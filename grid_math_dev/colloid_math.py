@@ -136,7 +136,7 @@ class DLVO:
         params = {'concentration': {'Na': 10e-4}, 'adjust_zeta': False, 'I_initial': None, 'I': 10e-4, 'ac': 1e-6,
                   'e': 1.6e-19, 'epsilon_0': 8.85e-12, 'epsilon_r': 78.304, 'valence': {'Na': 1.}, 'boltzmann': 1.38e-23,
                   'sheer_plane': 3e-10, 'T': 298.17, 'lvdwst_water': 21.8e-3, 'lvdwst_colloid': 39.9e-3,
-                  'lvdwst_solid': 33.7e-3, 'zeta_colloid': -40.5e-3, 'zeta_surface': -60.9e-3, 'psi+_colloid': 0.4e-3,
+                  'lvdwst_solid': 33.7e-3, 'zeta_colloid': -40.5e-3, 'zeta_solid': -60.9e-3, 'psi+_colloid': 0.4e-3,
                   'psi-_colloid': 34.3e-3, 'psi+_water': 25.5e-3, 'psi-_water': 25.5e-3, 'psi+_solid': 1.3e-3,
                   'psi-_solid': 62.2e-3}
 
@@ -149,26 +149,28 @@ class DLVO:
         self.e = params['e']
         self.valence = params['valence']
         self.concentration = params['concentration'] 
-        self.boltsmann = parmas['boltzmann']
+        self.boltzmann = params['boltzmann']
         self.stern_z = params['sheer_plane'] 
         self.T = params['T']
+        self.zeta_colloid = params['zeta_colloid']
+        self.zeta_solid = params['zeta_solid']
         self.lvdwst_water = params['lvdwst_water']
         self.lvdwst_colloid = params['lvdwst_colloid']
         self.lvdwst_solid = params['lvdwst_solid']
         self.eplus_water = params['psi+_water']
         self.eplus_colloid = params['psi+_colloid']
-        self.eplus_surface = params['psi+_surface']
+        self.eplus_solid = params['psi+_solid']
         self.eneg_water = params['psi-_water']
         self.eneg_colloid = params['psi-_colloid']
-        self.eneg_surface = params['psi-_surface']
+        self.eneg_solid = params['psi-_solid']
 
         if params['adjust_zeta'] is not False:
             if parmas['I_initial'] is not None:
                 self.k_debye_init(self.epsilon_0, self.epsilon_r, self.boltzmann, self.T, self.e, params['I_initial'])
                 
-                self.colloid_potential_init = self._colloid_potential(zeta_colloid, self.ac, self.k_debye,
+                self.colloid_potential_init = self._colloid_potential(self.zeta_colloid, self.ac, self.k_debye,
                                                                       self.stern_z)
-                self.surface_potential_init = self._surface_potential(zeta_surface, self.k_debye, self.stern_z)
+                self.surface_potential_init = self._surface_potential(self.zeta_solid, self.k_debye, self.stern_z)
 
                 if params['I'] is not None:
                     self.ionic_strength = 2*params['I'] #2I is what is used in the debye equation
@@ -181,7 +183,7 @@ class DLVO:
                 self.zeta_colloid = self._adjust_zeta_colloid(self.colloid_potential_init, self.ac, self.k_debye,
                                                               self.stern_z)
 
-                self.zeta_surface = self._adjust_zeta_surface(self.surface_potential_init, self.k_debye,
+                self.zeta_solid = self._adjust_zeta_surface(self.surface_potential_init, self.k_debye,
                                                               self.stern_z)
             else:
                 print('Please suppy initial ionic strength')
@@ -189,11 +191,9 @@ class DLVO:
                 
 
         else: 
-            self.zeta_colloid = params['zeta_colloid']
-            self.zeta_surface = params['zeta_surface']
+            pass
         
-
-        if I is not None:
+        if params['I'] is not None:
             self.ionic_strength = 2*params['I'] #2I is what is used in the debye equation
         else:
             self.ionic_strength = self.ionic(params['valence'], params['concentration'])
@@ -202,7 +202,7 @@ class DLVO:
                                   self.ionic_strength)
                                          
         self.colloid_potential = self._colloid_potential(self.zeta_colloid, self.ac, self.k_debye, self.stern_z)
-        self.surface_potential = self._surface_potential(self.zeta_surface, self.k_debye, self.stern_z)
+        self.surface_potential = self._surface_potential(self.zeta_solid, self.k_debye, self.stern_z)
 
         # returns values in energy. need forces, so divide by array
         
@@ -211,22 +211,23 @@ class DLVO:
 
         self.EDLy = self._EDL_energy(self.epsilon_0, self.epsilon_r, self.ac, self.colloid_potential,
                                      self.surface_potential, self.k_debye, yarr)/yarr
-
+        # EDL forces: TODO: we need to re-add direction vectors after calculation
+        
         self.LVDWx = self._Lifshitz_van_der_Walls(xarr, self.ac, self.lvdwst_water, self.lvdwst_colloid,
                                                   self.lvdwst_solid)/xarr
 
         self.LVDWy = self._Lifshitz_van_der_Walls(xarr, self.ac, self.lvdwst_water, self.lvdwst_colloid,
                                                   self.lvdwst_solid)/yarr
 
-        self.LewisABx = self._lewis_acid_base(xarr, self.eplus_colloid, self.eplus_solid, self.eplus_water,
+        self.LewisABx = self._lewis_acid_base(xarr, self.ac, self.eplus_colloid, self.eplus_solid, self.eplus_water,
                                               self.eneg_colloid, self.eneg_solid, self.eneg_water)/xarr
 
-        self.LewisABy = self._lewis_acid_base(yarr, self.eplus_colloid, self.eplus_solid, self.eplus_water,
+        self.LewisABy = self._lewis_acid_base(yarr, self.ac, self.eplus_colloid, self.eplus_solid, self.eplus_water,
                                               self.eneg_colloid, self.eneg_solid, self.eneg_water)/yarr
         
 
         
-    def ionic(valence, concentration):
+    def ionic(self, valence, concentration):
         '''
         Input is dictionaries of valence and concentration values (Molar)
 
@@ -238,20 +239,20 @@ class DLVO:
         return I
                   
 
-    def debye(epsilon_0, epsilon_r, kb, T, e, ionic_strength):
+    def debye(self, epsilon_0, epsilon_r, kb, T, e, ionic_strength):
         NA = 6.02e23
-        k_inverse = np.sqrt((epsilon_0*epsilon_r*kb*T)/(e**2*NA*ionic_strength))
-        return 1./k
+        k_inverse = np.sqrt((epsilon_0*epsilon_r*kb*T)/(e*e*NA*ionic_strength))
+        return 1./k_inverse
 
-    def _colloid_potential(zeta, ac, kd, z):
-        potential = zeta*(1+(z/ac))*np.exp(kd*z)
+    def _colloid_potential(self, zeta, ac, kd, z):
+        potential = zeta*(1.+(z/ac))*np.exp(kd*z)
         return potential
 
-    def _surface_potential(zeta, kd, z):
+    def _surface_potential(self, zeta, kd, z):
         potential = zeta*np.exp(kd*z)
         return potential
     
-    def _EDL_energy(E0, Er, ac, cp, sp, kd, arr):
+    def _EDL_energy(self, E0, Er, ac, cp, sp, kd, arr):
         '''
         Inputs:
         -------
@@ -270,26 +271,27 @@ class DLVO:
         -----
         Mathematical calcualtion is broken in three sections for ease of programming
         '''
+        print kd
 
         EDL0 = np.pi*E0*Er*ac
         EDL1 = 2.*sp*cp
-        EDL2 = np.log((1 + np.exp(-kd*arr))/(1 - np.exp(-kd*arr)))
+        EDL2 = np.log((1. + np.exp(-kd*np.abs(arr)))/(1. - np.exp(-kd*np.abs(arr))))
         EDL3 = sp*sp + cp*cp
-        EDL4 = np.log(1 - np.exp(-2*kd*arr))
+        EDL4 = np.log(1. - np.exp(-2.*kd*np.abs(arr)))
 
-        EDL = EDL0*(EDL1*ELD2 + EDL3*EDL4)
+        EDL = EDL0*(EDL1*EDL2 + EDL3*EDL4)
 
         return EDL
 
-    def _adjust_zeta_colloid(potential, ac, kd, z):
-        zeta = potential/((1 + (z/ac))*np.exp(kd*z))
+    def _adjust_zeta_colloid(self, potential, ac, kd, z):
+        zeta = potential/((1. + (z/ac))*np.exp(kd*z))
         return zeta
 
-    def _adjust_zeta_surface(potential, kd, z):
+    def _adjust_zeta_surface(self, potential, kd, z):
         zeta = potential/(np.exp(kd*z))
         return zeta
 
-    def _Lifshitz_van_der_Walls(arr, ac, vdw_st_water, vdw_st_colloid, vdw_st_solid):
+    def _Lifshitz_van_der_Walls(self, arr, ac, vdw_st_water, vdw_st_colloid, vdw_st_solid):
         '''
         Inputs:
         -------
@@ -317,7 +319,7 @@ class DLVO:
         LVDW = LVDW0*LVDW1*LVDW2
         return LVDW
 
-    def _lewis_acid_base(arr, eplus_colloid, eplus_solid, eplus_water, eneg_colloid,
+    def _lewis_acid_base(self, arr, ac, eplus_colloid, eplus_solid, eplus_water, eneg_colloid,
                          eneg_solid, eneg_water):
         '''
         Inputs:
@@ -339,7 +341,7 @@ class DLVO:
         h0 = 1.57e-10
         chi = 0.6e-10
 
-        LAB0 =  -4*np.pi*h0*ac
+        LAB0 =  -4.*np.pi*h0*ac
         LAB1 = np.exp((h0-arr)/chi)
         LAB2 = np.sqrt(eplus_water)*(np.sqrt(eneg_colloid) + np.sqrt(eneg_solid) - np.sqrt(eneg_water))
         LAB3 = np.sqrt(eneg_water)*(np.sqrt(eplus_colloid) + np.sqrt(eplus_solid) - np.sqrt(eplus_water))
