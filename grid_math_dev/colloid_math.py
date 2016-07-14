@@ -4,11 +4,12 @@ import sys
 
 class brownian:
     def __init__(self, xarr, yarr, f1, f4):
-        self.ac = 1e-6 # change this to reflect literature
+        # add kwargs support to this so we can reset ac if needed
+        self.ac = 1e-6 
         self.viscosity = 1./6.
         self.boltzmann = 1.38e-23
         self.epsilon = 6.* np.pi * self.viscosity * self.ac
-        self.T = 298.17 # temperature in Kelvin
+        self.T = 298.17 
         self.diffusive = (self.boltzmann * self.T) / self.epsilon
         self.brownian_x = self.Brown_xforce(self.epsilon, self.diffusive, f4)
         self.brownian_y = self.Brown_yforce(self.epsilon, self.diffusive, f1)
@@ -26,6 +27,9 @@ class brownian:
 
 class drag:
     def __init__(self, ux, uy, Vx, Vy, f1, f2, f3, f4):
+        # add docstrings and **kwargs support
+        '''
+        '''
         self.ac = 1e-6
         self.viscosity = 1./6.
         self.epsilon = 6. * np.pi * self.viscosity * self.ac
@@ -43,6 +47,9 @@ class drag:
         
 class gap:
     def __init__(self, xarr, yarr):
+        ### add docstrings and **kwargs support
+        '''
+        '''
         self.ac = 1e-6
         self.yhbar = np.abs(yarr/self.ac)
         self.xhbar = np.abs(xarr/self.ac)
@@ -70,7 +77,6 @@ class gap:
 
 class DLVO:
     def __init__(self, xarr, yarr, **kwargs):
-        ### If this gets unwieldly, handle optional input by **kwargs
         '''
         Defaults and parameterization handled by kwargs dictionary feeding into the params dict.
         
@@ -78,17 +84,48 @@ class DLVO:
         -------
         xarr: (np.array() float) distances from solid boundaries in the x direction
         yarr: (np.array() float) distances from solid boundaries in the y direction
-        valence: (int) dictionary of species valences for model run
-        concentration: (float) optional dictionary of species concentrations for model run
-        zeta_colloid: (float) measured_zeta potential of colloid
-        zeta_surface: (float) bulk_zeta potential of porous media
+        valence: (dictionary, int) valences of all species in solution
+        concentration: (dictionary, float) optional dictionary of species concentrations for model run Molar
+        zeta_colloid: (float) measured_zeta potential of colloid in Volts
+        zeta_surface: (float) bulk_zeta potential of porous media in Volts
         adjust_zeta: (bool) boolean flag that adjusts zeta if ionic strength is varied from zeta potential measurement ionic strength
-        I_initial: (float) required if adjust_zeta is True: ionic strength that zeta potential was measured at
-        I: (float) optional [recommended!]: ionic strength of simulated solution
+        I_initial: (float) required if adjust_zeta is True: Molar ionic strength that zeta potential was measured at
+        I: (float) optional [recommended!]: Molar ionic strength of simulated solution 
+        ac: (float) colloid radius in meters
+        e: (float) electron charge
+        epsilon_0: (float) dielectric permativity of a vacuum
+        epsilon_r: (float) relative permativity of water
+        boltzmann: (float) boltzmann constant
+        sheer_plane: (float) equivelent to the thickness of one layer of water molecules
+        T: (float) temperature of simulation fluid in degrees Kelvin
+        lvdwst_*: (float) * = colloid, water, solid. Lifshits-van der Waals component
+        psi+_*: (float) * = colloid, water, solid. Electron acceptor parameter
+        psi-_*: (float) * = colloid, water, solid. Electron donor parameter
+
 
         Defaults:
         ---------
-        
+        I: 10e-4 Molar
+        ac: 1E-6 meters 
+        e: 1.6e-19 C (charge of one electron)
+        epsilon_0: 8.85e-12 C**2/(J*m) 
+        epsilon_r: 78.304 @ 298 K {Malmberg and Maryott 1956. Jour. Res. Nat. Beau. Std. V56(1)}
+        valence: {'Na': 1.} [default assumes a Na+ ion solution]
+        concentration: {'Na': 10e-4} [default assumes ionic strength of 10e-4]
+        boltzmann: 1.38e-23 J/K
+        sheer_plane: 3e-10 meters {Interface Science and Technology, 2008. Volume 16 Chapter 3}
+        T: 298.17 deg K
+        zeta_colloid: -40.5e-3 zeta potential of Na-kaolinite {Chorom 1995. Eur. Jour. of Soil Sci.}
+        zeta_solid: -60.9e-3 zeta potential of glass-beads {Ducker 1992. Langmuir V8}
+        lvdwst_colloid: 39.9e-3 J/m**2 {Giese et. al. 1996, Jour. Disp. Sci. & Tech. 17(5)}
+        lvdwst_solid: 33.7e-3 J/m**2 {Giese et. al. 1996, Jour. Disp. Sci. & Tech. 17(5)}
+        lvdwst_water: 21.8e-3 J/m**2 {Interface Science and Technology, 2008. Volume 16. Chapter 2}
+        psi+_colloid: 0.4e-3 J/m**2 {Giese et. al. 1996, Jour. Disp. Sci. & Tech. 17(5)}
+        psi+_solid: 1.3e-3 J/m**2 {Giese et. al. 1996, Jour. Disp. Sci. & Tech. 17(5)}
+        psi+_water: 25.5e-3 J/m**2 {Interface Science and Technology, 2008. Volume 16. Chapter 2}
+        psi-_colloid: 34.3e-3 J/m**2 {Giese et. al. 1996, Jour. Disp. Sci. & Tech. 17(5)}
+        psi-_solid: 62.2e-3 J/m**2 {Giese et. al. 1996, Jour. Disp. Sci. & Tech. 17(5)}
+        psi-_water: 25.5e-3 J/m**2 {Interface Science and Technology, 2008. Volume 16. Chapter 2}
 
         Output:
         ------
@@ -96,10 +133,10 @@ class DLVO:
         
         '''
 
-        params = {'concentration': None, 'adjust_zeta': False, 'I_initial': None, 'I': 10e-4, 'ac': 1e-6,
-                  'e': 1.6e-19, 'epsilon_0': 8.85e12, 'epsilon_r': 74.58, 'valence': 1., 'boltzmann': 1.38e-23,
+        params = {'concentration': {'Na': 10e-4}, 'adjust_zeta': False, 'I_initial': None, 'I': 10e-4, 'ac': 1e-6,
+                  'e': 1.6e-19, 'epsilon_0': 8.85e-12, 'epsilon_r': 78.304, 'valence': {'Na': 1.}, 'boltzmann': 1.38e-23,
                   'sheer_plane': 3e-10, 'T': 298.17, 'lvdwst_water': 21.8e-3, 'lvdwst_colloid': 39.9e-3,
-                  'lvdwst_solid': 33.7e-3, 'zeta_colloid': -40.5e-3, 'zeta_surface': 60.9e-3, 'psi+_colloid': 0.4e-3,
+                  'lvdwst_solid': 33.7e-3, 'zeta_colloid': -40.5e-3, 'zeta_surface': -60.9e-3, 'psi+_colloid': 0.4e-3,
                   'psi-_colloid': 34.3e-3, 'psi+_water': 25.5e-3, 'psi-_water': 25.5e-3, 'psi+_solid': 1.3e-3,
                   'psi-_solid': 62.2e-3}
 
@@ -107,17 +144,17 @@ class DLVO:
             params[kwarg] = kwargs[kwarg]
                   
         self.epsilon_0 = params['epsilon_0']
-        self.epsilon_r = params['epsilon_r']# @ 298k
+        self.epsilon_r = params['epsilon_r']
         self.ac = params['ac']
         self.e = params['e']
         self.valence = params['valence']
-        self.concentration = params['concentration'] #Necessary if using valence:concentration to calculate 2*(ionic strength)
+        self.concentration = params['concentration'] 
         self.boltsmann = parmas['boltzmann']
-        self.stern_z = params['sheer_plane'] #thickness of the stern layer in angstroms=5 it is generally 3-5 A
+        self.stern_z = params['sheer_plane'] 
         self.T = params['T']
-        self.lvdwst_water = params['lvdwst_water']#Joules (21.8 milijoules)
-        self.lvdwst_colloid = params['lvdwst_colloid'] #Joules (assuming colloid is kaolinite clay) add support to set colloid value
-        self.lvdwst_solid = params['lvdwst_solid'] #these parameters should default to glass beads, however we also should be able to set values.
+        self.lvdwst_water = params['lvdwst_water']
+        self.lvdwst_colloid = params['lvdwst_colloid']
+        self.lvdwst_solid = params['lvdwst_solid']
         self.eplus_water = params['psi+_water']
         self.eplus_colloid = params['psi+_colloid']
         self.eplus_surface = params['psi+_surface']
@@ -167,23 +204,25 @@ class DLVO:
         self.colloid_potential = self._colloid_potential(self.zeta_colloid, self.ac, self.k_debye, self.stern_z)
         self.surface_potential = self._surface_potential(self.zeta_surface, self.k_debye, self.stern_z)
 
+        # returns values in energy. need forces, so divide by array
+        
         self.EDLx = self._EDL_energy(self.epsilon_0, self.epsilon_r, self.ac, self.colloid_potential,
-                                     self.surface_potential, self.k_debye, self.xarr)
+                                     self.surface_potential, self.k_debye, xarr)/xarr
 
         self.EDLy = self._EDL_energy(self.epsilon_0, self.epsilon_r, self.ac, self.colloid_potential,
-                                     self.surface_potential, self.k_debye, self.yarr)
+                                     self.surface_potential, self.k_debye, yarr)/yarr
 
         self.LVDWx = self._Lifshitz_van_der_Walls(xarr, self.ac, self.lvdwst_water, self.lvdwst_colloid,
-                                                  self.lvdwst_solid)
+                                                  self.lvdwst_solid)/xarr
 
         self.LVDWy = self._Lifshitz_van_der_Walls(xarr, self.ac, self.lvdwst_water, self.lvdwst_colloid,
-                                                  self.lvdwst_solid)
+                                                  self.lvdwst_solid)/yarr
 
         self.LewisABx = self._lewis_acid_base(xarr, self.eplus_colloid, self.eplus_solid, self.eplus_water,
-                                              self.eneg_colloid, self.eneg_solid, self.eneg_water)
+                                              self.eneg_colloid, self.eneg_solid, self.eneg_water)/xarr
 
-        self.LesisABy = self._lewis_acid_base(yarr, self.eplus_colloid, self.eplus_solid, self.eplus_water,
-                                              self.eneg_colloid, self.eneg_solid, self.eneg_water)
+        self.LewisABy = self._lewis_acid_base(yarr, self.eplus_colloid, self.eplus_solid, self.eplus_water,
+                                              self.eneg_colloid, self.eneg_solid, self.eneg_water)/yarr
         
 
         
@@ -262,14 +301,14 @@ class DLVO:
 
         constant:
         --------
-        h0: contact plane between colloid and surface
+        h0: contact plane between colloid and surface {Interface Science and Technology, 2008. Volume 16. Chapter 3}
 
         Output:
         -------
         LVDW: (np.array, np.float) array of lifshitz_vdW interaction energies
         '''
         
-        h0= 1.57e-10 #verified in Ch3 Interface Sci. and Technology
+        h0= 1.57e-10 
 
         LVDW0 = -4.*np.pi*(h0/arr)
         LVDW1 = np.sqrt(vdw_st_water) - np.sqrt(vdw_st_solid)
@@ -289,8 +328,8 @@ class DLVO:
 
         Constants:
         ----------
-        h0: contact plane between colloid and surface (Ch3 Interface Sci. and Technology 2008. vol 16)
-        chi: water decay length (van Oss 2008)
+        h0: contact plane between colloid and surface  {Interface Science and Technology, 2008. Volume 16. Chapter 3}
+        chi: water decay length {van Oss 2008}
 
         Output:
         -------
@@ -310,25 +349,3 @@ class DLVO:
         LAB = LAB0*LAB1*(LAB2+LAB3-LAB4-LAB5)
         return LAB
         
-        
-'''
-check = np.zeros((18, 18)) + 0.1
-check[::4, 1::4] = True
-check[1::2, ::4] = True
-check[0, :] = 0.1
-check[-1, :] = 0.1
-check[:, 0] = True
-check[:, -1] = True
-
-checky = np.copy(check.T)
-
-
-check = np.ma.masked_where(check == 1., check)
-checky = np.ma.masked_where(checky == 1., checky)
-
-checky = checky.T
-
-gaps = gap(check, checky)
-testr = brownian(check,checky, gaps.f1, gaps.f4)
-dtestr = drag(check, checky, check, checky, gaps.f1, gaps.f2, gaps.f3, gaps.f4)
-'''
