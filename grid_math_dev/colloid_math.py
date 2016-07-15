@@ -277,13 +277,13 @@ class DLVO:
         self.surface_potential = self._surface_potential(self.zeta_solid, self.k_debye, self.stern_z)
 
         # returns values in energy. need forces, so divide by array
+        # need to add back in force vectors to give directionality
         
         self.EDLx = self._EDL_energy(self.epsilon_0, self.epsilon_r, self.ac, self.colloid_potential,
                                      self.surface_potential, self.k_debye, xarr)/xarr
 
         self.EDLy = self._EDL_energy(self.epsilon_0, self.epsilon_r, self.ac, self.colloid_potential,
                                      self.surface_potential, self.k_debye, yarr)/yarr
-        # EDL forces: TODO: we need to re-add direction vectors after calculation
         
         self.LVDWx = self._Lifshitz_van_der_Walls(xarr, self.ac, self.lvdwst_water, self.lvdwst_colloid,
                                                   self.lvdwst_solid)/xarr

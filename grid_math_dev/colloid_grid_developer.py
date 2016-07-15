@@ -23,7 +23,7 @@ def distance_gridx(line, vline, gridres, solid):
     boundary= np.where(np.abs(np.diff(line)) >= 1)[0]
     
     try:
-        for i in range(1,len(boundary),2):
+        for i in range(1, len(boundary), 2):
             rbound = boundary[i] + 1
             lbound = boundary[i-1] + 1
             gap = rbound - lbound
