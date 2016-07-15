@@ -2,14 +2,38 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-class brownian:
-    def __init__(self, xarr, yarr, f1, f4):
-        # add kwargs support to this so we can reset ac if needed
-        self.ac = 1e-6 
-        self.viscosity = 1./6.
+class Brownian:
+    def __init__(self, xarr, yarr, f1, f4, ac=1e-6, viscosity=1./6., T=298.17):
+        '''
+        Class to estimate brownian forces on colloids
+
+        Inputs:
+        -------
+        xarr: (np.array, np.float) array of x-distances to nearest solid surface
+        yarr: (np.array, np.float) array of x-distances to nearest solid surface
+        f1: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
+        f4: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
+        ac: (float) Colloid radius
+        viscosity: (float) macroscopic fluid viscosity term
+        T = (float) Absolute Temperature in K
+
+        Defaults:
+        ---------
+        ac: 1e-6 m
+        viscosity: 1/6 (non dimensional viscosity): assumes LB tau == 1
+        epsion: 6*pi*viscosity*ac {Gao et. al. 2010. Computers and Math with App}
+        T = 298.17 K
+
+        Returns:
+        --------
+        brownian_x: (np.array, np.float) array of browian (random) forces in the x direction {Qiu et. al 2011. VZJ}
+        brownian_y: (np.array, np.float) array of browian (random) forces in the x direction {Qiu et. al 2011. VZJ}
+        '''
+        self.ac = ac
+        self.viscosity = viscosity
         self.boltzmann = 1.38e-23
         self.epsilon = 6.* np.pi * self.viscosity * self.ac
-        self.T = 298.17 
+        self.T = T
         self.diffusive = (self.boltzmann * self.T) / self.epsilon
         self.brownian_x = self.Brown_xforce(self.epsilon, self.diffusive, f4)
         self.brownian_y = self.Brown_yforce(self.epsilon, self.diffusive, f1)
@@ -25,32 +49,79 @@ class brownian:
         return Fbn
 
 
-class drag:
-    def __init__(self, ux, uy, Vx, Vy, f1, f2, f3, f4):
-        # add docstrings and **kwargs support
+class Drag:
+    def __init__(self, ux, uy, Vx, Vy, f1, f2, f3, f4, ac=1e-6, viscosity=1./6.):
+        
         '''
+        Class to calculate colloidal drag forces from fluid velocity arrays
+        
+        Inputs:
+        -------
+        ux: (np.array, np.float) fluid velocity in the x-direction
+        uy: (np.array, np.float) fluid velocity in the y-direction
+        Vx: (np.array, np.float) colloid velocity in the x-direction (assuming equal to ux for calculation)
+        Vy: (np.array, np.float) colloid velocity in the y-direction (assuming equal to uy for calculation)
+        f1: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
+        f2: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
+        f3: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
+        f4: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
+        ac: (float) Colloid radius
+        viscosity: (float) macroscopic fluid viscosity term
+        
+        Constants:
+        ----------
+        ac: 1e-6 m
+        viscosity: 1/6 (non dimensional viscosity): assumes LB tau == 1
+        epsion: 6*pi*viscosity*ac {Gao et. al. 2010. Computers and Math with App}
+
+        Returns:
+        --------
+        drag_x: (np.array, np.float) drag forces in the x-direction
+        drag_y: (np.array, np.float) drag forces in the y-direction
         '''
-        self.ac = 1e-6
-        self.viscosity = 1./6.
+        self.ac = ac
+        self.viscosity = viscosity
         self.epsilon = 6. * np.pi * self.viscosity * self.ac
-        self.drag_x = self.Drag_xforce(ux, Vx, self.epsilon, f3, f4)
-        self.drag_y = self.Drag_yforce(uy, Vy, self.epsilon, f1, f2)
+        self.drag_x = self.drag_xforce(ux, Vx, self.epsilon, f3, f4)
+        self.drag_y = self.drag_yforce(uy, Vy, self.epsilon, f1, f2)
                                        
-    def Drag_xforce(self, ux, Vx, epsilon, f3, f4):
+    def drag_xforce(self, ux, Vx, epsilon, f3, f4):
         Fdt = (epsilon / f4) * ((f3 * ux) - Vx)
         return Fdt
 
-    def Drag_yforce(self, uy, Vy, epsilon, f1, f2):
+    def drag_yforce(self, uy, Vy, epsilon, f1, f2):
         Fdn = epsilon * ((f2 * uy) - (Vy / f1))
         return Fdn
 
         
-class gap:
-    def __init__(self, xarr, yarr):
+class Gap:
+    def __init__(self, xarr, yarr, ac=1e-6):
         ### add docstrings and **kwargs support
         '''
+        Inputs:
+        -------
+        xarr: (np.array, np.float) array of x-distances to nearest solid surface
+        yarr: (np.array, np.float) array of x-distances to nearest solid surface
+        ac: (np.float) radius of a colloid
+
+        Defaults:
+        ---------
+        ac = 1e-6 m
+
+        Returns:
+        -------
+        yhbar: (np.array, np.float) Normalized gap distance by colloid radius in y-direction
+        xhbar: (np.array, np.float) Normalized gap distance by colloid radius in x-direction
+        f1: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
+        f2: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
+        f3: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
+        f4: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
+
+        Note:
+        -----
+        Passing np.nan to these returns an overflow warning. 
         '''
-        self.ac = 1e-6
+        self.ac = ac
         self.yhbar = np.abs(yarr/self.ac)
         self.xhbar = np.abs(xarr/self.ac)
         self.f1 = self.set_f1(self.yhbar)
@@ -59,15 +130,16 @@ class gap:
         self.f4 = self.set_f4(self.xhbar)
         
     def set_f1(self, yhbar):
-         f1 = 1.0 - 0.443 * np.exp(yhbar * -1.299) - 0.5568 * np.exp((yhbar ** -0.75) * -0.32)
+         f1 = 1.0 - 0.443 * np.exp(yhbar * -1.299) - 0.5568 * np.exp((yhbar ** 0.75) * -0.32)
+         print(f1)
          return f1
 
     def set_f2(self, yhbar):
-        f2 = 1.0 + 1.455 * np.exp(yhbar * -1.259) + 0.7951 * np.exp((yhbar ** -0.50) * -0.56)
+        f2 = 1.0 + 1.455 * np.exp(yhbar * -1.259) + 0.7951 * np.exp((yhbar ** 0.50) * -0.56)
         return f2
 
     def set_f3(self, xhbar):
-        f3 = 1.0 - 0.487 * np.exp(xhbar * -5.423) - 0.5905 * np.exp((xhbar ** -0.50) * -37.83)
+        f3 = 1.0 - 0.487 * np.exp(xhbar * -5.423) - 0.5905 * np.exp((xhbar ** 0.50) * -37.83)
         return f3
 
     def set_f4(self, xhbar):
@@ -271,7 +343,6 @@ class DLVO:
         -----
         Mathematical calcualtion is broken in three sections for ease of programming
         '''
-        print kd
 
         EDL0 = np.pi*E0*Er*ac
         EDL1 = 2.*sp*cp
