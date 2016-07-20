@@ -131,7 +131,6 @@ class Gap:
         
     def set_f1(self, yhbar):
          f1 = 1.0 - 0.443 * np.exp(yhbar * -1.299) - 0.5568 * np.exp((yhbar ** 0.75) * -0.32)
-         print(f1)
          return f1
 
     def set_f2(self, yhbar):

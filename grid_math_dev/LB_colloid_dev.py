@@ -2,9 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from scipy import interpolate
+import colloid_math as cm
 import h5py as H
 import optparse
 import sys
+
 
 class HDF5_reader:
     def __init__(self, HDF_name):
@@ -120,6 +122,8 @@ class Gridarray:
         except IndexError:
             print 'volume does not percolate'
             sys.exit()
+        #line[line == 1.] = np.nan
+        #vline[line == 1.] = np.nan
         return line, vline
 
     def _distance_gridy(self, line, vline, gridres, ylen, gridsplit):
@@ -184,6 +188,8 @@ class Gridarray:
             vline[lbound:rbound] = bottom
         else:
             pass
+        #line[line == 1.] = np.nan
+        #vline[line == 1.] = np.nan
         return line, vline
 
 def LB_varray(LBv, img):
@@ -206,19 +212,22 @@ def interp_v(LBv, gridsplit):
 
 LB = HDF5_reader('Synthetic255.hdf5')
 gridsplit = 10
-gridres = 110/gridsplit
+gridres = 1e-6/gridsplit
 
 LBy = LB_varray(LB.yu, LB.imarray)
 LBx = LB_varray(LB.xu, LB.imarray)
-LBv = np.sqrt(LB.yu*LB.yu+LB.xu*LB.xu)
-LBvp = LB_varray(LBv, LB.imarray)
+#LBv = np.sqrt(LB.yu*LB.yu+LB.xu*LB.xu)
+#LBvp = LB_varray(LBv, LB.imarray)
+#print LBx, LBy
 
-plt.imshow(LBvp, interpolation='nearest')
-plt.colorbar()
-plt.show()
+#plt.imshow(LBvp, interpolation='nearest')
+#plt.colorbar()
+#plt.show()
 
 #### interpolate over grid array and interpolate veloctity profiles ####
-Col_vp = interp_v(LBvp, gridsplit)
+#Col_vp = interp_v(LBvp, gridsplit)
+LBy = interp_v(LBy, gridsplit)
+LBx = interp_v(LBx, gridsplit)
 Col_img = interp_v(LB.imarray, gridsplit)
 
 ### Use grids function to measure distance from pore space and correct
@@ -230,18 +239,36 @@ yArr = Grids.gridy
 vxArr = Grids.vector_x
 vyArr = Grids.vector_y
 
+xArr[LBx == 0.] = np.nan
+yArr[LBy == 0.] = np.nan
+vxArr[LBx == 0.] = np.nan
+vyArr[LBy == 0.] = np.nan
+
+#cfactor and drag forces pass testing, note that if res/grid_res > colloid_r
+#warnings are thrown by numpy
+
+cfactor = cm.Gap(xArr, yArr)
+
+drag_forces = cm.Drag(LBx, LBy, LBx, LBy, cfactor.f1, cfactor.f2,
+                      cfactor.f3, cfactor.f4)
+
+'''
 plt.imshow(vxArr, interpolation='nearest')
+plt.colorbar()
 plt.show()
 
 plt.imshow(vyArr, interpolation='nearest')
+plt.colorbar()
 plt.show()
 
 xArr = np.ma.masked_where(yArr == 1., xArr)
 plt.imshow(xArr, interpolation = 'nearest')
+plt.colorbar()
 plt.show()
 
 yArr = np.ma.masked_where(yArr == 1., yArr)
 plt.imshow(yArr, interpolation = 'nearest')
+plt.colorbar()
 plt.show()
 
 
@@ -250,4 +277,4 @@ Col_vp = np.ma.masked_where(Col_vp == 0, Col_vp)
 plt.imshow(Col_vp, interpolation = 'nearest')
 plt.colorbar()
 plt.show()
-
+'''
