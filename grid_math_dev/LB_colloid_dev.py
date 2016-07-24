@@ -122,8 +122,6 @@ class Gridarray:
         except IndexError:
             print 'volume does not percolate'
             sys.exit()
-        #line[line == 1.] = np.nan
-        #vline[line == 1.] = np.nan
         return line, vline
 
     def _distance_gridy(self, line, vline, gridres, ylen, gridsplit):
@@ -142,17 +140,17 @@ class Gridarray:
 
         # create an array of pore boundaries from binary system
         boundary= np.where(np.abs(np.diff(line)) >= 1)[0]
-
+        
         if len(boundary) > 0:
-            rbound = boundary[0] + 1
+            rbound = boundary[1] + 1 
             lbound = 0
             top = np.arange(rbound, lbound, -1)*gridres
             line[lbound:rbound] = top
-
             vtop = np.ones(len(top))*-1
             vline[lbound:rbound] = vtop
+            
                
-            for i in range(1, len(boundary), 2):
+            for i in range(3, len(boundary), 2):
                 rbound = boundary[i] + 1
                 lbound = boundary[i-1] + 1
                 gap = rbound - lbound
@@ -162,8 +160,8 @@ class Gridarray:
                     right = left[::-1]
                     line[lbound:rbound] = np.append(left, right)
 
-                    left = np.ones(gap)*-1
-                    right = np.ones(gap)
+                    left = np.ones(gap)
+                    right = np.ones(gap)*-1
                     vline[lbound:rbound] = np.append(left, right)
                     
                 else:
@@ -174,8 +172,8 @@ class Gridarray:
                     left = np.append(left, adjust)
                     line[lbound:rbound] = np.append(left, right)
 
-                    left = np.ones(gap + 1)*-1
-                    right = np.ones(gap)
+                    left = np.ones(gap + 1)
+                    right = np.ones(gap)*-1
                     vline[lbound:rbound] = np.append(left, right)
                     
             rbound = ylen
@@ -188,8 +186,6 @@ class Gridarray:
             vline[lbound:rbound] = bottom
         else:
             pass
-        #line[line == 1.] = np.nan
-        #vline[line == 1.] = np.nan
         return line, vline
 
 def LB_varray(LBv, img):
@@ -235,6 +231,7 @@ Col_img = interp_v(LB.imarray, gridsplit)
 Grids = Gridarray(Col_img, gridres, gridsplit)
 xArr = Grids.gridx
 yArr = Grids.gridy
+
 
 vxArr = Grids.vector_x
 vyArr = Grids.vector_y
