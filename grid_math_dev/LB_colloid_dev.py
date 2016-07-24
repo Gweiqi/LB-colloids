@@ -212,13 +212,6 @@ gridres = 1e-6/gridsplit
 
 LBy = LB_varray(LB.yu, LB.imarray)
 LBx = LB_varray(LB.xu, LB.imarray)
-#LBv = np.sqrt(LB.yu*LB.yu+LB.xu*LB.xu)
-#LBvp = LB_varray(LBv, LB.imarray)
-#print LBx, LBy
-
-#plt.imshow(LBvp, interpolation='nearest')
-#plt.colorbar()
-#plt.show()
 
 #### interpolate over grid array and interpolate veloctity profiles ####
 #Col_vp = interp_v(LBvp, gridsplit)
@@ -233,26 +226,44 @@ xArr = Grids.gridx
 yArr = Grids.gridy
 
 
-vxArr = Grids.vector_x
-vyArr = Grids.vector_y
+xvArr = Grids.vector_x
+yvArr = Grids.vector_y
 
 xArr[LBx == 0.] = np.nan
 yArr[LBy == 0.] = np.nan
-vxArr[LBx == 0.] = np.nan
-vyArr[LBy == 0.] = np.nan
+xvArr[LBx == 0.] = np.nan
+yvArr[LBy == 0.] = np.nan
 
-#cfactor and drag forces pass testing, note that if res/grid_res > colloid_r
-#warnings are thrown by numpy
+# cfactor passes testing : note that if res/grid_res > ac warnings are thrown by numpy!
+# Browian passes testing!
+# EDL passes testing!
+# LVDW passes testing!
+# Provisional pass of LewisAB, double check mathematics
+#
+# Provisional pass of Drag forces
+# Drag forces: we need to adjust x-velocity and y-velocity to our grid resolution. Check
+# that we have proper vector directions in Lattice Boltzmann model!
+
 
 cfactor = cm.Gap(xArr, yArr)
 
 drag_forces = cm.Drag(LBx, LBy, LBx, LBy, cfactor.f1, cfactor.f2,
-                      cfactor.f3, cfactor.f4)
+                      cfactor.f3, cfactor.f4, xvArr, yvArr) 
 
-drag_forces.drag_x
-drag_forces.drag_y
+brownian = cm.Brownian(xArr, yArr, cfactor.f1, cfactor.f4)
 
+dlvo = cm.DLVO(xArr, yArr, xvArr=xvArr, yvArr=yvArr)
+p
 
+plt.imshow(drag_forces.drag_x, interpolation='nearest', vmin=-1e-17, vmax=1e-17)
+plt.colorbar()
+plt.show()
+
+plt.imshow(drag_forces.drag_y, interpolation='nearest', vmin=-1e-12, vmax=1e-12)
+plt.colorbar()
+plt.show()
+
+'''
 plt.imshow(vxArr, interpolation='nearest')
 plt.colorbar()
 plt.show()
@@ -271,7 +282,6 @@ plt.imshow(yArr, interpolation = 'nearest')
 plt.colorbar()
 plt.show()
 
-'''
 plt.imshow(Col_img, cmap=mpl.cm.Accent, interpolation='nearest')
 Col_vp = np.ma.masked_where(Col_vp == 0, Col_vp)
 plt.imshow(Col_vp, interpolation = 'nearest')

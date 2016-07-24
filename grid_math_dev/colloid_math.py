@@ -50,7 +50,7 @@ class Brownian:
 
 
 class Drag:
-    def __init__(self, ux, uy, Vx, Vy, f1, f2, f3, f4, ac=1e-6, viscosity=1./6.):
+    def __init__(self, ux, uy, Vx, Vy, f1, f2, f3, f4, xvArr, yvArr, ac=1e-6, viscosity=1./6.):
         
         '''
         Class to calculate colloidal drag forces from fluid velocity arrays
@@ -65,6 +65,8 @@ class Drag:
         f2: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
         f3: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
         f4: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
+        xvArr: (np.array, np.float) Array of vectors in the x direction (1. right, -1. left)
+        yvArr: (np.array, np.float) Array of vectors in the y direction (1. right, -1. left)
         ac: (float) Colloid radius
         viscosity: (float) macroscopic fluid viscosity term
         
@@ -76,14 +78,14 @@ class Drag:
 
         Returns:
         --------
-        drag_x: (np.array, np.float) drag forces in the x-direction
-        drag_y: (np.array, np.float) drag forces in the y-direction
+        drag_x: (np.array, np.float) vectorized drag forces in the x-direction non-vectorized
+        drag_y: (np.array, np.float) vectorized drag forces in the y-direction non-vectorized
         '''
         self.ac = ac
         self.viscosity = viscosity
         self.epsilon = 6. * np.pi * self.viscosity * self.ac
-        self.drag_x = self.drag_xforce(ux, Vx, self.epsilon, f3, f4)
-        self.drag_y = self.drag_yforce(uy, Vy, self.epsilon, f1, f2)
+        self.drag_x = self.drag_xforce(ux, Vx, self.epsilon, f3, f4)*xvArr
+        self.drag_y = self.drag_yforce(uy, Vy, self.epsilon, f1, f2)*yvArr
                                        
     def drag_xforce(self, ux, Vx, epsilon, f3, f4):
         Fdt = (epsilon / f4) * ((f3 * ux) - Vx)
@@ -172,6 +174,8 @@ class DLVO:
         lvdwst_*: (float) * = colloid, water, solid. Lifshits-van der Waals component
         psi+_*: (float) * = colloid, water, solid. Electron acceptor parameter
         psi-_*: (float) * = colloid, water, solid. Electron donor parameter
+        xvArr: (np.array() float) np.array of direction vectors. It is inverted in DLVO to represent attractive and repulsive forces properly
+        yvArr: (np.array() float) np.array of directiion vectors. It is inverted in DLVO to represent attractive and repulsive forces properly
 
 
         Defaults:
@@ -200,8 +204,13 @@ class DLVO:
 
         Output:
         ------
-        
-        
+        DLVO forces
+        EDLx: (np.array, float) vectorized np.array of electric-double-layer force values in the x-direction
+        EDLy: (np.array, float) vectorized np.array of electric-double-layer  force values in the y-direction
+        LVDWx: (np.array, float) vectorized np.array of lifshitz-van-der-walls force values in the x-direction
+        LVDWy: (np.array, float) vectorized np.array of lifshitz-van-der-walls force values in the y-direction
+        LewisABx: (np.array, float) vectorized np.array of lewis acid base force values in the x-direction
+        LewisABy: (np.array, float) vectorized np.array of lewis acid base force values in the y-direction
         '''
 
         params = {'concentration': {'Na': 10e-4}, 'adjust_zeta': False, 'I_initial': None, 'I': 10e-4, 'ac': 1e-6,
@@ -234,6 +243,8 @@ class DLVO:
         self.eneg_water = params['psi-_water']
         self.eneg_colloid = params['psi-_colloid']
         self.eneg_solid = params['psi-_solid']
+        self.xvArr = params['xvArr']*-1
+        self.yvArr = params['yvArr']*-1
 
         if params['adjust_zeta'] is not False:
             if parmas['I_initial'] is not None:
@@ -279,22 +290,22 @@ class DLVO:
         # need to add back in force vectors to give directionality
         
         self.EDLx = self._EDL_energy(self.epsilon_0, self.epsilon_r, self.ac, self.colloid_potential,
-                                     self.surface_potential, self.k_debye, xarr)/xarr
+                                     self.surface_potential, self.k_debye, xarr)/xarr*self.xvArr
 
         self.EDLy = self._EDL_energy(self.epsilon_0, self.epsilon_r, self.ac, self.colloid_potential,
-                                     self.surface_potential, self.k_debye, yarr)/yarr
+                                     self.surface_potential, self.k_debye, yarr)/yarr*self.yvArr
         
         self.LVDWx = self._Lifshitz_van_der_Walls(xarr, self.ac, self.lvdwst_water, self.lvdwst_colloid,
-                                                  self.lvdwst_solid)/xarr
+                                                  self.lvdwst_solid)/xarr*self.xvArr
 
         self.LVDWy = self._Lifshitz_van_der_Walls(xarr, self.ac, self.lvdwst_water, self.lvdwst_colloid,
-                                                  self.lvdwst_solid)/yarr
+                                                  self.lvdwst_solid)/yarr*self.yvArr
 
         self.LewisABx = self._lewis_acid_base(xarr, self.ac, self.eplus_colloid, self.eplus_solid, self.eplus_water,
-                                              self.eneg_colloid, self.eneg_solid, self.eneg_water)/xarr
+                                              self.eneg_colloid, self.eneg_solid, self.eneg_water)/xarr*self.xvArr
 
         self.LewisABy = self._lewis_acid_base(yarr, self.ac, self.eplus_colloid, self.eplus_solid, self.eplus_water,
-                                              self.eneg_colloid, self.eneg_solid, self.eneg_water)/yarr
+                                              self.eneg_colloid, self.eneg_solid, self.eneg_water)/yarr*self.yvArr
         
 
         
@@ -382,7 +393,7 @@ class DLVO:
         
         h0= 1.57e-10 
 
-        LVDW0 = -4.*np.pi*(h0/arr)
+        LVDW0 = -4.*np.pi*(h0*h0/arr)*ac
         LVDW1 = np.sqrt(vdw_st_water) - np.sqrt(vdw_st_solid)
         LVDW2 = np.sqrt(vdw_st_water) - np.sqrt(vdw_st_colloid)
 
