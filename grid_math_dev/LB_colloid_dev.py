@@ -94,7 +94,7 @@ class Gridarray:
         try:
             for i in range(1, len(boundary), 2):
                 rbound = boundary[i] + 1
-                lbound = boundary[i-1] + 1
+                lbound = boundary[i-1]
                 gap = rbound - lbound
 
                 if gap % 2 == 0:
@@ -252,7 +252,10 @@ cfactor = cm.Gap(xArr, yArr)
 drag_forces = cm.Drag(LBx, LBy, LBx, LBy, cfactor.f1, cfactor.f2,
                       cfactor.f3, cfactor.f4)
 
-'''
+drag_forces.drag_x
+drag_forces.drag_y
+
+
 plt.imshow(vxArr, interpolation='nearest')
 plt.colorbar()
 plt.show()
@@ -260,7 +263,7 @@ plt.show()
 plt.imshow(vyArr, interpolation='nearest')
 plt.colorbar()
 plt.show()
-
+print xArr, yArr
 xArr = np.ma.masked_where(yArr == 1., xArr)
 plt.imshow(xArr, interpolation = 'nearest')
 plt.colorbar()
@@ -271,7 +274,7 @@ plt.imshow(yArr, interpolation = 'nearest')
 plt.colorbar()
 plt.show()
 
-
+'''
 plt.imshow(Col_img, cmap=mpl.cm.Accent, interpolation='nearest')
 Col_vp = np.ma.masked_where(Col_vp == 0, Col_vp)
 plt.imshow(Col_vp, interpolation = 'nearest')
