@@ -225,7 +225,6 @@ Grids = Gridarray(Col_img, gridres, gridsplit)
 xArr = Grids.gridx
 yArr = Grids.gridy
 
-
 xvArr = Grids.vector_x
 yvArr = Grids.vector_y
 
@@ -235,17 +234,19 @@ xvArr[LBx == 0.] = np.nan
 yvArr[LBy == 0.] = np.nan
 
 # cfactor passes testing : note that if res/grid_res > ac warnings are thrown by numpy!
+# Drag passes testing!
 # Browian passes testing!
 # EDL passes testing!
 # LVDW passes testing!
-# Provisional pass of LewisAB, double check mathematics
+# LewisAB provisional pass
 #
-# Provisional pass of Drag forces
-# Drag forces: we need to adjust x-velocity and y-velocity to our grid resolution. Check
-# that we have proper vector directions in Lattice Boltzmann model!
-
+# 
 
 cfactor = cm.Gap(xArr, yArr)
+
+velocity = cm.Velocity(LBx, LBy, 1., gridres)
+LBx = velocity.xvelocity
+LBy = velocity.yvelocity
 
 drag_forces = cm.Drag(LBx, LBy, LBx, LBy, cfactor.f1, cfactor.f2,
                       cfactor.f3, cfactor.f4, xvArr, yvArr) 
@@ -253,13 +254,21 @@ drag_forces = cm.Drag(LBx, LBy, LBx, LBy, cfactor.f1, cfactor.f2,
 brownian = cm.Brownian(xArr, yArr, cfactor.f1, cfactor.f4)
 
 dlvo = cm.DLVO(xArr, yArr, xvArr=xvArr, yvArr=yvArr)
-p
 
-plt.imshow(drag_forces.drag_x, interpolation='nearest', vmin=-1e-17, vmax=1e-17)
+physicalx = brownian.brownian_x + drag_forces.drag_x
+physicaly = brownian.brownian_y + drag_forces.drag_y
+
+dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx
+dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
+
+print physicalx
+print physicaly
+
+plt.imshow(physicalx, interpolation='nearest', vmin=-1e-13, vmax=1e-13)
 plt.colorbar()
 plt.show()
 
-plt.imshow(drag_forces.drag_y, interpolation='nearest', vmin=-1e-12, vmax=1e-12)
+plt.imshow(physicaly, interpolation='nearest', vmin=-1e-13, vmax=1e-13)
 plt.colorbar()
 plt.show()
 

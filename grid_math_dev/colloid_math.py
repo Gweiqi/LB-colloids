@@ -2,6 +2,28 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
+class Velocity:
+    def __init__(self, LBx, LBy, ts, gridres):
+        '''
+        Class that dimensionalizes LB velocity
+
+        Inputs:
+        -------
+        LBx: (np.array, np.float) array of Lattice Boltzmann velocities in the x-direction
+        LBy: (np.array, np.float) array of Lattice Boltzmann velocities in the y-direction
+        ts: (float) Lattice Boltzmann time step value
+        gridres: (float) Grid resolution {LB_resolution/gridsplit}
+
+        Returns:
+        --------
+        xVelocity: (np.array, np.float) array of dimensionalized velocities in the x-direction
+        yVelocity: (np.array, np.float) array of dimensionalized velocities in the y-direction
+        '''
+
+        self.xvelocity = (LBx*gridres)/ts
+        self.yvelocity = (LBy*gridres)/ts
+        
+        
 class Brownian:
     def __init__(self, xarr, yarr, f1, f4, ac=1e-6, viscosity=1./6., T=298.17):
         '''
