@@ -238,9 +238,9 @@ yvArr[LBy == 0.] = np.nan
 # Browian passes testing!
 # EDL passes testing!
 # LVDW passes testing!
-# LewisAB provisional pass
+# LewisAB provisional pass!
 #
-# 
+# gravity and bouyancy pass testing!
 
 cfactor = cm.Gap(xArr, yArr)
 
@@ -255,14 +255,18 @@ brownian = cm.Brownian(xArr, yArr, cfactor.f1, cfactor.f4)
 
 dlvo = cm.DLVO(xArr, yArr, xvArr=xvArr, yvArr=yvArr)
 
+gravity = cm.Gravity()
+bouyancy = cm.Bouyancy()
+print gravity.gravity
+print bouyancy.bouyancy
+print gravity.gravity + bouyancy.bouyancy
+
 physicalx = brownian.brownian_x + drag_forces.drag_x
-physicaly = brownian.brownian_y + drag_forces.drag_y
+physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy
 
 dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx
 dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
 
-print physicalx
-print physicaly
 
 plt.imshow(physicalx, interpolation='nearest', vmin=-1e-13, vmax=1e-13)
 plt.colorbar()

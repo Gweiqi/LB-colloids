@@ -23,6 +23,60 @@ class Velocity:
         self.xvelocity = (LBx*gridres)/ts
         self.yvelocity = (LBy*gridres)/ts
         
+
+class Gravity:
+    def __init__(self, rho_colloid=2650., ac=1e-6):
+        '''
+        Class to estimate the gravitational force experienced by a colloid:
+
+        Inputs:
+        -------
+        rho_colloid: (float) particle density of a colloid in kg/m*3
+        ac: (float) colloid radius in m
+
+        Defaults:
+        ---------
+        rho_colloid = 2650 kg/m*3 (standard particle density of soil)
+        ac = 1e-6 m
+        
+        Returns:
+        --------
+        colloid_mass: (float) assumes that colloids are spherical in nature
+        gravity: (float) gravitational force that a colloid experiences in vector form
+        '''
+        
+        self.colloid_mass = (4./3.)*np.pi*(ac*ac*ac)*rho_colloid
+        self.gravity = (self.colloid_mass*-9.81)
+
+
+class Bouyancy:
+    def __init__(self, rho_water = 1000., rho_colloid=2650., ac=1e-6):
+        '''
+        Class to estimate the gravitational force experienced by a colloid:
+
+        Inputs:
+        -------
+        rho_water: (float) density of water kg/m*3
+        rho_colloid: (float) particle density of a colloid in kg/m*3
+        ac: (float) colloid radius in m
+
+        Defaults:
+        ---------
+        rho_colloid = 2650 kg/m*3 (standard particle density of soil)
+        ac = 1e-6 m
+        
+        Returns:
+        --------
+        colloid_mass: (float) assumes that colloids are spherical in nature
+        gravity: (float) gravitational force that a colloid experiences
+
+        Note:
+        -----
+        acceleration due to gravity is kept positive to maintain the proper vector direction
+        '''
+        
+        self.water_mass = (4./3.)*np.pi*(ac*ac*ac)*rho_water
+        self.bouyancy = (self.water_mass*rho_water*9.81)/(rho_colloid)
         
 class Brownian:
     def __init__(self, xarr, yarr, f1, f4, ac=1e-6, viscosity=1./6., T=298.17):
@@ -51,6 +105,7 @@ class Brownian:
         brownian_x: (np.array, np.float) array of browian (random) forces in the x direction {Qiu et. al 2011. VZJ}
         brownian_y: (np.array, np.float) array of browian (random) forces in the x direction {Qiu et. al 2011. VZJ}
         '''
+        
         self.ac = ac
         self.viscosity = viscosity
         self.boltzmann = 1.38e-23
@@ -103,6 +158,7 @@ class Drag:
         drag_x: (np.array, np.float) vectorized drag forces in the x-direction non-vectorized
         drag_y: (np.array, np.float) vectorized drag forces in the y-direction non-vectorized
         '''
+        
         self.ac = ac
         self.viscosity = viscosity
         self.epsilon = 6. * np.pi * self.viscosity * self.ac
@@ -143,8 +199,9 @@ class Gap:
 
         Note:
         -----
-        Passing np.nan to these returns an overflow warning. 
+        Passing np.nan can return an overflow warning. 
         '''
+        
         self.ac = ac
         self.yhbar = np.abs(yarr/self.ac)
         self.xhbar = np.abs(xarr/self.ac)
