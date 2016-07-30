@@ -6,6 +6,52 @@ import Colloid_Math as cm
 import sys
 import optparse
 
+class Colloid:
+    '''
+    Wrapper class to initiate and track colloid position through the LB Model
+
+    Inputs:
+    -------
+
+    Methods:
+    --------
+    _append_xposition: method object that appends the list tracking a colloids x position
+    _append_yposition: method object that appends the list tracking a colloids y position
+    update_position: method that updates postion of colloids by calling the append methods
+    strip_positions: method that strips all but last item from colloid position lists
+    
+    Returns:
+    --------
+    '''
+    def __init__(self, xlen, resolution):
+        self.xposition = list(np.random.randn(1)*xlen*resolution)
+        self.yposition = [0]
+        self.resolution = resolution
+
+    def _append_xposition(self, item):
+        self.xpositon = self.xposition.append(item)
+
+    def _append_yposition(self, item):
+        self.xpositon = self.yposition.append(item)
+
+    def update_position(self, xvelocity, yvelocity, ts):
+        # basics completed but not yet finished, need to look up the nearest grid site velocity
+        # remember that velocity and forces are not continuous, but colloids are!
+        # create an index lookup system for x and y and return the proper velocity from that
+        irx = self.xposition[-1]
+        iry = self.yposition[-1]
+        deltarx = xvelocity/ts
+        deltary = yvelocity/ts
+        rx = irx + deltarx
+        ry = iry + deltary
+        self._append_xposition(rx)
+        self._append_yposition(ry)
+
+    def strip_positions(self):
+        self.xposition = [self.xposition[-1]]
+        self.yposition = [self.yposition[-1]]
+
+
 LB = cs.HDF5_reader('Synthetic255.hdf5')
 
 #### gridsplit needs to be one of the many config options!
@@ -68,7 +114,20 @@ vy = cm.ForceToVelocity(fy)
 vx = vx.velocity + LBx
 vy = vy.velocity + LBy
 
+x = Colloid(256, 1e-6)
+print x.xposition
+print x.yposition
+x.update_position(100,10,1)
+x.update_position(10,110,1)
+print x.xposition
+print x.yposition
+
+x.strip_positions()
+print x.xposition
+print x.yposition
+
 plt.imshow(vx, interpolation='nearest', vmin=-1e-13, vmax=1e-13)
+plt.plot(x.xposition, x.yposition, 'ko', ms=8)
 plt.colorbar()
 plt.show()
 
