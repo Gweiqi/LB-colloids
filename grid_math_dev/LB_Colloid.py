@@ -12,6 +12,8 @@ class Colloid:
 
     Inputs:
     -------
+    xlen: (int) grid length after interpolation in the x-direction
+    resolution: (float) grid resolution after interpolation
 
     Methods:
     --------
@@ -22,9 +24,11 @@ class Colloid:
     
     Returns:
     --------
+    xposition: (list, float) a list of x-position values normalized to the grid resolution
+    yposition: (list, float) a list of y-position values normalized to grid resolution (top left is 0,0)
     '''
     def __init__(self, xlen, resolution):
-        self.xposition = list(np.random.randn(1)*xlen*resolution)
+        self.xposition = list(np.random.rand(1)*xlen*resolution)
         self.yposition = [0]
         self.resolution = resolution
 
@@ -35,15 +39,20 @@ class Colloid:
         self.xpositon = self.yposition.append(item)
 
     def update_position(self, xvelocity, yvelocity, ts):
-        # basics completed but not yet finished, need to look up the nearest grid site velocity
-        # remember that velocity and forces are not continuous, but colloids are!
-        # create an index lookup system for x and y and return the proper velocity from that
+        '''
+        grid index method to update continuous colloid system using the discete grid forces.
+        idxry must be inverted because we assume (0,0) at top left corner and down is negitive.
+        '''
         irx = self.xposition[-1]
         iry = self.yposition[-1]
-        deltarx = xvelocity/ts
-        deltary = yvelocity/ts
+        idxrx = int(self.xposition[-1]//self.resolution) 
+        idxry = int(self.yposition[-1]//-self.resolution) #  negative accounts for grid indexes.
+        xv = xvelocity[idxry][idxrx]
+        yv = yvelocity[idxry][idxrx]
+        deltarx = xv/ts
+        deltary = yv/ts
         rx = irx + deltarx
-        ry = iry + deltary
+        ry = iry + deltary 
         self._append_xposition(rx)
         self._append_yposition(ry)
 
@@ -113,21 +122,19 @@ vy = cm.ForceToVelocity(fy)
 
 vx = vx.velocity + LBx
 vy = vy.velocity + LBy
+xlen = len(Col_img)
+x = Colloid(xlen, gridres)
 
-x = Colloid(256, 1e-6)
-print x.xposition
-print x.yposition
-x.update_position(100,10,1)
-x.update_position(10,110,1)
-print x.xposition
-print x.yposition
-
-x.strip_positions()
-print x.xposition
-print x.yposition
-
+timer = 0
+while timer < 20000:
+    x.update_position(vx, vy, 1)
+    x.update_position(vx, vy, 1)
+    timer += 1
+    if timer%10000 == 0.:
+        print timer
+print x.yposition[:2], x.yposition[-3:]
 plt.imshow(vx, interpolation='nearest', vmin=-1e-13, vmax=1e-13)
-plt.plot(x.xposition, x.yposition, 'ko', ms=8)
+plt.plot(np.array(x.xposition)/gridres, np.array(x.yposition)/-gridres, 'ko', ms=2)
 plt.colorbar()
 plt.show()
 
