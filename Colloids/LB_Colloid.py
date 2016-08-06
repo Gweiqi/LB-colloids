@@ -59,16 +59,16 @@ class Colloid:
         irx = self.xposition[-1]
         iry = self.yposition[-1]
         # find grid indexes and look up velocity (negative y accounts for grid indexes bc of vector direction).
-
+        # bug fix the index issues and nan issues when we introduce cols.
         if np.isnan(irx) == True:
-            self._append_position(irx)
-            self._append_position(iry)
+            self._append_xposition(irx)
+            self._append_yposition(iry)
             print('x-nan')
             return
         
         if np.isnan(iry) == True:
-            self._append_position(irx)
-            self._append_position(iry)
+            self._append_xposition(irx)
+            self._append_yposition(iry)
             print('y-nan')
             return
         try:   

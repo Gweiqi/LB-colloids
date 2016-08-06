@@ -241,7 +241,7 @@ class Drag:
 
         
 class Gap:
-    def __init__(self, xarr, yarr, ac=1e-6):
+    def __init__(self, xarr, yarr, **kwargs):
         '''
         Inputs:
         -------
