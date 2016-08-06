@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import sys
 
 class ForceToVelocity:
-    def __init__(self, forces, ts=1.):
+    def __init__(self, forces, rho_colloid=2650., ac=1e-6, ts=1.):
         '''
         Class that calculates velocity from force
 
@@ -11,17 +11,23 @@ class ForceToVelocity:
         -------
         forces: (np.array, np.float) Array of forces felt by a colloid
         ts: (float) Lattice Boltzmann time step value
+        rho_colloid: (float) Colloid particle density 
+        ac: (float) colloid radius
+
+        Defaults:
+        ---------
+        rho_colloid: (float) 2650 kg/m^3
+        ac: (float) 1e-6
 
         Returns:
         --------
         xvelocity (np.array, np.float) Array of velocities calc. from forces
         '''
-
-        self.velocity = forces/ts/ts
-
+        self.mass_colloid = (4./3.)*np.pi*(ac*ac*ac)*2650.
+        self.velocity = (forces*ts)/self.mass_colloid # should be mass colloid
         
 class Velocity:
-    def __init__(self, LBx, LBy, ts, gridres):
+    def __init__(self, LBx, LBy, gridres):
         '''
         Class that dimensionalizes LB velocity
 
@@ -38,8 +44,8 @@ class Velocity:
         yVelocity: (np.array, np.float) array of dimensionalized velocities in the y-direction
         '''
 
-        self.xvelocity = (LBx*gridres)/ts
-        self.yvelocity = (LBy*gridres)/ts
+        self.xvelocity = (LBx*gridres)
+        self.yvelocity = (LBy*gridres)
         
 
 class Gravity:
@@ -97,7 +103,7 @@ class Bouyancy:
         self.bouyancy = (self.water_mass*rho_water*9.81)/(rho_colloid)
         
 class Brownian:
-    def __init__(self, xarr, yarr, f1, f4, ac=1e-6, viscosity=1./6., T=298.17):
+    def __init__(self, xarr, yarr, f1, f4, ac=1e-6, viscosity=1.002e-3, T=298.17):
         '''
         Class to estimate brownian forces on colloids
 
@@ -108,13 +114,13 @@ class Brownian:
         f1: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
         f4: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
         ac: (float) Colloid radius
-        viscosity: (float) macroscopic fluid viscosity term
+        viscosity: (float) dynamic viscosity of water
         T = (float) Absolute Temperature in K
 
         Defaults:
         ---------
         ac: 1e-6 m
-        viscosity: 1/6 (non dimensional viscosity): assumes LB tau == 1
+        viscosity: 1.002e-3 (dynamic viscosity of water @ 20 C)
         epsion: 6*pi*viscosity*ac {Gao et. al. 2010. Computers and Math with App}
         T = 298.17 K
 
@@ -145,7 +151,7 @@ class Brownian:
 
 
 class Drag:
-    def __init__(self, ux, uy, Vx, Vy, f1, f2, f3, f4, xvArr, yvArr, ac=1e-6, viscosity=1./6.):
+    def __init__(self, ux, uy, f1, f2, f3, f4, xvArr, yvArr, ac=1e-6, viscosity=1.002e-3, rhos=2650., rhol=1000.):
         
         '''
         Class to calculate colloidal drag forces from fluid velocity arrays
@@ -163,14 +169,19 @@ class Drag:
         xvArr: (np.array, np.float) Array of vectors in the x direction (1. right, -1. left)
         yvArr: (np.array, np.float) Array of vectors in the y direction (1. right, -1. left)
         ac: (float) Colloid radius
-        viscosity: (float) macroscopic fluid viscosity term
+        viscosity: (float) dynamic fluid viscosity of water
+        rhos: (float) particle density
+        rhol: (float) water density 
         
         Constants:
         ----------
         ac: 1e-6 m
         viscosity: 1/6 (non dimensional viscosity): assumes LB tau == 1
         epsion: 6*pi*viscosity*ac {Gao et. al. 2010. Computers and Math with App}
-
+        viscosity: 1.002e-3 (dynamic viscosity of water @ 20 C)
+        rhos: 2650. kg/m**3 (standard particle density of soil)
+        rhol: 1000. kg/m**3 (density of water @ 20C)
+        
         Returns:
         --------
         drag_x: (np.array, np.float) vectorized drag forces in the x-direction non-vectorized
@@ -180,9 +191,10 @@ class Drag:
         self.ac = ac
         self.viscosity = viscosity
         self.epsilon = 6. * np.pi * self.viscosity * self.ac
-        self.drag_x = self.drag_xforce(ux, Vx, self.epsilon, f3, f4)*xvArr
-        self.drag_y = self.drag_yforce(uy, Vy, self.epsilon, f1, f2)*yvArr
-                                       
+        self.Vcol = ((rhos - rhol)*((2*ac)**2)*9.81)/(18*self.viscosity)
+        self.drag_x = self.drag_xforce(ux, self.Vcol, self.epsilon, f3, f4)*xvArr
+        self.drag_y = self.drag_yforce(uy, self.Vcol, self.epsilon, f1, f2)*yvArr
+        
     def drag_xforce(self, ux, Vx, epsilon, f3, f4):
         Fdt = (epsilon / f4) * ((f3 * ux) - Vx)
         return Fdt
@@ -383,9 +395,7 @@ class DLVO:
         self.colloid_potential = self._colloid_potential(self.zeta_colloid, self.ac, self.k_debye, self.stern_z)
         self.surface_potential = self._surface_potential(self.zeta_solid, self.k_debye, self.stern_z)
 
-        # returns values in energy. need forces, so divide by array
-        # need to add back in force vectors to give directionality
-        
+        # Calculate the chemical forces
         self.EDLx = self._EDL_energy(self.epsilon_0, self.epsilon_r, self.ac, self.colloid_potential,
                                      self.surface_potential, self.k_debye, xarr)/xarr*self.xvArr
 

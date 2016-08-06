@@ -57,15 +57,15 @@ class Colloid:
         '''
         irx = self.xposition[-1]
         iry = self.yposition[-1]
-        idxrx = int(self.xposition[-1]//self.resolution) 
+        idxrx = int(self.xposition[-1]//self.resolution)
         idxry = int(self.yposition[-1]//-self.resolution)#  negative accounts for grid indexes.
         xv = xvelocity[idxry][idxrx]
         yv = yvelocity[idxry][idxrx]
-        deltarx = xv/ts
-        deltary = yv/ts
+        # velocity is L/T therefore multiply by T
+        deltarx = xv*ts 
+        deltary = yv*ts
         rx = irx + deltarx
         ry = iry + deltary
-
         # Use a check to make sure colloid does not leave domain on first iteration
         # move colloid to a new location to if it leaves domain
         if ry >= 0:
@@ -76,6 +76,8 @@ class Colloid:
         
         self._append_xposition(rx)
         self._append_yposition(ry)
+        
+        
 
     def strip_positions(self):
         self.xposition = [self.xposition[-1]]
@@ -130,12 +132,12 @@ if __name__ == '__main__':
 
     cfactor = cm.Gap(xArr, yArr)
 
-    velocity = cm.Velocity(LBx, LBy, 1., gridres)
+    velocity = cm.Velocity(LBx, LBy, gridres)
     LBx = velocity.xvelocity
     LBy = velocity.yvelocity
 
     # Initial setup block to estimate colloid velocity for drag_force calc. #
-    drag_forces = cm.Drag(LBx, LBy, LBx, LBy, cfactor.f1, cfactor.f2,
+    drag_forces = cm.Drag(LBx, LBy, cfactor.f1, cfactor.f2,
                           cfactor.f3, cfactor.f4, xvArr, yvArr)
 
     brownian = cm.Brownian(xArr, yArr, cfactor.f1, cfactor.f4)
@@ -154,39 +156,19 @@ if __name__ == '__main__':
     fx = dlvox + physicalx
     fy = dlvoy + physicaly
 
-    vx = cm.ForceToVelocity(fx)
-    vy = cm.ForceToVelocity(fy)
+    # Necessary! ts=xxxx as a config param.
+    
+    vx = cm.ForceToVelocity(fx, ts=0.0001)
+    vy = cm.ForceToVelocity(fy, ts=0.0001)
 
     vx = vx.velocity + LBx
     vy = vy.velocity + LBy
-    # End setup block ##########################################################
-
-    # Start velocity block by recalculating drag_forces to get new colloid velocity profile!
-
-    drag_forces = cm.Drag(LBx, LBy, vx, vy, cfactor.f1, cfactor.f2,
-                          cfactor.f3, cfactor.f4, xvArr, yvArr)
-
-    physicalx = brownian.brownian_x + drag_forces.drag_x
-    physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy
-
-    dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx
-    dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
-
-    fx = dlvox + physicalx
-    fy = dlvoy + physicaly
-
-    vx = cm.ForceToVelocity(fx)
-    vy = cm.ForceToVelocity(fy)
-
-    vx = vx.velocity + LBx
-    vy = vy.velocity + LBy
-    # End velocity profile block ##############################################
-
+    
     xlen = len(Col_img)
-    x = [Colloid(xlen, gridres) for i in range(1)]
+    x = [Colloid(xlen, gridres) for i in range(20)]
 
     timer = 0
-    while timer < 500000:
+    while timer < 50000:
         for col in x:
             col.update_position(vx, vy, 0.0001)
         timer += 1
@@ -195,15 +177,10 @@ if __name__ == '__main__':
             for col in x:
                 col.store_position(timer)
                 col.strip_positions()
-        
-    #print x.yposition[:2], x.yposition[-3:]
-    #plt.imshow(vx, interpolation='nearest', vmin=-1e-13, vmax=1e-13)
-    #plt.colorbar()
-    #plt.show()
 
     plt.imshow(vy, interpolation='nearest', vmin=-1e-13, vmax=1e-13)
     for col in x:
-        plt.plot(np.array(col.storex)/gridres, np.array(col.storey)/-gridres, 'kD',
+        plt.plot(np.array(col.storex)/gridres, np.array(col.storey)/-gridres, 'D',
                  ms=8)
     plt.colorbar()
     plt.show()
