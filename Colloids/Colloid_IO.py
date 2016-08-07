@@ -2,6 +2,22 @@ import sys
 
 class Config:
     def __init__(self, fname):
+        '''
+        Class to handle configuration files for LB-Colloids. Checks in place
+        to look for consistancy in data type and config variable per data block.
+
+        Input:
+        ------
+        fname: (string) configuration file name ie. Model.config
+
+        Returns:
+        --------
+        model_parameters: (dict) Dictionary of necessary model parameters
+        physical_parameters: (dict) Dictionary of optional physical parameters
+        chemical_parmaeters: (dict) Dictionary of chemical parameter options
+        output_control: (dict) Dictionary of output control options
+        
+        '''
         self.config = self._reader(fname)
         self._strtype = ('LBMODEL', 'ENDPOINT', 'PATHLINE', 'INTERVAL')
         self._inttype = ('NCOLS', 'ITERS', 'STORE_TIME', 'PRINT_TIME')
@@ -13,6 +29,8 @@ class Config:
                            'PSI-_COLLOID', 'PSI-_WATER', 'PSI-_SOLID')
         self._booltype = ('PLOT', 'ADJUST_ZETA')
         self._dicttype = ('CONCENTRATION', 'VALENCE')
+        self._required = ('LBMODEL', 'NCOLS', 'ITERS', 'LBRES', 'GRIDREF',
+                          'TS')
         self.validmodelparams = ('LBMODEL', 'NCOLS', 'ITERS', 'LBRES',
                                  'GRIDREF', 'AC', 'TIMESTEP', 'TEMPERATURE')
         self.validphysicalparams = ('RHO_WATER', 'RHO_COLLOID', 'VISCOSITY')
@@ -26,11 +44,18 @@ class Config:
                                    'ENDPOINT', 'PATHLINE', 'INTERVAL')
 
     def _reader(self, fname):
+        '''
+        reads in the input config file
+        '''
         with open(fname, 'r') as f:
             config = [line.strip('\n').strip(' ') for line in f]
         return config
 
     def model_parameters(self):
+        '''
+        reads the MODEL PARAMETERS block of the configuration file and creates
+        the ModelDict which contains the required parameters to run LB-Colloid
+        '''
         ModelDict = {}
         blockname = 'MODEL PARAMETERS'
 
@@ -40,10 +65,15 @@ class Config:
             self.check_if_valid(blockname, pname, self.validmodelparams)
             pname = self.adjust_pname(pname)
             ModelDict[pname] = param
-            
+        self.check_model_parameters(ModelDict)
         return ModelDict
 
     def physical_parameters(self):
+        '''
+        reads the PHYSICAL PARAMETERS block of the configuration file and creates
+        the PhysicsDict that passes optional parameters to the physical force calculations
+        in the Colloid_Math.py module
+        '''
         PhysicsDict = {}
         blockname = 'PHYSICAL PARAMETERS'
 
@@ -52,11 +82,18 @@ class Config:
             pname, param = self.parametertype(parameter)
             self.check_if_valid(blockname, pname, self.validphysicalparams)
             pname = self.adjust_pname(pname)
-            PhysicsDict[pname] = param    
+            PhysicsDict[pname] = param
+
+        PhysicsDict = self.add_universal_parameters(PhysicsDict)
             
         return PhysicsDict
 
     def chemical_parameters(self):
+        '''
+        reads the CHEMICAL PARAMETERS block of the configuration file and creates
+        the ChemicalDict that passes optional parameters to the chemical force calculations
+        in the Colloid_Math.py module
+        '''
         ChemicalDict = {}
         blockname = 'CHEMICAL PARAMETERS'
 
@@ -66,9 +103,15 @@ class Config:
             self.check_if_valid(blockname, pname, self.validchemicalparams)
             pname = self.adjust_pname(pname)
             ChemicalDict[pname] = param
+
+        ChemicalDict = self.add_universal_parameters(ChemicalDict)
         return ChemicalDict
 
     def output_control(self):
+        '''
+        reads the OUTPUT CONTROL block of the configuration file and creates
+        the OutputDict that passes optional parameters to control model output
+        '''
         OutputDict = {}
         blockname = 'OUTPUT CONTROL'
 
@@ -78,10 +121,19 @@ class Config:
             self.check_if_valid(blockname, pname, self.validoutputparams)
             pname = self.adjust_pname(pname)
             OutputDict[pname] = param
-            
+        
         return OutputDict
 
     def get_block(self, blockname):
+        '''
+        Input:
+        ------
+        blockname: (str) blockname of a parameters block in the config file.
+
+        Returns:
+        --------
+        list: (list) returns a list of parameters contained within the block
+        '''
         try:
             idx0 = self.config.index('START %s' % blockname)
             idx1 = self.config.index('END %s' % blockname)
@@ -91,6 +143,18 @@ class Config:
         return self.config[idx0+1:idx1]
 
     def parametertype(self, parameter):
+        '''
+        Method takes a parameter string, splits it, and sets the parameter type
+
+        Input:
+        ------
+        parameter: (string) string of "<pname>: <param>"
+
+        returns:
+        --------
+        pname: (string) parameter name
+        param: (type dependent) parameter associated with pname
+        '''
         # split the paramter block line, and strip whitespace
         pname, param = parameter.split(':')
         pname = pname.strip(' ')
@@ -109,7 +173,6 @@ class Config:
             if param.upper() == 'TRUE':
                 param = True
             else:
-                # maybe use a pass here and define defaults
                 param = False
 
         elif pname in self._dicttype:
@@ -122,10 +185,19 @@ class Config:
             print 'Parameter name %s is not valid' % pname
             sys.exit(-1)
 
-        # pname = pname.lower()
         return pname, param
 
     def check_if_valid(self, blockname, pname, validparams):
+        '''
+        Method checks if a specific parameter is valid for the block it was supplied
+        in the configuration file.
+
+        Input:
+        ------
+        blockname: (string) the name of the configuration block
+        pname: (string) parameter name
+        validparams: (tuple, string) tuple of valid parameters for the specific configuration block
+        '''
         if pname in validparams:
             return
         else:
@@ -134,21 +206,50 @@ class Config:
             sys.exit(-1)
 
     def adjust_pname(self, pname):
-        if pname in ('I_INITIAL', 'I', 'TEMPERATURE'):
+        '''
+        Adjusts parameter name from configuration file name to LB-Colloids name for a limited number of
+        parameters. Sets all other parameters as lowercase to follow PEP-8
+        '''
+        if pname in ('I_INITIAL', 'I', 'TEMPERATURE', 'TIMESTEP'):
             if pname == 'I_INITIAL':
                 return 'I_initial'
             elif pname == 'I':
                 return 'I'
             elif pname == 'TEMPERATURE':
                 return 'T'
+            elif pname == 'TIMESTEP':
+                return 'ts'
             else:
                 pass
         else:
             return pname.lower()
-        
-test = Config('Synthetic.config')
-print test.model_parameters()
-print test.physical_parameters()
-print test.output_control()
-print test.chemical_parameters()
+
+    def add_universal_parameters(self, Dict):
+        '''
+        Add common model parameters to other dictionaries if present. Necessary for parameterization by
+        kwargs of physics and chemistry.
+        '''
+        modelparams = self.model_parameters()
+        for key in modelparams:
+            if key in ('ac', 'T', 'visocity', 'ts'):
+                Dict[key] = modelparams[key]
+        return Dict
+
+    def check_model_parameters(self, ModelDict):
+        '''
+        Check for required parameters. If not present inform the user which parameter(s) are needed
+        '''
+        for key in self._required:
+            if key.lower() not in ModelDict:
+                if key.lower() == 'ts':
+                    key = 'TIMESTEP'
+                else:
+                    pass
+                print('%s is a required MODEL PARAMETER' % key)
+                sys.exit(-1)
+            else:
+                pass
+                
+#add class Output!!!!!
+
 
