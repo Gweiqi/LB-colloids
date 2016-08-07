@@ -31,7 +31,7 @@ class ForceToVelocity:
         ac = params['ac']
         ts = params['ts']
         self.mass_colloid = (4./3.)*np.pi*(ac*ac*ac)*rho_colloid
-        self.velocity = (forces*ts)/self.mass_colloid # should be mass colloid
+        self.velocity = (forces*ts)/self.mass_colloid 
         
 class Velocity:
     def __init__(self, LBx, LBy, gridres, **kwargs):
