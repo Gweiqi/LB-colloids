@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import Colloid_Setup as cs
 import Colloid_Math as cm
+import Colloid_IO as IO
 import sys
 import optparse
 import random
@@ -29,7 +30,7 @@ class Colloid:
     yposition: (list, float) a list of y-position values normalized to grid resolution (top left is 0,0)
     '''
     def __init__(self, xlen, resolution):
-        self.xposition = [random.uniform(0.05,0.95)*xlen*resolution] #list(np.random.rand(1)*xlen*resolution)
+        self.xposition = [random.uniform(0.03,0.97)*xlen*resolution]
         self.yposition = [0]
         self.resolution = resolution
         self.storey = [self.yposition[0]]
@@ -59,30 +60,12 @@ class Colloid:
         irx = self.xposition[-1]
         iry = self.yposition[-1]
         # find grid indexes and look up velocity (negative y accounts for grid indexes bc of vector direction).
-        # bug fix the index issues and nan issues when we introduce cols.
-        if np.isnan(irx) == True:
-            self._append_xposition(irx)
-            self._append_yposition(iry)
-            print('x-nan')
-            return
         
-        if np.isnan(iry) == True:
-            self._append_xposition(irx)
-            self._append_yposition(iry)
-            print('y-nan')
-            return
-        try:   
-            idxrx = int(self.xposition[-1]//self.resolution)
-            idxry = int(self.yposition[-1]//-self.resolution)
-        except ValueError:
-            print iry, irx, self.xposition, self.yposition
-            print np.isnan(irx), np.isna(iry)
-        try:   
-            xv = xvelocity[idxry][idxrx]
-            yv = yvelocity[idxry][idxrx]
-        except IndexError:
-            print len(xvelocity[0])
-            print idxrx, idxry, iry, irx, self.xposition, self.yposition
+        idxrx = int(self.xposition[-1]//self.resolution)
+        idxry = int(self.yposition[-1]//-self.resolution)
+        xv = xvelocity[idxry][idxrx]
+        yv = yvelocity[idxry][idxrx]
+        
         # velocity is L/T therefore multiply by T
         deltarx = xv*ts 
         deltary = yv*ts
@@ -91,15 +74,14 @@ class Colloid:
         # Use a check to make sure colloid does not leave domain on first iteration
         # move colloid to a new location to if it leaves domain
         if ry >= 0:
-            rx = np.random.rand(1)[0]*xlen*self.resolution
+            rx = random.uniform(0.05,0.95)*xlen*self.resolution #np.random.rand(1)[0]*xlen*self.resolution
             ry = 0.
         else:
             pass
-        
+
+        # need to add a handler for when colloids break through the system!
         self._append_xposition(rx)
         self._append_yposition(ry)
-        
-        
 
     def strip_positions(self):
         self.xposition = [self.xposition[-1]]
@@ -118,13 +100,29 @@ class Output:
     def __init__(self, fname):
         self.fname = fname
 
-if __name__ == '__main__':        
-    LB = cs.HDF5_reader('Synthetic255.hdf5')
+if __name__ == '__main__':
+    config = IO.Config('Synthetic.config')
+    ModelDict = config.model_parameters()
+    PhysicalDict = config.physical_parameters()
+    ChemicalDict = config.chemical_parameters()
+    OutputDict = config.output_control()
 
-    #### gridsplit needs to be one of the many config options!
-    gridsplit = 10
-    gridres = 1e-6/gridsplit
-    ts = 0.0001
+    # set model variable block
+    modelname = ModelDict['lbmodel']
+    gridsplit = ModelDict['gridref']
+    lbres = ModelDict['lbres']
+    gridres = lbres/gridsplit
+    ts = ModelDict['ts']
+    iters = ModelDict['iters']
+    ncols = ModelDict['ncols']
+
+    if 'print_time' in OutputDict:
+        print_time = OutputDict['print_time']
+    else:
+        print_time = iters
+
+    #
+    LB = cs.HDF5_reader(modelname)
 
     LBy = cs.LBVArray(LB.yu, LB.imarray)
     LBx = cs.LBVArray(LB.xu, LB.imarray)
@@ -159,15 +157,15 @@ if __name__ == '__main__':
     LBy = velocity.yvelocity
 
     # Initial setup block to estimate colloid velocity for drag_force calc. #
-    drag_forces = cm.Drag(LBx, LBy, cfactor.f1, cfactor.f2,
-                          cfactor.f3, cfactor.f4, xvArr, yvArr)
+    drag_forces = cm.Drag(LBx, LBy, cfactor.f1, cfactor.f2, cfactor.f3,
+                          cfactor.f4, xvArr, yvArr, **PhysicalDict)
 
-    brownian = cm.Brownian(xArr, yArr, cfactor.f1, cfactor.f4)
+    brownian = cm.Brownian(xArr, yArr, cfactor.f1, cfactor.f4, **PhysicalDict)
 
-    dlvo = cm.DLVO(xArr, yArr, xvArr=xvArr, yvArr=yvArr)
+    dlvo = cm.DLVO(xArr, yArr, xvArr=xvArr, yvArr=yvArr, **ChemicalDict)
 
-    gravity = cm.Gravity()
-    bouyancy = cm.Bouyancy()
+    gravity = cm.Gravity(**PhysicalDict)
+    bouyancy = cm.Bouyancy(**PhysicalDict)
 
     physicalx = brownian.brownian_x + drag_forces.drag_x
     physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy
@@ -178,11 +176,11 @@ if __name__ == '__main__':
     fx = dlvox + physicalx
     fy = dlvoy + physicaly
     #dic = {'ts': ts}
-    vx = cm.ForceToVelocity(fx, ts=ts)
-    vy = cm.ForceToVelocity(fy, ts=ts)
+    vx = cm.ForceToVelocity(fx, **PhysicalDict)
+    vy = cm.ForceToVelocity(fy, **PhysicalDict)
 
     # adjust LBvelocity by timestep, move this to cm.velocity
-    velocity = cm.Velocity(LBx, LBy, gridres, ts=ts)
+    velocity = cm.Velocity(LBx, LBy, gridres, **PhysicalDict)
     LBx = velocity.xvelocity
     LBy = velocity.yvelocity
     
@@ -190,19 +188,19 @@ if __name__ == '__main__':
     vy = vy.velocity + LBy
     
     xlen = len(Col_img)
-    x = [Colloid(xlen, gridres) for i in range(20)]
+    x = [Colloid(xlen, gridres) for i in range(ncols)]
 
     timer = 0
-    while timer < 100000:
+    while timer < iters:
         for col in x:
             col.update_position(vx, vy, ts)
         timer += 1
-        if timer%50 == 0.:
+        if timer%print_time == 0.:
             print timer
             for col in x:
                 col.store_position(timer)
                 col.strip_positions()
-
+    
     plt.imshow(vy, interpolation='nearest', vmin=-1e-13, vmax=1e-13)
     for col in x:
         plt.plot(np.array(col.storex)/gridres, np.array(col.storey)/-gridres, 'D',
