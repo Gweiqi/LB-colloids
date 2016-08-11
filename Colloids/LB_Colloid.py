@@ -101,19 +101,23 @@ class TrackTime:
     is useful to free memoryafter storing the data externally. Is necessary for
     output class functionality!
     '''
-    def __init__(self):
+    def __init__(self, ts):
+        self.ts = ts
         self.timer = [0]
         self.time = self.timer[-1]
+        self.totim = [self.time*self.ts]
 
     def update_time(self):
         self.time = self.time + 1
         self.timer.append(self.time)
+        self.totim.append(self.time*self.ts)
 
     def strip_time(self):
         self.timer = [self.timer[-1]]
+        self.totim = [self.totim[-1]]
 
     def print_time(self):
-        print(self.timer[-1])
+        print(self.timer[-1], self.totim[-1])
 
 
 if __name__ == '__main__':
@@ -206,7 +210,7 @@ if __name__ == '__main__':
     xlen = len(Col_img)
     x = [Colloid(xlen, gridres) for i in range(ncols)]
 
-    timer = TrackTime()
+    timer = TrackTime(ts)
     while timer.time < iters:
         for col in x:
             col.update_position(vx, vy, ts)
