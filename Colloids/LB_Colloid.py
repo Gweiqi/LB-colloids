@@ -93,12 +93,28 @@ class Colloid:
         self._append_storey(self.yposition[-1])
         
     def print_positions(self):
-        print self.xposition[-1], self.yposition[-1]
+        print(self.xposition[-1], self.yposition[-1])
 
+class TrackTime:
+    '''
+    TrackTime class is the model timer, enables stripping stored time steps which
+    is useful to free memoryafter storing the data externally. Is necessary for
+    output class functionality!
+    '''
+    def __init__(self):
+        self.timer = [0]
+        self.time = self.timer[-1]
 
-class Output:
-    def __init__(self, fname):
-        self.fname = fname
+    def update_time(self):
+        self.time = self.time + 1
+        self.timer.append(self.time)
+
+    def strip_time(self):
+        self.timer = [self.timer[-1]]
+
+    def print_time(self):
+        print(self.timer[-1])
+
 
 if __name__ == '__main__':
     config = IO.Config('Synthetic.config')
@@ -190,16 +206,18 @@ if __name__ == '__main__':
     xlen = len(Col_img)
     x = [Colloid(xlen, gridres) for i in range(ncols)]
 
-    timer = 0
-    while timer < iters:
+    timer = TrackTime()
+    while timer.time < iters:
         for col in x:
             col.update_position(vx, vy, ts)
-        timer += 1
-        if timer%print_time == 0.:
-            print timer
+        timer.update_time()
+        if timer.time%print_time == 0.:
+            timer.print_time()
+            timer.strip_time()
             for col in x:
                 col.store_position(timer)
                 col.strip_positions()
+                
     
     plt.imshow(vy, interpolation='nearest', vmin=-1e-13, vmax=1e-13)
     for col in x:

@@ -249,7 +249,15 @@ class Config:
                 sys.exit(-1)
             else:
                 pass
-                
-#add class Output!!!!!
+
+
+class Output:
+    def ___init__(self):
+        self.output = None
+
+    def _writer(self, fi, data):
+        with open(fi, 'a') as f:
+            for line in data: # format as 1d list that is str fomated with \n
+                f.write(line)
 
 
