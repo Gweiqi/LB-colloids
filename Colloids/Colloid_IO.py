@@ -252,12 +252,38 @@ class Config:
 
 
 class Output:
-    def ___init__(self):
-        self.output = None
-
-    def _writer(self, fi, data):
-        with open(fi, 'a') as f:
+    def __init__(self, fi, overwrite=True):
+        self.filename = fi
+        self.header = header = '{:>8}{:>9}{:>11}{:>14}{:>14}\n'.format(
+            'colloid', 'ts', 'totim', 'x-position', 'y-position')
+        # add method that checks if file exists, and overwrites if so!
+        if overwrite == True:
+            self._writer(fi, header, wtype='w')
+        
+    def _writer(self, fi, data, wtype='a'):
+        with open(fi, wtype) as f:
             for line in data: # format as 1d list that is str fomated with \n
                 f.write(line)
 
 
+    def write_output(self, timer, colloids):
+        """
+        set up and write full output to an ascii file
+
+        [format is [time, totim, col#, xpos, ypos, resolution, modelx, modely] Add flag to this?
+        """
+        time = timer.timer
+        totim = timer.totim
+        output = []
+        for idx in range(len(time)-1): # so we don't duplicate
+            for colloid_number in range(len(colloids)):
+                output_string = '{:>8d}    {:5d}    {:07.5f}    {:09.8f}    {:09.8f}\n'.format(
+                                colloid_number, time[idx] , totim[idx],
+                                colloids[colloid_number].xposition[idx],
+                                colloids[colloid_number].yposition[idx])
+                output.append(output_string)
+        self._writer(self.filename, output)
+        
+
+            
+        

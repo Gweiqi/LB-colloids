@@ -31,7 +31,7 @@ class Colloid:
     '''
     def __init__(self, xlen, resolution):
         self.xposition = [random.uniform(0.03,0.97)*xlen*resolution]
-        self.yposition = [0]
+        self.yposition = [0.]
         self.resolution = resolution
         self.storey = [self.yposition[0]]
         self.storex = [self.xposition[0]]
@@ -195,7 +195,7 @@ if __name__ == '__main__':
 
     fx = dlvox + physicalx
     fy = dlvoy + physicaly
-    #dic = {'ts': ts}
+    
     vx = cm.ForceToVelocity(fx, **PhysicalDict)
     vy = cm.ForceToVelocity(fy, **PhysicalDict)
 
@@ -210,6 +210,8 @@ if __name__ == '__main__':
     xlen = len(Col_img)
     x = [Colloid(xlen, gridres) for i in range(ncols)]
 
+    output = IO.Output('tester.pathline')
+    
     timer = TrackTime(ts)
     while timer.time < iters:
         for col in x:
@@ -217,7 +219,9 @@ if __name__ == '__main__':
         timer.update_time()
         if timer.time%print_time == 0.:
             timer.print_time()
+            output.write_output(timer, x)
             timer.strip_time()
+            
             for col in x:
                 col.store_position(timer)
                 col.strip_positions()
