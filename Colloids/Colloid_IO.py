@@ -19,7 +19,7 @@ class Config:
         
         '''
         self.config = self._reader(fname)
-        self._strtype = ('LBMODEL', 'ENDPOINT', 'PATHLINE', 'INTERVAL')
+        self._strtype = ('LBMODEL', 'ENDPOINT', 'PATHLINE', 'TIMESERIES')
         self._inttype = ('NCOLS', 'ITERS', 'STORE_TIME', 'PRINT_TIME')
         self._floattype = ('LBRES', 'GRIDREF', 'AC', 'TIMESTEP', 'TEMPERATURE',
                            'RHO_WATER', 'RHO_COLLOID', 'VISCOSITY', 'I_INITIAL',
@@ -27,7 +27,7 @@ class Config:
                            'LVDWST_COLLOID', 'LVDWST_SOLID', 'ZETA_COLLOID',
                            'ZETA_SOLID', 'PSI+_COLLOID', 'PSI+_WATER', 'PSI+_SOLID',
                            'PSI-_COLLOID', 'PSI-_WATER', 'PSI-_SOLID')
-        self._booltype = ('PLOT', 'ADJUST_ZETA')
+        self._booltype = ('PLOT', 'ADJUST_ZETA', 'OVERWRITE')
         self._dicttype = ('CONCENTRATION', 'VALENCE')
         self._required = ('LBMODEL', 'NCOLS', 'ITERS', 'LBRES', 'GRIDREF',
                           'TS')
@@ -41,7 +41,8 @@ class Config:
                                     'PSI+_WATER', 'PSI+_SOLID', 'PSI-_COLLOID',
                                     'PSI-_WATER', 'PSI-_SOLID')
         self.validoutputparams = ('STORE_TIME', 'PRINT_TIME', 'PLOT',
-                                   'ENDPOINT', 'PATHLINE', 'INTERVAL')
+                                   'ENDPOINT', 'PATHLINE', 'TIMESERIES',
+                                  'OVERWRITE')
 
     def _reader(self, fname):
         '''
@@ -122,6 +123,7 @@ class Config:
             pname = self.adjust_pname(pname)
             OutputDict[pname] = param
         
+        OutputDict = self.add_universal_parameters(OutputDict)
         return OutputDict
 
     def get_block(self, blockname):
@@ -252,12 +254,21 @@ class Config:
 
 
 class Output:
-    def __init__(self, fi, overwrite=True):
+    def __init__(self, fi, **kwargs):
+
+        defaults = {'overwrite': True}
+
+        for key in kwargs:
+            defaults[key] = kwargs[key]
+
         self.filename = fi
-        self.header = header = '{:>8}{:>9}{:>11}{:>14}{:>14}\n'.format(
-            'colloid', 'ts', 'totim', 'x-position', 'y-position')
-        # add method that checks if file exists, and overwrites if so!
-        if overwrite == True:
+        self.header = header = '{:>8}{:>9}{:>11}{:>14}{:>14}{:>14}{:>14}{:>14}\n'.format(
+                               'colloid', 'ts', 'totim', 'x-position', 'y-position',
+                               'resolution', 'x-model', 'y-model')
+        self.resolution = defaults['lbres']/defaults['gridref']
+        
+        #checks if file exists, and overwrites if overwrite is True!
+        if defaults['overwrite'] is True:
             self._writer(fi, header, wtype='w')
         
     def _writer(self, fi, data, wtype='a'):
@@ -272,15 +283,20 @@ class Output:
 
         [format is [time, totim, col#, xpos, ypos, resolution, modelx, modely] Add flag to this?
         """
+        # todo: add support for grid location, model flag.
         time = timer.timer
         totim = timer.totim
         output = []
         for idx in range(len(time)-1): # so we don't duplicate
             for colloid_number in range(len(colloids)):
-                output_string = '{:>8d}    {:5d}    {:07.5f}    {:09.8f}    {:09.8f}\n'.format(
+                output_string = '{:>8d}    {:5d}    {:07.5f}    {:09.8f}\
+                {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}\n'.format(
                                 colloid_number, time[idx] , totim[idx],
                                 colloids[colloid_number].xposition[idx],
-                                colloids[colloid_number].yposition[idx])
+                                colloids[colloid_number].yposition[idx],
+                                self.resolution,
+                                colloids[colloid_number].xposition[idx]/self.resolution,
+                                colloids[colloid_number].yposition[idx]/self.resolution)
                 output.append(output_string)
         self._writer(self.filename, output)
         

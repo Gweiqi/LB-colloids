@@ -136,12 +136,40 @@ if __name__ == '__main__':
     iters = ModelDict['iters']
     ncols = ModelDict['ncols']
 
+    # setup output and boolean flags.    
     if 'print_time' in OutputDict:
         print_time = OutputDict['print_time']
     else:
         print_time = iters
 
-    #
+    isitpathline = False
+    isittimeseries = False
+    isitendpoint = False
+    
+    if 'pathline'  in OutputDict:
+        pathline = IO.Output(OutputDict['pathline'], **OutputDict)
+        isitpathline = True
+        if 'storetime' not in OutputDict:
+            OutputDict['storetime'] = 100
+            
+    if 'timeseries' in OutputDict:
+        timeseries = IO.Output(OutputDict['timeseries'], **OutputDict)
+        isittimeseries = True
+        assert 'storetime' in OutputDict, 'please provide STORE_TIME as interval time'
+        
+    if 'endpoint' in OutputDict:
+        endpoint = IO.Output(OutputDict['endpoint'], **OutputDict)
+        isitendpoint = True
+        if 'storetime' not in OutputDict:
+            OutputDict['storetime'] = 100
+
+    # implemented for memory management purposes
+    if 'storetime' not in OutputDict:
+        store_time = 100
+    else:
+        store_time = OutputDict['storetime']        
+
+    # get data from LB Model
     LB = cs.HDF5_reader(modelname)
 
     LBy = cs.LBVArray(LB.yu, LB.imarray)
@@ -153,8 +181,8 @@ if __name__ == '__main__':
     LBx = cs.InterpV(LBx, gridsplit)
     Col_img = cs.InterpV(LB.imarray, gridsplit)
 
-    ### Use grids function to measure distance from pore space and correct
-    ### boundaries for interpolation effects. 
+    # Use grids function to measure distance from pore space and correct
+    # boundaries for interpolation effects. 
     Grids = cs.Gridarray(Col_img, gridres, gridsplit)
     xArr = Grids.gridx
     yArr = Grids.gridy
@@ -167,7 +195,7 @@ if __name__ == '__main__':
     xvArr[LBx == 0.] = np.nan
     yvArr[LBy == 0.] = np.nan
 
-    # Begin calling colloid mathematics #
+    # Begin calling colloid mathematics 
 
     cfactor = cm.Gap(xArr, yArr)
 
@@ -176,7 +204,7 @@ if __name__ == '__main__':
     LBx = velocity.xvelocity
     LBy = velocity.yvelocity
 
-    # Initial setup block to estimate colloid velocity for drag_force calc. #
+    # Initial setup block to estimate colloid velocity for drag_force calc. 
     drag_forces = cm.Drag(LBx, LBy, cfactor.f1, cfactor.f2, cfactor.f3,
                           cfactor.f4, xvArr, yvArr, **PhysicalDict)
 
@@ -209,24 +237,44 @@ if __name__ == '__main__':
     
     xlen = len(Col_img)
     x = [Colloid(xlen, gridres) for i in range(ncols)]
-
-    output = IO.Output('tester.pathline')
     
     timer = TrackTime(ts)
-    while timer.time < iters:
+    while timer.time <= iters:
+        # update colloid position and time
         for col in x:
             col.update_position(vx, vy, ts)
         timer.update_time()
+
+        # check for a printing prompt
         if timer.time%print_time == 0.:
             timer.print_time()
-            output.write_output(timer, x)
-            timer.strip_time()
             
-            for col in x:
-                col.store_position(timer)
+        # check store_times and strip younger time steps from memory
+        if timer.time%store_time == 0.:
+            if isitpathline is True:
+                pathline.write_output(timer, x)
+                timer.strip_time()
+                for col in x:
+                    col.store_position(timer) # use this for plotting functionality
+                    col.strip_positions()
+            elif isittimeseries is True:
+                for col in x:
+                    col.store_position(timer) # use this for plotting functionality
+                    col.strip_positions()
+                timeseries.write_output(timer, x)
+            else:
+                col.store_positions(timer)
                 col.strip_positions()
                 
-    
+        # check if user wants an endpoint file
+        if timer.time == iters:
+            if isitendpoint is True:
+                for col in x:
+                    col.store_positon(timer)
+                    col.strip_positions()
+                endpoint.write_output(timer, x)
+
+    # add optional plotting capability?    
     plt.imshow(vy, interpolation='nearest', vmin=-1e-13, vmax=1e-13)
     for col in x:
         plt.plot(np.array(col.storex)/gridres, np.array(col.storey)/-gridres, 'D',
