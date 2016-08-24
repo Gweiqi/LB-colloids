@@ -117,7 +117,7 @@ class TrackTime:
         self.totim = [self.totim[-1]]
 
     def print_time(self):
-        print(self.timer[-1], self.totim[-1])
+        print(self.timer[-1], "%.3f" % self.totim[-1])
 
 
 if __name__ == '__main__':
@@ -149,25 +149,25 @@ if __name__ == '__main__':
     if 'pathline'  in OutputDict:
         pathline = IO.Output(OutputDict['pathline'], **OutputDict)
         isitpathline = True
-        if 'storetime' not in OutputDict:
-            OutputDict['storetime'] = 100
+        if 'store_time' not in OutputDict:
+            OutputDict['store_time'] = 100
             
     if 'timeseries' in OutputDict:
         timeseries = IO.Output(OutputDict['timeseries'], **OutputDict)
         isittimeseries = True
-        assert 'storetime' in OutputDict, 'please provide STORE_TIME as interval time'
+        assert 'store_time' in OutputDict, 'please provide STORE_TIME as interval time'
         
     if 'endpoint' in OutputDict:
         endpoint = IO.Output(OutputDict['endpoint'], **OutputDict)
         isitendpoint = True
-        if 'storetime' not in OutputDict:
-            OutputDict['storetime'] = 100
+        if 'store_time' not in OutputDict:
+            OutputDict['store_time'] = 100
 
     # implemented for memory management purposes
     if 'storetime' not in OutputDict:
         store_time = 100
     else:
-        store_time = OutputDict['storetime']        
+        store_time = OutputDict['store_time']        
 
     # get data from LB Model
     LB = cs.HDF5_reader(modelname)
@@ -261,7 +261,7 @@ if __name__ == '__main__':
                 for col in x:
                     col.store_position(timer) # use this for plotting functionality
                     col.strip_positions()
-                timeseries.write_output(timer, x)
+                timeseries.write_output(timer, x, pathline=False)
             else:
                 col.store_positions(timer)
                 col.strip_positions()
@@ -270,9 +270,9 @@ if __name__ == '__main__':
         if timer.time == iters:
             if isitendpoint is True:
                 for col in x:
-                    col.store_positon(timer)
+                    col.store_position(timer)
                     col.strip_positions()
-                endpoint.write_output(timer, x)
+                endpoint.write_output(timer, x, pathline=False)
 
     # add optional plotting capability?    
     plt.imshow(vy, interpolation='nearest', vmin=-1e-13, vmax=1e-13)

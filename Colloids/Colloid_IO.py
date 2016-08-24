@@ -233,7 +233,7 @@ class Config:
         '''
         modelparams = self.model_parameters()
         for key in modelparams:
-            if key in ('ac', 'T', 'visocity', 'ts'):
+            if key in ('ac', 'T', 'visocity', 'ts', 'lbres', 'gridref'):
                 Dict[key] = modelparams[key]
         return Dict
 
@@ -277,7 +277,7 @@ class Output:
                 f.write(line)
 
 
-    def write_output(self, timer, colloids):
+    def write_output(self, timer, colloids, pathline=True):
         """
         set up and write full output to an ascii file
 
@@ -287,17 +287,30 @@ class Output:
         time = timer.timer
         totim = timer.totim
         output = []
-        for idx in range(len(time)-1): # so we don't duplicate
+        
+        if pathline is not True:
             for colloid_number in range(len(colloids)):
-                output_string = '{:>8d}    {:5d}    {:07.5f}    {:09.8f}\
-                {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}\n'.format(
-                                colloid_number, time[idx] , totim[idx],
-                                colloids[colloid_number].xposition[idx],
-                                colloids[colloid_number].yposition[idx],
+                output_string = '{:>8d}    {:5d}    {:07.5f}    {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}\n'.format(
+                                colloid_number, time[-1] , totim[-1],
+                                colloids[colloid_number].xposition[-1],
+                                colloids[colloid_number].yposition[-1],
                                 self.resolution,
-                                colloids[colloid_number].xposition[idx]/self.resolution,
-                                colloids[colloid_number].yposition[idx]/self.resolution)
+                                colloids[colloid_number].xposition[-1]/self.resolution,
+                                colloids[colloid_number].yposition[-1]/self.resolution)
                 output.append(output_string)
+        
+        else:    
+            for idx in range(len(time)-1): # so we don't duplicate
+                for colloid_number in range(len(colloids)):
+                    output_string = '{:>8d}    {:5d}    {:07.5f}    {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}\n'.format(
+                                    colloid_number, time[idx] , totim[idx],
+                                    colloids[colloid_number].xposition[idx],
+                                    colloids[colloid_number].yposition[idx],
+                                    self.resolution,
+                                    colloids[colloid_number].xposition[idx]/self.resolution,
+                                    colloids[colloid_number].yposition[idx]/self.resolution)
+                    output.append(output_string)
+
         self._writer(self.filename, output)
         
 
