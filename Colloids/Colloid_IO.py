@@ -42,7 +42,7 @@ class Config:
                                     'PSI-_WATER', 'PSI-_SOLID')
         self.validoutputparams = ('STORE_TIME', 'PRINT_TIME', 'PLOT',
                                    'ENDPOINT', 'PATHLINE', 'TIMESERIES',
-                                  'OVERWRITE')
+                                  'OVERWRITE', 'PLOT')
 
     def _reader(self, fname):
         '''

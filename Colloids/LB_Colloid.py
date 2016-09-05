@@ -9,7 +9,7 @@ import optparse
 import random
 
 class Colloid:
-    '''
+    """
     Wrapper class to initiate and track colloid position through the LB Model
 
     Inputs:
@@ -28,9 +28,9 @@ class Colloid:
     --------
     xposition: (list, float) a list of x-position values normalized to the grid resolution
     yposition: (list, float) a list of y-position values normalized to grid resolution (top left is 0,0)
-    '''
+    """
     def __init__(self, xlen, resolution):
-        self.xposition = [random.uniform(0.03,0.97)*xlen*resolution]
+        self.xposition = [random.uniform(0.04,0.96)*xlen*resolution]
         self.yposition = [0.]
         self.resolution = resolution
         self.storey = [self.yposition[0]]
@@ -53,16 +53,20 @@ class Colloid:
         self.time.append(item)
 
     def update_position(self, xvelocity, yvelocity, ts):
-        '''
+        """
         grid index method to update continuous colloid system using the discete grid forces.
         idxry must be inverted because we assume (0,0) at top left corner and down is negitive.
-        '''
+        """
         irx = self.xposition[-1]
         iry = self.yposition[-1]
         # find grid indexes and look up velocity (negative y accounts for grid indexes bc of vector direction).
-        
-        idxrx = int(self.xposition[-1]//self.resolution)
-        idxry = int(self.yposition[-1]//-self.resolution)
+        # using this try statement for debugging purposes
+        try:
+            idxrx = int(self.xposition[-1]//self.resolution)
+            idxry = int(self.yposition[-1]//-self.resolution)
+        except ValueError:
+            raise AssertionError(irx, iry)
+            
         xv = xvelocity[idxry][idxrx]
         yv = yvelocity[idxry][idxrx]
         
@@ -95,12 +99,13 @@ class Colloid:
     def print_positions(self):
         print(self.xposition[-1], self.yposition[-1])
 
+
 class TrackTime:
-    '''
+    """
     TrackTime class is the model timer, enables stripping stored time steps which
     is useful to free memoryafter storing the data externally. Is necessary for
     output class functionality!
-    '''
+    """
     def __init__(self, ts):
         self.ts = ts
         self.timer = [0]
@@ -235,7 +240,7 @@ if __name__ == '__main__':
     vx = vx.velocity + LBx
     vy = vy.velocity + LBy
     
-    xlen = len(Col_img)
+    xlen = len(Col_img[0])
     x = [Colloid(xlen, gridres) for i in range(ncols)]
     
     timer = TrackTime(ts)
@@ -274,10 +279,10 @@ if __name__ == '__main__':
                     col.strip_positions()
                 endpoint.write_output(timer, x, pathline=False)
 
-    # add optional plotting capability?    
-    plt.imshow(vy, interpolation='nearest', vmin=-1e-13, vmax=1e-13)
-    for col in x:
-        plt.plot(np.array(col.storex)/gridres, np.array(col.storey)/-gridres, 'D',
-                 ms=8)
-    plt.colorbar()
-    plt.show()
+    if OutputDict['plot'] is True:  
+        plt.imshow(vy, interpolation='nearest', vmin=-1e-13, vmax=1e-13)
+        for col in x:
+            plt.plot(np.array(col.storex)/gridres, np.array(col.storey)/-gridres, 'o',
+                     ms=8)
+        plt.colorbar()
+        plt.show()

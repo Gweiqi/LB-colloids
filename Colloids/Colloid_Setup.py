@@ -84,7 +84,7 @@ class Gridarray:
         rplc = np.linspace(0, 1, gridsplit)
         rplc = rplc[gridsplit/2:]
         for i in rplc:
-            line[i] = 1.    # pore space == 0, solid is still 1.
+            line[i] = 1. # pore space == 0, solid is still 1.
         line[line < 1] = 0. # linear interpolation also interpolates pore
         line[line > 1] = 0. # boundaries, this block corrects that error
 
