@@ -262,8 +262,8 @@ class Output:
             defaults[key] = kwargs[key]
 
         self.filename = fi
-        self.header = header = '{:>8}{:>9}{:>11}{:>14}{:>14}{:>14}{:>14}{:>14}\n'.format(
-                               'colloid', 'ts', 'totim', 'x-position', 'y-position',
+        self.header = header = '{:>8}{:>9}{:>9}{:>11}{:>14}{:>14}{:>14}{:>14}{:>14}\n'.format(
+                               'colloid', 'flag', 'ts', 'totim', 'x-position', 'y-position',
                                'resolution', 'x-model', 'y-model')
         self.resolution = defaults['lbres']/defaults['gridref']
         
@@ -290,8 +290,8 @@ class Output:
         
         if pathline is not True:
             for colloid_number in range(len(colloids)):
-                output_string = '{:>8d}    {:5d}    {:07.5f}    {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}\n'.format(
-                                colloid_number, time[-1] , totim[-1],
+                output_string = '{:>8d}    {:>5d}    {:5d}    {:07.5f}    {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}\n'.format(
+                                colloid_number, colloids[colloid_number].flag[-1], time[-1] , totim[-1],
                                 colloids[colloid_number].xposition[-1],
                                 colloids[colloid_number].yposition[-1],
                                 self.resolution,
@@ -303,7 +303,7 @@ class Output:
             for idx in range(len(time)-1): # so we don't duplicate
                 for colloid_number in range(len(colloids)):
                     output_string = '{:>8d}    {:5d}    {:07.5f}    {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}\n'.format(
-                                    colloid_number, time[idx] , totim[idx],
+                                    colloid_number, colloids[colloid_number].flag[-1], time[idx] , totim[idx],
                                     colloids[colloid_number].xposition[idx],
                                     colloids[colloid_number].yposition[idx],
                                     self.resolution,

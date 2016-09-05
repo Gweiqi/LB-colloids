@@ -30,12 +30,13 @@ class Colloid:
     yposition: (list, float) a list of y-position values normalized to grid resolution (top left is 0,0)
     """
     def __init__(self, xlen, resolution):
-        self.xposition = [random.uniform(0.04,0.96)*xlen*resolution]
+        self.xposition = [random.uniform(0.01,0.99)*xlen*resolution]
         self.yposition = [0.]
         self.resolution = resolution
         self.storey = [self.yposition[0]]
         self.storex = [self.xposition[0]]
         self.time = [0]
+        self.flag = [1]
 
     def _append_xposition(self, item):
         self.xposition.append(item)
@@ -52,6 +53,9 @@ class Colloid:
     def _append_time(self, item):
         self.time.append(item)
 
+    def _append_flag(self, item):
+        self.flag.append(item)
+
     def update_position(self, xvelocity, yvelocity, ts):
         """
         grid index method to update continuous colloid system using the discete grid forces.
@@ -59,33 +63,65 @@ class Colloid:
         """
         irx = self.xposition[-1]
         iry = self.yposition[-1]
+        flag = self.flag[-1]
         # find grid indexes and look up velocity (negative y accounts for grid indexes bc of vector direction).
-        # using this try statement for debugging purposes
-        try:
-            idxrx = int(self.xposition[-1]//self.resolution)
-            idxry = int(self.yposition[-1]//-self.resolution)
-        except ValueError:
-            raise AssertionError(irx, iry)
-            
-        xv = xvelocity[idxry][idxrx]
-        yv = yvelocity[idxry][idxrx]
-        
-        # velocity is L/T therefore multiply by T
-        deltarx = xv*ts 
-        deltary = yv*ts
-        rx = irx + deltarx
-        ry = iry + deltary
-        # Use a check to make sure colloid does not leave domain on first iteration
-        # move colloid to a new location to if it leaves domain
-        if ry >= 0:
-            rx = random.uniform(0.05,0.95)*xlen*self.resolution #np.random.rand(1)[0]*xlen*self.resolution
-            ry = 0.
-        else:
-            pass
 
-        # need to add a handler for when colloids break through the system!
-        self._append_xposition(rx)
-        self._append_yposition(ry)
+        if flag == 2:
+            # this is a NaN condition
+            self.update_special(irx, iry, 2)
+
+        elif flag == 3:
+            # this is the breakthrough condition
+            irx = float('NaN')
+            iry = float('NaN')
+            self.update_special(irx, iry, 3)
+
+        else:
+            # normal streaming conditions
+            
+            # if NaN flip flag to 2, we can then debug!
+            try:
+                idxrx = int(irx//self.resolution)
+           
+            except ValueError:
+                self._append_flag(2)
+                self._append_xposition(irx)
+                self._append_yposition(iry)
+                return
+
+        # if colloid breaks through domain change flag to 3  
+            try:
+                idxry = int(iry//-self.resolution)
+
+            except IndexError:
+                self._append_flag(3)
+                self._append_xposition(float("NaN"))
+                self._append_yposition(float("NaN"))
+
+            xv = xvelocity[idxry][idxrx]
+            yv = yvelocity[idxry][idxrx]
+        
+            # velocity is L/T therefore multiply by T
+            deltarx = xv*ts 
+            deltary = yv*ts
+            rx = irx + deltarx
+            ry = iry + deltary
+            # Use a check to make sure colloid does not leave domain on first iteration
+            # move colloid to a new location to if it leaves domain in the vertical y-direction
+            if ry >= 0:
+                rx = random.uniform(0.05,0.95)*xlen*self.resolution
+                ry = 0.
+            else:
+                pass
+
+            self._append_xposition(rx)
+            self._append_yposition(ry)
+            self._append_flag(1)
+
+    def update_special(self, irx, iry, flag):
+        self._append_xposition(irx)
+        self._append_yposition(iry)
+        self._append_flag(flag)
 
     def strip_positions(self):
         self.xposition = [self.xposition[-1]]
@@ -169,11 +205,12 @@ if __name__ == '__main__':
             OutputDict['store_time'] = 100
 
     # implemented for memory management purposes
-    if 'storetime' not in OutputDict:
+    if 'store_time' not in OutputDict:
         store_time = 100
     else:
-        store_time = OutputDict['store_time']        
+        store_time = OutputDict['store_time']
 
+    print(store_time)
     # get data from LB Model
     LB = cs.HDF5_reader(modelname)
 
@@ -262,11 +299,13 @@ if __name__ == '__main__':
                 for col in x:
                     col.store_position(timer) # use this for plotting functionality
                     col.strip_positions()
+            
             elif isittimeseries is True:
                 for col in x:
                     col.store_position(timer) # use this for plotting functionality
                     col.strip_positions()
                 timeseries.write_output(timer, x, pathline=False)
+
             else:
                 col.store_positions(timer)
                 col.strip_positions()
