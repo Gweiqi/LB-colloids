@@ -1,4 +1,5 @@
 import Image
+from scipy.ndimage import imread
 import numpy as np
 import h5py as H
 import optparse
@@ -15,6 +16,14 @@ class images:
         self.format = self.image.format
         self.size = self.image.size
         self.mode = self.image.mode
+        
+        if self.mode == 'RGB':
+            rgb = np.array(self.image)
+            r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
+            self.image = 0.2990*r + 0.5870*g + 0.1140*b
+        else:
+            pass
+        
         self.imarray = np.array(self.image)
 
 class boundary_condition:
@@ -30,17 +39,17 @@ class boundary_condition:
         self.ybc = np.column_stack((self.setupybc[0], self.tandbbc))
         self.bcimarray = np.column_stack((self.ybc, self.setupybc[0]))
         self.boarray = np.where(self.bcimarray == solidvx, True, False)
-	self.solids =float(np.count_nonzero(self.boarray[blayers:-blayers]))
-	self.all = float((self.xlen-2)*self.ylen)
+        self.solids =float(np.count_nonzero(self.boarray[blayers:-blayers]))
+        self.all = float((self.xlen-2)*self.ylen)
         self.porosity = 1.-(self.solids/self.all)
 
 class HDF5_write:
     def __init__(self, arr, porosity, boundary, output):
         with H.File(output,"w") as self.fi:
-	    print '[Writing to %s]' % output
+            print '[Writing to %s]' % output
             self.imwrite = self.fi.create_dataset('Binary_image', data=arr)
-	    self.pwrite = self.fi.create_dataset('results/porosity', data=porosity)
-	    self.bwrite = self.fi.create_dataset('results/boundary', data=boundary)
+            self.pwrite = self.fi.create_dataset('results/porosity', data=porosity)
+            self.bwrite = self.fi.create_dataset('results/boundary', data=boundary)
 ####Test definition for later use####
 def HDF5_readarray(filename, data):
     f = H.File(filename, "r+")
