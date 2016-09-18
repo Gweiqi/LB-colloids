@@ -17,12 +17,12 @@ def initial_distribution(q,ny,nx,rho,rhoI,vis,img,wi):
     for j in range(q):
         for i in range(ny):
             fd[j,i,:] = (rho-(rhoI * (i/(ny-1.))))* wi[j]
-    fd = Zho_he(fd,rho,vis)    
+    fd = initiate_model(fd,rho,vis)    
     ###sets solid boundaries from image data####
     #fd = set_solids(fd,img)
     return fd
 
-def Zho_he(fd,rho,vis):
+def initiate_model(fd,rho,vis):
     ###function solves Zho He boundary condition against a top boundary###
     # gives the model it's initial kick to start running! Could develop a fortran version
     fd[6,0,:] = fd[2,0,:]*2./3.*rho*vis
@@ -37,11 +37,170 @@ def set_solids(fs,img):
         fs[i,img] = solids[i,img]
     return fs
 
-def f_rho(f):
-    ###function calculates density####
+def py_rho(f):
+    # function calculates density
     rho = np.sum(f, axis=0)
     return rho
 
+def py_u(f, rho):
+    # calculates velocity in the y-direction and x-direction
+    uy = ((f[1] + f[2] + f[3]) - (f[5] + f[6] + f[7]))/rho
+    ux = ((f[0] + f[1] + f[7]) - (f[3] + f[4] + f[5]))/rho
+    return uy, ux
+
+def py_usqr(uy, ux):
+    # calculates velocity squared
+    usqr = uy*uy + ux*ux
+    return usqr
+
+def py_eu(uy, ux, ny, nx):
+    # calculate the einstein velocities of lattice boltzmann domain
+    eu = np.zeros((9, ny, nx))
+    eu[0, :, :] = ux
+    eu[1, :, :] = ux + uy
+    eu[2, :, :] = uy
+    eu[3, :, :] = uy - ux
+    eu[4, :, :] = -ux
+    eu[5, :, :] = -ux - uy
+    eu[6, :, :] = -uy
+    eu[7, :, :] = ux - uy
+    eu[8, :, :] = ux * 0.
+
+    return eu
+
+def py_feq(eu, rho, usqr, wi, csqr, ny, nx):
+    # calculate the lattice boltzmann equalibrium distribution function
+    feq = np.zeros((9, ny, nx))
+    for i in range(9):
+        feq[i, :, :] = wi[i]*rho*(1 + eu[i]/csqr + 0.5*(eu[i]/csqr)**2 - usqr/(2*csqr))
+    return feq
+
+def py_collision(f, feq, tau):
+    # calculate the LB collision operator
+    fcol = f - ((f - feq)/tau)
+    return fcol
+
+def py_zhohe(f, rho, ny, nx):
+    # calculate zho he boundary condions
+    fzhe = np.zeros((9, ny, nx))
+
+    vy_lb = 1 - ((f[8] + f[0] + f[4] + 2*(f[5] + f[6] + f[7]))/rho)
+    vy_ub = -(1 - ((f[8] + f[0] + f[4] + 2*(f[1] + f[2] + f[3]))/rho))
+    
+    # compute the unkown distributions on the upper domain
+    # naming based on python zero based indexing
+    f1 = 1./6.*rho*vy_lb + (f[4] - f[0])/2 + f[5]
+    f2 = 2./3.*rho*vy_lb + f[6]
+    f3 = 1./6.*rho*vy_lb + (f[0] - f[4])/2 + f[7]
+
+    # compute the unkown distribution on the lower domain
+    f5 = -1./6.*rho*vy_ub + (f[0] - f[4])/2 + f[1]
+    f6 = -2./3.*rho*vy_ub + f[2]
+    f7 = -1./6.*rho*vy_ub + (f[4] - f[0])/2 + f[3]
+
+    for j in range(ny):
+        for k in range(nx):
+            
+            if j == 0:
+                
+                fzhe[0, j, k] = f[0, j, k]
+                fzhe[1, j, k] = f1[j, k]
+                fzhe[2, j, k] = f2[j, k]
+                fzhe[3, j, k] = f3[j, k]
+                fzhe[4, j, k] = f[4, j, k]
+                fzhe[5, j, k] = f[5, j, k]
+                fzhe[6, j, k] = f[6, j, k]
+                fzhe[7, j, k] = f[7, j, k]
+                fzhe[8, j, k] = f[8, j, k]
+
+            elif j == ny - 1:
+                
+                fzhe[0, j, k] = f[0, j, k]
+                fzhe[1, j, k] = f[1, j, k]
+                fzhe[2, j, k] = f[2, j, k]
+                fzhe[3, j, k] = f[3, j, k]
+                fzhe[4, j, k] = f[4, j, k]
+                fzhe[5, j, k] = f5[j, k]
+                fzhe[6, j, k] = f6[j, k]
+                fzhe[7, j, k] = f7[j, k]
+                fzhe[8, j, k] = f[8, j, k]
+
+            else:
+                
+                fzhe[0, j, k] = f[0, j, k]
+                fzhe[1, j, k] = f[1, j, k]
+                fzhe[2, j, k] = f[2, j, k]
+                fzhe[3, j, k] = f[3, j, k]
+                fzhe[4, j, k] = f[4, j, k]
+                fzhe[5, j, k] = f[5, j, k]
+                fzhe[6, j, k] = f[6, j, k]
+                fzhe[7, j, k] = f[7, j, k]
+                fzhe[8, j, k] = f[8, j, k]
+
+    return fzhe
+
+def py_bounceback(f, fcol, image, ny, nx):
+    # apply bounceback conditions to LB-model collision function
+    fbounce = np.zeros((9, ny, nx))
+    # set bounceback indicies as local variable
+    # bounce = [4, 5, 6, 7, 0, 1, 2, 3, 8]
+    
+    for j in range(ny):
+        for k in range(nx):
+            
+            if image[j,k] == True:
+                fbounce[0, j, k] = f[4, j, k]
+                fbounce[1, j, k] = f[5, j, k]
+                fbounce[2, j, k] = f[6, j, k]
+                fbounce[3, j, k] = f[7, j, k]
+                fbounce[4, j, k] = f[0, j, k]
+                fbounce[5, j, k] = f[1, j, k]
+                fbounce[6, j, k] = f[2, j, k]
+                fbounce[7, j, k] = f[3, j, k]
+                fbounce[8, j, k] = f[8, j, k]
+
+            else:
+                fbounce[:, j, k] = fcol[:, j, k]
+    return fbounce
+
+def py_streaming(fcol, ny, nx):
+    # stream the LB-model
+    fstream = np.zeros((9, ny, nx))
+
+    for j in range(ny):
+        for k in range(nx):
+
+            if k == 0:
+                kp = k + 1
+                kn = nx - 1
+            elif k == nx - 1:
+                kp = 0
+                kn = k - 1
+            else:
+                kp = k + 1
+                kn = k - 1
+
+            if j == 0:
+                jp = j + 1
+                jn = ny - 1
+            elif j == ny - 1:
+                jp = 0
+                jn = j - 1
+            else:
+                jp = j + 1
+                jn = j - 1
+
+            fstream[0, j, kp]  = fcol[0, j, k]
+            fstream[1, jp, kp] = fcol[1, j, k]
+            fstream[2, jp, k]  = fcol[2, j, k]
+            fstream[3, jp, kn] = fcol[3, j, k]
+            fstream[4, j, kn]  = fcol[4, j, k]
+            fstream[5, jn, kn] = fcol[5, j, k]
+            fstream[6, jn, k]  = fcol[6, j, k]
+            fstream[7, jn, kp] = fcol[7, j, k]
+            fstream[8, j, k]   = fcol[8, j, k]
+    return fstream
+    
 def mean_u(x):
     ###calculates mean velocity in the y and x directions####
     ###remeber to pop off ghost layers####
@@ -66,6 +225,8 @@ class HDF5_write:
             self.wf = self.fi.create_dataset('results/f', data=f)
             self.delr = self.fi.create_dataset('results/delr', data=delrho)
             self.rho = self.fi.create_dataset('results/rho', data=rho)
+
+
 ####Begin program with parser options####
 parser = optparse.OptionParser()
 parser.add_option('-i', '--input' , dest = 'input', help='Input a .hdf5 file')
@@ -84,6 +245,8 @@ parser.add_option('-v', '--vtuple', dest='vtuple', help='enter vmin and vmax def
 		  default = '0.01,0.00001')
 parser.add_option('-q', '--notquiet', dest='q', help='enter print interval for verbose',
 		  default = None)
+parser.add_option('-k', '--kernal', dest='kernal', help='computer kernal selection f or p; default is f',
+                  default = 'f')
 (opts,args)=parser.parse_args()
 
 
@@ -104,6 +267,7 @@ nx = len(image[0])
 tau = float(opts.tau)
 vis = 1./3.*(tau-0.5)
 maxTS = int(opts.maxTS)
+kernal = opts.kernal
 
 # weights are consistant with up,right == positive
 # down, left == negative. position 9 == 0.
@@ -111,30 +275,53 @@ wi = np.array([1./9., 1./36., 1./9., 1./36., 1./9.,
                1./36., 1./9., 1./36., 4./9.])
 
 f = initial_distribution(q,ny,nx,rho,delr,vis,image, wi)
+if kernal == 'f':
+    for i in range(maxTS):
+        # call fortran subroutines to run lattice boltzmann
+        rho = LB.f_rho(f, ny, nx)
+        uy, ux = LB.f_u(f, rho, ny, nx)
+        eu = LB.f_eu(uy, ux, ny, nx)
+        usqr = LB.f_usqr(uy, ux)
+        feq = LB.f_feq(eu, rho, usqr, wi, cs2, ny, nx)
+        fcol = LB.f_collision(f, feq, tau, ny, nx)
+        fcol = LB.f_zhohe(fcol, rho, ny, nx)
+        fcol = LB.f_bounceback(f, fcol, image, ny, nx)
+        f = LB.f_streaming(fcol, ny, nx)
 
-for i in range(maxTS):
-    # call fortran subroutines to run lattice boltzmann
-    rho = LB.f_rho(f, ny, nx)
-    uy, ux = LB.f_u(f, rho, ny, nx)
-    eu = LB.f_eu(uy, ux, ny, nx)
-    usqr = LB.f_usqr(uy, ux)
-    feq = LB.f_feq(eu, rho, usqr, wi, cs2, ny, nx)
-    fcol = LB.f_collision(f, feq, tau, ny, nx)
-    fcol = LB.f_zhohe(fcol, rho, ny, nx)
-    fcol = LB.f_bounceback(f, fcol, image, ny, nx)
-    f = LB.f_streaming(fcol, ny, nx)
+        if opts.pretty != None:   
+            if i%int(opts.pretty) == 0:
+                print '[Saving image: %i]' %i
+                u = [uy, ux]
+                pretty.velocity_image(u, image, opts.pfolder + '/' + opts.input,i, opts.pu, vmin, vmax)
 
-    if opts.pretty != None:   
-        if i%int(opts.pretty) == 0:
-            print '[Saving image: %i]' %i
-            u = [uy, ux]
-            pretty.velocity_image(u, image, opts.pfolder + '/' + opts.input,i, opts.pu, vmin, vmax)
+        if opts.q != None:
+            if i%int(opts.q) == 0:
+                print '[Iter: %i]' % i
 
-    if opts.q != None:
-        if i%int(opts.q) == 0:
-            print '[Iter: %i]' % i
+elif kernal == 'p':
+    for i in range(maxTS):
+        # call fortran subroutines to run lattice boltzmann
+        rho = py_rho(f)
+        uy, ux = py_u(f, rho)
+        eu = py_eu(uy, ux, ny, nx)
+        usqr = py_usqr(uy, ux)
+        feq = py_feq(eu, rho, usqr, wi, cs2, ny, nx)
+        fcol = py_collision(f, feq, tau)
+        fcol = py_zhohe(fcol, rho, ny, nx)
+        fcol = py_bounceback(f, fcol, image, ny, nx)
+        f = py_streaming(fcol, ny, nx)
 
-macrho = f_rho(rho)/len(rho)
+        if opts.pretty != None:   
+            if i%int(opts.pretty) == 0:
+                print '[Saving image: %i]' %i
+                u = [uy, ux]
+                pretty.velocity_image(u, image, opts.pfolder + '/' + opts.input,i, opts.pu, vmin, vmax)
+
+        if opts.q != None:
+            if i%int(opts.q) == 0:
+                print '[Iter: %i]' % i
+    
+macrho = py_rho(rho)/len(rho)
 mrho = mean_rho(macrho, rho1)
 u = [uy, ux]
 
