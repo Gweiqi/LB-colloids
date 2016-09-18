@@ -24,7 +24,7 @@ def initial_distribution(q,ny,nx,rho,rhoI,vis,img,wi):
 
 def Zho_he(fd,rho,vis):
     ###function solves Zho He boundary condition against a top boundary###
-    # gives the model it's initial kick to start running!
+    # gives the model it's initial kick to start running! Could develop a fortran version
     fd[6,0,:] = fd[2,0,:]*2./3.*rho*vis
     fd[5,0,:] = fd[1,0,:]+ 0.5*rho*vis
     fd[7,0,:] = fd[3,0,:]+ 0.5*rho*vis
