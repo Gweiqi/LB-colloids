@@ -18,10 +18,10 @@ def velocity_image(u, img, name, numit, vel, vmin, vmax):
     	img = np.ma.masked_where(img == 0, img)
     	uxy = np.ma.masked_where(uxy == 0, uxy)
     
-    plt.imshow(img, cmap=mpl.cm.Accent_r, interpolation='nearest')
+    plt.imshow(img, cmap=mpl.cm.viridis, interpolation='nearest')
     plt.tick_params(axis='both', which='both',bottom='off',top='off',
                     labelbottom='off',right='off',left='off', labelleft='off')
-    plt.imshow(uxy, cmap=mpl.cm.nipy_spectral, norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax))#cmap=mpl.cm.nipy_spectral,
+    plt.imshow(uxy, cmap=mpl.cm.viridis, norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax))#cmap=mpl.cm.nipy_spectral,
     plt.colorbar()
     numit = str(numit)
     if len(numit) < 5:
