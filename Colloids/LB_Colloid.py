@@ -82,6 +82,7 @@ class Colloid:
             # if NaN flip flag to 2, we can then debug!
             try:
                 idxrx = int(irx//self.resolution)
+                idxry = int(iry//-self.resolution)
            
             except ValueError:
                 self._append_flag(2)
