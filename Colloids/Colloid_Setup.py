@@ -81,13 +81,20 @@ class Gridarray:
         Follows by creating an array of pore boundaries and then counts the distance
         from the nearest solid. It also creates a a vector direction array that corresponds.
         '''
-        rplc = np.linspace(0, 1, gridsplit)
-        rplc = rplc[gridsplit/2:]
-        for i in rplc:
-            line[i] = 1. # pore space == 0, solid is still 1.
-        line[line < 1] = 0. # linear interpolation also interpolates pore
-        line[line > 1] = 0. # boundaries, this block corrects that error
 
+        # Saner(?) method which does not raise warnings from Python 2.7.12
+        # Forward compatable with Python 3.5.2
+        for i in range(len(line)):
+            if line[i] >= 0.5:
+                vline[i] = 1.
+                line[i] = 1.
+            else:
+                vline[i] = 0.
+                line[i] = 0.
+        np.array(line)
+        line[line < 1] = 0.
+        line[line > 1] = 0.
+        
         # create an array of pore boundaries from binary system
         boundary= np.where(np.abs(np.diff(line)) >= 1)[0]
         try:
@@ -103,8 +110,11 @@ class Gridarray:
                     line[lbound:rbound] = np.append(left, right)
 
                     left = np.ones(gap)*-1
+                    # print left
                     right = np.ones(gap)
+                    # print right
                     vline[lbound:rbound] = np.append(left, right)
+                    # print vline
 
                 else:
                     gap = gap//2
@@ -130,28 +140,30 @@ class Gridarray:
         Follows by creating an array of pore boundaries and then counts the distance
         from the nearest solid. It also creates a a vector direction array that corresponds.
         '''
-        rplc = np.linspace(0, 1, gridsplit)
-        rplc = rplc[gridsplit/2:]
-        for i in rplc:
-            line[i] = 1.     # pore space == 0, solid is still 1.
-        line[line > 1.] = 0. # linear interpolation also interpolates pore
-        line[line < 1.] = 0. # boundaries, this block corrects that error
-
+        
+        for i in range(len(line)):
+            if line[i] >= 0.5:
+                vline[i] = 1.
+                line[i] = 1.
+            else:
+                vline[i] = 0.
+                line[i] = 0.
+        np.array(line)
+        
         # create an array of pore boundaries from binary system
         boundary= np.where(np.abs(np.diff(line)) >= 1)[0]
-        
+
         if len(boundary) > 0:
-            rbound = boundary[1] + 1 
+            rbound = boundary[0] + 1 
             lbound = 0
             top = np.arange(rbound, lbound, -1)*gridres
             line[lbound:rbound] = top
-            vtop = np.ones(len(top))*-1
+            vtop = np.ones(len(top)) * -1
             vline[lbound:rbound] = vtop
             
-               
-            for i in range(3, len(boundary), 2):
+            for i in range(2, len(boundary), 2):
                 rbound = boundary[i] + 1
-                lbound = boundary[i-1] + 1
+                lbound = boundary[i - 1] + 1
                 gap = rbound - lbound
                 if gap % 2 == 0:
                     gap = gap//2
@@ -178,7 +190,7 @@ class Gridarray:
             rbound = ylen
             lbound = boundary[-1] + 1
             gap = rbound - lbound
-            bottom =np.arange(1, gap + 1)*gridres
+            bottom = np.arange(1, gap + 1)*gridres
             line[lbound:rbound] = bottom
 
             bottom = np.ones(gap)

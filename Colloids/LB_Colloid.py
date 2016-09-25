@@ -238,8 +238,7 @@ if __name__ == '__main__':
     xvArr[LBx == 0.] = np.nan
     yvArr[LBy == 0.] = np.nan
 
-    # Begin calling colloid mathematics 
-
+    # Begin calling colloid mathematics
     cfactor = cm.Gap(xArr, yArr)
 
     # for calculations we need ts = 1., adjust later
