@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
+import sys
 
 def velocity_image(u, img, name, numit, vel, vmin, vmax):    
     temp = np.ones((len(img),len(img[0])))
@@ -17,11 +18,16 @@ def velocity_image(u, img, name, numit, vel, vmin, vmax):
     	img = np.array([temp[i]*img[i] for i in range(len(uxy))])
     	img = np.ma.masked_where(img == 0, img)
     	uxy = np.ma.masked_where(uxy == 0, uxy)
+
+    whichpython = sys.version_info
     
-    plt.imshow(img, cmap=mpl.cm.viridis, interpolation='nearest')
+    plt.imshow(img, cmap=mpl.cm.Dark2_r, interpolation='nearest')
     plt.tick_params(axis='both', which='both',bottom='off',top='off',
                     labelbottom='off',right='off',left='off', labelleft='off')
-    plt.imshow(uxy, cmap=mpl.cm.viridis, norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax))#cmap=mpl.cm.nipy_spectral,
+    if whichpython[0] > 2 or whichpython[2] >=10:
+        plt.imshow(uxy, cmap=mpl.cm.viridis, norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax))
+    else:
+        plt.imshow(uxy, cmap=mpl.cm.jet, norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax))
     plt.colorbar()
     numit = str(numit)
     if len(numit) < 5:
@@ -31,14 +37,3 @@ def velocity_image(u, img, name, numit, vel, vmin, vmax):
     plt.savefig(Figname)
     plt.close()
     
-'''
-u=np.arange(64)
-u.shape = (2,8,4)
-
-image = np.array([[True,False,True,True],[False,True,True,True],
-               [True,False,True,True],[False,True,True,True],
-               [True,False,True,True],[False,True,True,True],
-               [True,False,True,True],[False,True,True,True]])
-i = 100
-velocity_image(u,image, 'testr.hdf5', i)
-'''
