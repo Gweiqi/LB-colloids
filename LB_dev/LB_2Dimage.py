@@ -5,6 +5,7 @@ import h5py as H
 import optparse
 import matplotlib.pyplot as plt
 import sys
+import LBIO
 
 class images:
 
@@ -57,34 +58,50 @@ def HDF5_readarray(filename, data):
     f.close()
     return dset
 
+# Facilitates defaults through kwargs
+def addIO(defaults, config):
+    for key in config:
+        defaults[key] = config[key]
+    return defaults
+
 ######Begin program with parse options######
 parser = optparse.OptionParser()
 parser.add_option('-i','--input', dest='infile', help='Input an image file')
-parser.add_option('-c', '--components', dest='components', help='set component vales ex. f0,s255 (white=0)')
+#parser.add_option('-c', '--components', dest='components', help='set component vales ex. f0,s255 (white=0)')
 parser.add_option('-o', '--output', dest='output', help='Please provide an output.hdf5 file name')
 parser.add_option('-b', '--boundary', dest='boundary', help='Specify the number of top and bottom boundary layers', default='4')
+parser.add_option('-c', '--config', dest='config', help='supply a lb config file')
 (opts, args) = parser.parse_args()
 
+'''
 if opts.infile == None:
     sys.exit('Oh no enter an input file!')
 if opts.components== None:
     sys.exit('I don\'t know what you want to do with this image')
 if opts.output == None:
     sys.exit('Wouldn\'t it be better if you saved me!')
+'''
+config = LBIO.Config(opts.config)
 
-fil = opts.infile
+ImageDict = {'BOUNDARY': 10}
+ModelDict = {}
 
-components = opts.components.split(',')
-fluid = int(components[0][1:])
-solid = int(components[1][1:])
+ImageDict = addIO(ImageDict, config.image_parameters())
+ModelDict = addIO(ModelDict, config.model_parameters())
 
-bl = int(opts.boundary)
+fil = ImageDict['IMAGE']
+
+# components = opts.components.split(',')
+fluid = ImageDict['VOID']
+solid = ImageDict['SOLID']
+
+bl = ImageDict['BOUNDARY']
 im = images(fil)
 print '[Reading image]'
-bcim = boundary_condition(im.imarray,fluid,solid,bl)
+bcim = boundary_condition(im.imarray, fluid, solid, bl)
 print '[Setting boundary condition]'
 print '[Porosity: %.4f]' % bcim.porosity
 plt.imshow(bcim.boarray, interpolation = 'nearest')
 plt.show()
-out = HDF5_write(bcim.boarray, bcim.porosity, opts.boundary, opts.output)
+out = HDF5_write(bcim.boarray, bcim.porosity, bl, ModelDict['LBMODEL'])
 print '[Done]'

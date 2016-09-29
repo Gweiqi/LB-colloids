@@ -3,6 +3,8 @@ import h5py as H
 import LB_pretty as pretty
 import optparse
 import LB2D as LB
+import LBIO
+import os
 
 def HDF5_readarray(filename, data):
     ###import saved array data from LB_2Dimages####
@@ -215,6 +217,15 @@ def mean_rho(f, delrho):
     mrho = np.ma.mean(img)
     return mrho
 
+def check_directory(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+def addIO(defaults, config):
+    for key in config:
+        defaults[key] = config[key]
+    return defaults
+
 class HDF5_write:
     def __init__(self, mrho, tau, u, f, delrho, rho, output):
         with H.File(output,"r+") as self.fi:
@@ -227,56 +238,58 @@ class HDF5_write:
             self.rho = self.fi.create_dataset('results/rho', data=rho)
 
 
+
 ####Begin program with parser options####
 parser = optparse.OptionParser()
-parser.add_option('-i', '--input' , dest = 'input', help='Input a .hdf5 file')
-parser.add_option('-r', '--rho', dest = 'rho', help='density array ex. 1.001,0.999',
-                  default = '1.001,0.999')
-parser.add_option('-t', '--tau', dest = 'tau', help='relaxation time for LGBK, default = 1',
-                  default= '1')
-parser.add_option('-p', '--pretty', dest = 'pretty', help='use to print LB images for animation, set interval',
-                  default = None)
-parser.add_option('-f', '--pfolder', dest = 'pfolder', help = 'specify a directory for images',
-                  default = None)
-parser.add_option('-n', '--nts', dest='maxTS', help='Enter number of time steps')
-parser.add_option('-u', '--pu', dest='pu', help='Enter uy for velocity images with only y vectors',
-		  default = None)
-parser.add_option('-v', '--vtuple', dest='vtuple', help='enter vmin and vmax default 0.01,0.00001',
-		  default = '0.01,0.00001')
-parser.add_option('-q', '--notquiet', dest='q', help='enter print interval for verbose',
-		  default = None)
-parser.add_option('-k', '--kernal', dest='kernal', help='computer kernal selection f or p; default is f',
-                  default = 'f')
+parser.add_option('-c', '--config', dest = 'config', help='configuration file name')
 (opts,args)=parser.parse_args()
 
+config = LBIO.Config(opts.config)
+# define defaults
+ModelDict = {'KERNAL': 'fortan'}
+PermeabilityDict = {'RHOT': 1.001, 'RHOB': 0.999, 'TAU': 1.0}
+OutputDict = {'VMIN': 0.00001, 'VMAX': 0.01, 'VERBOSE': False, 'IMAGE_SAVE_INTERVAL': None,
+              'IMAGE_SAVE_FOLDER': os.path.expanduser('~/Desktop/LBimages'), 'PLOT_Y_VELOCITY': False,
+              'SAVE_IMAGE': False}
+
+ModelDict = addIO(ModelDict, config.model_parameters())
+PermeabilityDict = addIO(PermeabilityDict, config.permeability_parameters())
+OutputDict = addIO(OutputDict, config.output_parameters())
 
 ####Open saved image data; set initial variables####
-vtuple = opts.vtuple.split(',')
-vmax = float(vtuple[0])
-vmin = float(vtuple[1])
-image = HDF5_readarray(opts.input, 'Binary_image')
-rhol = opts.rho.split(',')
-rho = float(rhol[0]) #add through opts.input
-delr = float(rhol[0])-float(rhol[1])
-rho1 = float(rhol[1])
+lbmodel = ModelDict['LBMODEL']
+vmax = OutputDict['VMAX']
+vmin = OutputDict['VMIN']
+image = HDF5_readarray(lbmodel, 'Binary_image')
+
+rhot = PermeabilityDict['RHOT'] #add through opts.input
+rhob = PermeabilityDict['RHOB']
+rhoarray = [rhot, rhob]
+delr = rhot - rhob
 cs = 0.577350269
 cs2 = cs*cs
 q = 9
 ny = len(image)
 nx = len(image[0])
-tau = float(opts.tau)
+tau = PermeabilityDict['TAU']
 vis = 1./3.*(tau-0.5)
-maxTS = int(opts.maxTS)
-kernal = opts.kernal
+niters = PermeabilityDict['NITERS']
+kernal = ModelDict['KERNAL'].lower()
+if OutputDict['SAVE_IMAGE'] is True:
+    check_directory(OutputDict['IMAGE_SAVE_FOLDER'])
+    image_name = OutputDict['IMAGE_SAVE_FOLDER'] + '/' + lbmodel
+                    
+    
 
 # weights are consistant with up,right == positive
 # down, left == negative. position 9 == 0.
 wi = np.array([1./9., 1./36., 1./9., 1./36., 1./9.,
                1./36., 1./9., 1./36., 4./9.])
 
-f = initial_distribution(q,ny,nx,rho,delr,vis,image, wi)
-if kernal == 'f':
-    for i in range(maxTS):
+f = initial_distribution(q, ny, nx, rhot, delr, vis, image, wi)
+
+if kernal == 'fortran':
+    for i in range(niters):
         # call fortran subroutines to run lattice boltzmann
         rho = LB.f_rho(f, ny, nx)
         uy, ux = LB.f_u(f, rho, ny, nx)
@@ -288,19 +301,20 @@ if kernal == 'f':
         fcol = LB.f_bounceback(f, fcol, image, ny, nx)
         f = LB.f_streaming(fcol, ny, nx)
 
-        if opts.pretty != None:   
-            if i%int(opts.pretty) == 0:
+        if OutputDict['IMAGE_SAVE_INTERVAL'] != None:   
+            if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
                 print '[Saving image: %i]' %i
                 u = [uy, ux]
-                pretty.velocity_image(u, image, opts.pfolder + '/' + opts.input,i, opts.pu, vmin, vmax)
+                pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
+                                      vmin, vmax)
 
-        if opts.q != None:
-            if i%int(opts.q) == 0:
+        if OutputDict['VERBOSE'] is not False:
+            if i%OutputDict['VERBOSE'] == 0:
                 print '[Iter: %i]' % i
 
-elif kernal == 'p':
-    for i in range(maxTS):
-        # call fortran subroutines to run lattice boltzmann
+elif kernal == 'python':
+    for i in range(niters):
+        # call python subroutines to run lattice boltzmann
         rho = py_rho(f)
         uy, ux = py_u(f, rho)
         eu = py_eu(uy, ux, ny, nx)
@@ -311,20 +325,24 @@ elif kernal == 'p':
         fcol = py_bounceback(f, fcol, image, ny, nx)
         f = py_streaming(fcol, ny, nx)
 
-        if opts.pretty != None:   
-            if i%int(opts.pretty) == 0:
+        if OutputDict['IMAGE_SAVE_INTERVAL'] != None:   
+            if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
                 print '[Saving image: %i]' %i
                 u = [uy, ux]
-                pretty.velocity_image(u, image, opts.pfolder + '/' + opts.input,i, opts.pu, vmin, vmax)
+                pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
+                                      vmin, vmax)
 
-        if opts.q != None:
-            if i%int(opts.q) == 0:
+        if OutputDict['VERBOSE'] is not False:
+            if i%OutputDict['VERBOSE'] == 0:
                 print '[Iter: %i]' % i
+
+else:
+    raise Exception('Kernal type not supported')
     
 macrho = py_rho(rho)/len(rho)
-mrho = mean_rho(macrho, rho1)
+mrho = mean_rho(macrho, rhob)
 u = [uy, ux]
 
-output = HDF5_write(mrho, tau, u, f, delr, float(rhol[0]), opts.input)
+output = HDF5_write(mrho, tau, u, f, delr, rhot, lbmodel)
 
 print "[Done]"

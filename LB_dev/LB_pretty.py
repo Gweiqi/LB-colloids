@@ -6,7 +6,7 @@ import sys
 def velocity_image(u, img, name, numit, vel, vmin, vmax):    
     temp = np.ones((len(img),len(img[0])))
     imgi = np.invert(img)
-    if vel == 'uy':
+    if vel == True:
 	uxy = u[0]
         uxy = np.array([uxy[i]*imgi[i] for i in range(len(uxy))])
 	img = np.array([temp[i]*img[i] for i in range(len(uxy))])
