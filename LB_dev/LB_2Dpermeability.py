@@ -86,19 +86,19 @@ def py_zhohe(f, rho, ny, nx):
     # calculate zho he boundary condions
     fzhe = np.zeros((9, ny, nx))
 
-    vy_lb = 1 - ((f[8] + f[0] + f[4] + 2*(f[5] + f[6] + f[7]))/rho)
-    vy_ub = -(1 - ((f[8] + f[0] + f[4] + 2*(f[1] + f[2] + f[3]))/rho))
+    vy_lb = 1. - ((f[8] + f[0] + f[4] + 2.*(f[5] + f[6] + f[7]))/rho)
+    vy_ub = -(1. - ((f[8] + f[0] + f[4] + 2.*(f[1] + f[2] + f[3]))/rho))
     
     # compute the unkown distributions on the upper domain
     # naming based on python zero based indexing
-    f1 = 1./6.*rho*vy_lb + (f[4] - f[0])/2 + f[5]
-    f2 = 2./3.*rho*vy_lb + f[6]
-    f3 = 1./6.*rho*vy_lb + (f[0] - f[4])/2 + f[7]
-
+    f1 = (1./6.)*rho*vy_lb + (f[4] - f[0])/2. + f[5]
+    f2 = (2./3.)*rho*vy_lb + f[6]
+    f3 = (1./6.)*rho*vy_lb + (f[0] - f[4])/2. + f[7]
+    
     # compute the unkown distribution on the lower domain
-    f5 = -1./6.*rho*vy_ub + (f[0] - f[4])/2 + f[1]
-    f6 = -2./3.*rho*vy_ub + f[2]
-    f7 = -1./6.*rho*vy_ub + (f[4] - f[0])/2 + f[3]
+    f5 = -(1./6.)*rho*vy_ub + (f[0] - f[4])/2. + f[1]
+    f6 = -(2./3.)*rho*vy_ub + f[2]
+    f7 = -(1./6.)*rho*vy_ub + (f[4] - f[0])/2. + f[3]
 
     for j in range(ny):
         for k in range(nx):
@@ -286,9 +286,10 @@ if OutputDict['SAVE_IMAGE'] is True:
 wi = np.array([1./9., 1./36., 1./9., 1./36., 1./9.,
                1./36., 1./9., 1./36., 4./9.])
 
-f = initial_distribution(q, ny, nx, rhot, delr, vis, image, wi)
+
 
 if kernal == 'fortran':
+    f = initial_distribution(q, ny, nx, rhot, delr, vis, image, wi)
     for i in range(niters):
         # call fortran subroutines to run lattice boltzmann
         rho = LB.f_rho(f, ny, nx)
@@ -297,14 +298,14 @@ if kernal == 'fortran':
         usqr = LB.f_usqr(uy, ux)
         feq = LB.f_feq(eu, rho, usqr, wi, cs2, ny, nx)
         fcol = LB.f_collision(f, feq, tau, ny, nx)
-        fcol = LB.f_zhohe(fcol, rho, ny, nx)
         fcol = LB.f_bounceback(f, fcol, image, ny, nx)
         f = LB.f_streaming(fcol, ny, nx)
-
+        f = LB.f_zhohe(f, rho, ny, nx)
+        
         if OutputDict['IMAGE_SAVE_INTERVAL'] != None:   
             if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
                 print '[Saving image: %i]' %i
-                u = [uy, ux]
+                u = [uy[1:-1], ux[1:-1]]
                 pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
                                       vmin, vmax)
 
@@ -313,6 +314,7 @@ if kernal == 'fortran':
                 print '[Iter: %i]' % i
 
 elif kernal == 'python':
+    f = initial_distribution(q, ny, nx, rhot, delr, vis, image, wi)
     for i in range(niters):
         # call python subroutines to run lattice boltzmann
         rho = py_rho(f)
@@ -321,14 +323,16 @@ elif kernal == 'python':
         usqr = py_usqr(uy, ux)
         feq = py_feq(eu, rho, usqr, wi, cs2, ny, nx)
         fcol = py_collision(f, feq, tau)
-        fcol = py_zhohe(fcol, rho, ny, nx)
+        # fcol = py_zhohe(fcol, rho, ny, nx)
         fcol = py_bounceback(f, fcol, image, ny, nx)
         f = py_streaming(fcol, ny, nx)
-
+        f = py_zhohe(f, rho, ny, nx)
+        
         if OutputDict['IMAGE_SAVE_INTERVAL'] != None:   
             if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
                 print '[Saving image: %i]' %i
-                u = [uy, ux]
+                uyp = uy * -1
+                u = [uyp[1:-1], ux[1:-1]]
                 pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
                                       vmin, vmax)
 
@@ -341,7 +345,13 @@ else:
     
 macrho = py_rho(rho)/len(rho)
 mrho = mean_rho(macrho, rhob)
-u = [uy, ux]
+
+if kernal == 'python':
+    uy = -1*uy
+    ux = ux
+    #image = np.flipud(image)
+
+u = [uy[1:-1], ux[1:-1]]
 
 output = HDF5_write(mrho, tau, u, f, delr, rhot, lbmodel)
 

@@ -265,6 +265,7 @@ class Output:
         self.header = header = '{:>8}{:>9}{:>9}{:>11}{:>14}{:>14}{:>14}{:>14}{:>14}\n'.format(
                                'colloid', 'flag', 'ts', 'totim', 'x-position', 'y-position',
                                'resolution', 'x-model', 'y-model')
+
         self.resolution = defaults['lbres']/defaults['gridref']
         
         #checks if file exists, and overwrites if overwrite is True!
@@ -302,7 +303,7 @@ class Output:
         else:    
             for idx in range(len(time)-1): # so we don't duplicate
                 for colloid_number in range(len(colloids)):
-                    output_string = '{:>8d}    {:5d}    {:07.5f}    {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}\n'.format(
+                    output_string = '{:>8d}    {:5d}    {:07.5f}    {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}    {:09.8f}\n'.format(
                                     colloid_number, colloids[colloid_number].flag[-1], time[idx] , totim[idx],
                                     colloids[colloid_number].xposition[idx],
                                     colloids[colloid_number].yposition[idx],

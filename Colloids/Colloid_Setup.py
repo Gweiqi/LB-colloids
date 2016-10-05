@@ -10,7 +10,7 @@ import sys
 class HDF5_reader:
     def __init__(self, HDF_name):
         hdf = H.File(HDF_name, 'r+')
-        self.imarray = hdf['Binary_image'][()]
+        self.imarray = hdf['Binary_image'][()][1:-1]
         self.uarray = hdf['results/uarray'][()]
         self.yu = hdf['results/uarray'][()][0]
         self.xu = hdf['results/uarray'][()][1]

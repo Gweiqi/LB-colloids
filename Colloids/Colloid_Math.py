@@ -56,8 +56,8 @@ class Velocity:
             params[kwarg] = kwargs[kwarg]
 
         ts = params['ts']
-        self.xvelocity = (LBx*gridres)*(ts/1.)
-        self.yvelocity = (LBy*gridres)*(ts/1.)
+        self.xvelocity = (LBx*gridres)*(1./ts)
+        self.yvelocity = (LBy*gridres)*(1./ts)
         
 
 class Gravity:
@@ -227,9 +227,9 @@ class Drag:
         self.rho_water = params['rho_water']
         self.rho_colloid = params['rho_colloid']
         self.epsilon = 6. * np.pi * self.viscosity * self.ac
-        self.Vcol = ((self.rho_colloid - self.rho_water)*((2*self.ac)**2)*9.81)/(18*self.viscosity)
-        self.drag_x = self.drag_xforce(ux, self.Vcol, self.epsilon, f3, f4)*xvArr
-        self.drag_y = self.drag_yforce(uy, self.Vcol, self.epsilon, f1, f2)*yvArr
+        self.Vcol = -((self.rho_colloid - self.rho_water)*((2*self.ac)**2)*9.81)/(18*self.viscosity)
+        self.drag_x = self.drag_xforce(ux, self.Vcol, self.epsilon, f3, f4)#*xvArr
+        self.drag_y = self.drag_yforce(uy, self.Vcol, self.epsilon, f1, f2)#*yvArr
         
     def drag_xforce(self, ux, Vx, epsilon, f3, f4):
         Fdt = (epsilon / f4) * ((f3 * ux) - Vx)

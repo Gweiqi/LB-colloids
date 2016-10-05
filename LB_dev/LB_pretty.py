@@ -27,7 +27,7 @@ def velocity_image(u, img, name, numit, vel, vmin, vmax):
     if whichpython[0] > 2 or whichpython[2] >=10:
         plt.imshow(uxy, cmap=mpl.cm.viridis, norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax))
     else:
-        plt.imshow(uxy, cmap=mpl.cm.jet, norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax))
+        plt.imshow(uxy, cmap=mpl.cm.jet)#, norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax))
     plt.colorbar()
     numit = str(numit)
     if len(numit) < 5:

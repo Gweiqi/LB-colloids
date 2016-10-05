@@ -29,14 +29,16 @@ class Colloid:
     xposition: (list, float) a list of x-position values normalized to the grid resolution
     yposition: (list, float) a list of y-position values normalized to grid resolution (top left is 0,0)
     """
-    def __init__(self, xlen, resolution):
-        self.xposition = [random.uniform(0.01,0.99)*xlen*resolution]
-        self.yposition = [0.]
+    def __init__(self, xlen, ylen, resolution):
+        self.xposition = [random.uniform(0.05,0.95)*xlen*resolution]
+        self.yposition = [-resolution]
         self.resolution = resolution
         self.storey = [self.yposition[0]]
         self.storex = [self.xposition[0]]
         self.time = [0]
         self.flag = [1]
+        self.ylen = ylen
+        self.xlen = xlen
 
     def _append_xposition(self, item):
         self.xposition.append(item)
@@ -93,11 +95,18 @@ class Colloid:
         # if colloid breaks through domain change flag to 3  
             try:
                 idxry = int(iry//-self.resolution)
-
+                idxrx = int(irx//self.resolution)
+                xv = xvelocity[idxry][idxrx]
+                yv = yvelocity[idxry][idxrx]
+                
             except IndexError:
-                self._append_flag(3)
-                self._append_xposition(float("NaN"))
-                self._append_yposition(float("NaN"))
+                if idxry >= self.ylen:
+                    self._append_flag(3)
+                    self._append_xposition(float("NaN"))
+                    self._append_yposition(float("NaN"))
+                    return
+                else:
+                    raise Exception('WTF?')
 
             xv = xvelocity[idxry][idxrx]
             yv = yvelocity[idxry][idxrx]
@@ -107,11 +116,12 @@ class Colloid:
             deltary = yv*ts
             rx = irx + deltarx
             ry = iry + deltary
+            
             # Use a check to make sure colloid does not leave domain on first iteration
             # move colloid to a new location to if it leaves domain in the vertical y-direction
-            if ry >= 0:
+            if ry >= 0.:
                 rx = random.uniform(0.05,0.95)*xlen*self.resolution
-                ry = 0.
+                ry = -self.resolution
             else:
                 pass
 
@@ -217,7 +227,7 @@ if __name__ == '__main__':
 
     LBy = cs.LBVArray(LB.yu, LB.imarray)
     LBx = cs.LBVArray(LB.xu, LB.imarray)
-
+    
     #### interpolate over grid array and interpolate veloctity profiles ####
     #Col_vp = interp_v(LBvp, gridsplit)
     LBy = cs.InterpV(LBy, gridsplit)
@@ -242,7 +252,8 @@ if __name__ == '__main__':
     cfactor = cm.Gap(xArr, yArr)
 
     # for calculations we need ts = 1., adjust later
-    velocity = cm.Velocity(LBx, LBy, gridres)
+   
+    velocity = cm.Velocity(LBx, LBy, gridres, **PhysicalDict)
     LBx = velocity.xvelocity
     LBy = velocity.yvelocity
 
@@ -258,9 +269,9 @@ if __name__ == '__main__':
     bouyancy = cm.Bouyancy(**PhysicalDict)
 
     physicalx = brownian.brownian_x + drag_forces.drag_x
-    physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy
+    physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy #brownian.brownian_y +
 
-    dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx
+    dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx 
     dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
 
     fx = dlvox + physicalx
@@ -269,16 +280,16 @@ if __name__ == '__main__':
     vx = cm.ForceToVelocity(fx, **PhysicalDict)
     vy = cm.ForceToVelocity(fy, **PhysicalDict)
 
-    # adjust LBvelocity by timestep, move this to cm.velocity
-    velocity = cm.Velocity(LBx, LBy, gridres, **PhysicalDict)
+    # get LB velocity to add to the physical forces calculated.
     LBx = velocity.xvelocity
     LBy = velocity.yvelocity
-    
+
     vx = vx.velocity + LBx
     vy = vy.velocity + LBy
-    
+
+    ylen = len(Col_img)
     xlen = len(Col_img[0])
-    x = [Colloid(xlen, gridres) for i in range(ncols)]
+    x = [Colloid(xlen, ylen, gridres) for i in range(ncols)]
     
     timer = TrackTime(ts)
     while timer.time <= iters:
