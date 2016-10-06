@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import matplotlib as mpl
 import Colloid_Setup as cs
 import Colloid_Math as cm
@@ -171,6 +172,52 @@ class TrackTime:
     def print_time(self):
         print(self.timer[-1], "%.3f" % self.totim[-1])
 
+def fmt(x, pos):
+    # functionformatter for matplotlib graphs
+    a, b = '{:.2e}'.format(x).split('e')
+    b = int(b)
+    return r'${} \times 10^{{{}}}$'.format(a, b)
+
+def run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isitpathline, isitendpoint):
+    """
+    definition to allow the use of multiple ionic strengths ie. attachment then flush, etc....
+    """
+    while timer.time <= iters:
+        # update colloid position and time
+        for col in x:
+            col.update_position(vx, vy, ts)
+        timer.update_time()
+
+        # check for a printing prompt
+        if timer.time%print_time == 0.:
+            timer.print_time()
+            
+        # check store_times and strip younger time steps from memory
+        if timer.time%store_time == 0.:
+            if isitpathline is True:
+                pathline.write_output(timer, x)
+                timer.strip_time()
+                for col in x:
+                    col.store_position(timer) # use this for plotting functionality
+                    col.strip_positions()
+            
+            elif isittimeseries is True:
+                for col in x:
+                    col.store_position(timer) # use this for plotting functionality
+                    col.strip_positions()
+                timeseries.write_output(timer, x, pathline=False)
+
+            else:
+                col.store_positions(timer)
+                col.strip_positions()
+                
+        # check if user wants an endpoint file
+        if timer.time == iters:
+            if isitendpoint is True:
+                for col in x:
+                    col.store_position(timer)
+                    col.strip_positions()
+                endpoint.write_output(timer, x, pathline=False)
 
 if __name__ == '__main__':
     config = IO.Config('Synthetic.config')
@@ -290,49 +337,58 @@ if __name__ == '__main__':
     ylen = len(Col_img)
     xlen = len(Col_img[0])
     x = [Colloid(xlen, ylen, gridres) for i in range(ncols)]
-    
+
+    #start model timer
     timer = TrackTime(ts)
-    while timer.time <= iters:
-        # update colloid position and time
-        for col in x:
-            col.update_position(vx, vy, ts)
-        timer.update_time()
+    run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isitpathline, isitendpoint)
 
-        # check for a printing prompt
-        if timer.time%print_time == 0.:
-            timer.print_time()
-            
-        # check store_times and strip younger time steps from memory
-        if timer.time%store_time == 0.:
-            if isitpathline is True:
-                pathline.write_output(timer, x)
-                timer.strip_time()
-                for col in x:
-                    col.store_position(timer) # use this for plotting functionality
-                    col.strip_positions()
-            
-            elif isittimeseries is True:
-                for col in x:
-                    col.store_position(timer) # use this for plotting functionality
-                    col.strip_positions()
-                timeseries.write_output(timer, x, pathline=False)
 
-            else:
-                col.store_positions(timer)
-                col.strip_positions()
-                
-        # check if user wants an endpoint file
-        if timer.time == iters:
-            if isitendpoint is True:
-                for col in x:
-                    col.store_position(timer)
-                    col.strip_positions()
-                endpoint.write_output(timer, x, pathline=False)
+    if True:
+        config2 = IO.Config('Synthetic2.config')
+        ModelDict = config2.model_parameters()
+        PhysicalDict = config2.physical_parameters()
+        ChemicalDict = config2.chemical_parameters()
 
+        iters = ModelDict['iters']
+
+        drag_forces = cm.Drag(LBx, LBy, cfactor.f1, cfactor.f2, cfactor.f3,
+                          cfactor.f4, xvArr, yvArr, **PhysicalDict)
+
+        brownian = cm.Brownian(xArr, yArr, cfactor.f1, cfactor.f4, **PhysicalDict)
+
+        dlvo = cm.DLVO(xArr, yArr, xvArr=xvArr, yvArr=yvArr, **ChemicalDict)
+
+        gravity = cm.Gravity(**PhysicalDict)
+        bouyancy = cm.Bouyancy(**PhysicalDict)
+
+        physicalx = brownian.brownian_x + drag_forces.drag_x
+        physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy #brownian.brownian_y +
+
+        dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx 
+        dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
+
+        fx = dlvox + physicalx
+        fy = dlvoy + physicaly
+    
+        vx = cm.ForceToVelocity(fx, **PhysicalDict)
+        vy = cm.ForceToVelocity(fy, **PhysicalDict)
+
+        LBx = velocity.xvelocity
+        LBy = velocity.yvelocity
+
+        vx = vx.velocity + LBx
+        vy = vy.velocity + LBy
+
+        run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isitpathline, isitendpoint)
+        # recalculate all physical chemical forces and continue running model
+
+        
     if OutputDict['plot'] is True:  
         plt.imshow(vy, interpolation='nearest', vmin=-1e-13, vmax=1e-13)
         for col in x:
             plt.plot(np.array(col.storex)/gridres, np.array(col.storey)/-gridres, 'o',
                      ms=8)
-        plt.colorbar()
+        plt.xlim([0, xlen])
+        plt.ylim([ylen, 0])
+        plt.colorbar(format=ticker.FuncFormatter(fmt)).set_label('m/s', rotation=270)
         plt.show()
