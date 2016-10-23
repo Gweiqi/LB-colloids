@@ -342,8 +342,8 @@ if __name__ == '__main__':
     timer = TrackTime(ts)
     run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isitpathline, isitendpoint)
 
-
-    if True:
+    blah = True
+    if blah is True:
         config2 = IO.Config('Synthetic2.config')
         ModelDict = config2.model_parameters()
         PhysicalDict = config2.physical_parameters()
