@@ -6,7 +6,6 @@ import Colloid_Math as cm
 import h5py as H
 import sys
 
-
 class HDF5_reader:
     def __init__(self, HDF_name):
         hdf = H.File(HDF_name, 'r+')
@@ -85,15 +84,13 @@ class Gridarray:
         # Saner(?) method which does not raise warnings from Python 2.7.12
         # Forward compatable with Python 3.5.2
         for i in range(len(line)):
-            if line[i] >= 0.5:
-                vline[i] = 1.
-                line[i] = 1.
+            if line[i] > 0.:
+                vline[i] = 1
+                line[i] = 1
             else:
-                vline[i] = 0.
-                line[i] = 0.
+                vline[i] = 0
+                line[i] = 0
         np.array(line)
-        line[line < 1] = 0.
-        line[line > 1] = 0.
         
         # create an array of pore boundaries from binary system
         boundary= np.where(np.abs(np.diff(line)) >= 1)[0]
@@ -142,12 +139,12 @@ class Gridarray:
         '''
         
         for i in range(len(line)):
-            if line[i] >= 0.5:
-                vline[i] = 1.
-                line[i] = 1.
+            if line[i] > 0:
+                vline[i] = 1
+                line[i] = 1
             else:
-                vline[i] = 0.
-                line[i] = 0.
+                vline[i] = 0
+                line[i] = 0
         np.array(line)
         
         # create an array of pore boundaries from binary system
@@ -206,15 +203,22 @@ def LBVArray(LBv, img):
     print vel.shape
     return vel
 
-def InterpV(LBv, gridsplit):
+def InterpV(LBv, gridsplit, img=False):
     ylen = len(LBv)
     xlen = len(LBv[0])
     xindex = np.arange(0,xlen)
     yindex = np.arange(0,ylen)
-    xnew = np.arange(0, xlen-1+(1./gridsplit), 1./gridsplit)
-    ynew = np.arange(0, ylen-1+(1./gridsplit), 1./gridsplit)
+    ifactor = 1./gridsplit
+    xnew = np.arange(0, xlen-1+(ifactor), ifactor)
+    ynew = np.arange(0, ylen-1+(ifactor), ifactor)
     f = interpolate.interp2d(xindex, yindex, LBv, kind='linear')
     znew = f(xnew, ynew)
+
+    if img == True:
+        # correct pore boundaries from interpolation
+        znew[znew >= ifactor] = 1
+        znew[znew < ifactor] = 0
+
     return znew
 
 

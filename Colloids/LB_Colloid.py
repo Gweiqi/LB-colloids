@@ -268,7 +268,7 @@ if __name__ == '__main__':
     else:
         store_time = OutputDict['store_time']
 
-    print(store_time)
+    print(ncols)
     # get data from LB Model
     LB = cs.HDF5_reader(modelname)
 
@@ -279,8 +279,8 @@ if __name__ == '__main__':
     #Col_vp = interp_v(LBvp, gridsplit)
     LBy = cs.InterpV(LBy, gridsplit)
     LBx = cs.InterpV(LBx, gridsplit)
-    Col_img = cs.InterpV(LB.imarray, gridsplit)
-
+    Col_img = cs.InterpV(LB.imarray, gridsplit, img=True)
+    
     # Use grids function to measure distance from pore space and correct
     # boundaries for interpolation effects. 
     Grids = cs.Gridarray(Col_img, gridres, gridsplit)
@@ -342,7 +342,7 @@ if __name__ == '__main__':
     timer = TrackTime(ts)
     run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isitpathline, isitendpoint)
 
-    blah = True
+    blah = False
     if blah is True:
         config2 = IO.Config('Synthetic2.config')
         ModelDict = config2.model_parameters()
@@ -383,12 +383,29 @@ if __name__ == '__main__':
         # recalculate all physical chemical forces and continue running model
 
         
-    if OutputDict['plot'] is True:  
-        plt.imshow(vy, interpolation='nearest', vmin=-1e-13, vmax=1e-13)
+    if OutputDict['plot'] is True:
+        # set up option for vy vs. LBy plotting
+        # re-interpolate Coloid image object to get binary array
+        Col_img = cs.InterpV(LB.imarray, gridsplit, img=True)
+        LBy[Col_img == 1] = np.nan
+        LBy = np.ma.masked_invalid(LBy)
+
+        # setup meshgrid for precise plotting
+        xx = np.arange(xlen + 1)
+        xx = np.tile(xx, (ylen + 1, 1))
+
+        yy = np.array([np.arange(ylen + 1)])
+        yy = np.tile(yy.T, (1, xlen + 1))
+                     
+        plt.pcolormesh(xx, yy, LBy, cmap='jet_r')
+        
         for col in x:
             plt.plot(np.array(col.storex)/gridres, np.array(col.storey)/-gridres, 'o',
                      ms=8)
         plt.xlim([0, xlen])
         plt.ylim([ylen, 0])
-        plt.colorbar(format=ticker.FuncFormatter(fmt)).set_label('m/s', rotation=270)
+    
+        cbar = plt.colorbar(format=ticker.FuncFormatter(fmt))
+        cbar.set_label('m/s', rotation=270)
+    
         plt.show()
