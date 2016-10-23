@@ -19,7 +19,7 @@ def initial_distribution(q,ny,nx,rho,rhoI,vis,img,wi):
     for j in range(q):
         for i in range(ny):
             fd[j,i,:] = (rho-(rhoI * (i/(ny-1.))))* wi[j]
-    fd = initiate_model(fd,rho,vis)    
+    # fd = initiate_model(fd,rho,vis)    
     ###sets solid boundaries from image data####
     #fd = set_solids(fd,img)
     return fd
@@ -27,13 +27,14 @@ def initial_distribution(q,ny,nx,rho,rhoI,vis,img,wi):
 def initiate_model(fd,rho,vis):
     ###function solves Zho He boundary condition against a top boundary###
     # gives the model it's initial kick to start running! Could develop a fortran version
+    # depreciated, not used with gravity driven flow
     fd[6,0,:] = fd[2,0,:]*2./3.*rho*vis
     fd[5,0,:] = fd[1,0,:]+ 0.5*rho*vis
     fd[7,0,:] = fd[3,0,:]+ 0.5*rho*vis
     return fd
 
 def set_solids(fs,img):
-    ###sets/reinforces solid boundaries from image data####
+    ###sets/reinforces solid boundaries from image data, not used####
     solids = np.zeros((q,ny,nx))
     for i in range(q):
         fs[i,img] = solids[i,img]
@@ -55,9 +56,10 @@ def py_usqr(uy, ux):
     usqr = uy*uy + ux*ux
     return usqr
 
-def py_eu(uy, ux, ny, nx):
+def py_eu(uy, ux, tau, g, ny, nx):
     # calculate the einstein velocities of lattice boltzmann domain
     eu = np.zeros((9, ny, nx))
+    uy = uy - (tau*g)
     eu[0, :, :] = ux
     eu[1, :, :] = ux + uy
     eu[2, :, :] = uy
@@ -83,7 +85,7 @@ def py_collision(f, feq, tau):
     return fcol
 
 def py_zhohe(f, rho, ny, nx):
-    # calculate zho he boundary condions
+    # calculate zho he boundary condions, not used at present.
     fzhe = np.zeros((9, ny, nx))
 
     vy_lb = 1. - ((f[8] + f[0] + f[4] + 2.*(f[5] + f[6] + f[7]))/rho)
@@ -247,7 +249,7 @@ parser.add_option('-c', '--config', dest = 'config', help='configuration file na
 config = LBIO.Config(opts.config)
 # define defaults
 ModelDict = {'KERNAL': 'fortan'}
-PermeabilityDict = {'RHOT': 1.001, 'RHOB': 0.999, 'TAU': 1.0}
+PermeabilityDict = {'RHOT': 1.001, 'RHOB': 0.999, 'TAU': 1.0, 'GRAVITY': 0.001}
 OutputDict = {'VMIN': 0.00001, 'VMAX': 0.01, 'VERBOSE': False, 'IMAGE_SAVE_INTERVAL': None,
               'IMAGE_SAVE_FOLDER': os.path.expanduser('~/Desktop/LBimages'), 'PLOT_Y_VELOCITY': False,
               'SAVE_IMAGE': False}
@@ -269,6 +271,7 @@ delr = rhot - rhob
 cs = 0.577350269
 cs2 = cs*cs
 q = 9
+g = PermeabilityDict['GRAVITY']
 ny = len(image)
 nx = len(image[0])
 tau = PermeabilityDict['TAU']
@@ -294,18 +297,17 @@ if kernal == 'fortran':
         # call fortran subroutines to run lattice boltzmann
         rho = LB.f_rho(f, ny, nx)
         uy, ux = LB.f_u(f, rho, ny, nx)
-        eu = LB.f_eu(uy, ux, ny, nx)
+        eu = LB.f_eu(uy, ux, tau, g, ny, nx)
         usqr = LB.f_usqr(uy, ux)
         feq = LB.f_feq(eu, rho, usqr, wi, cs2, ny, nx)
         fcol = LB.f_collision(f, feq, tau, ny, nx)
         fcol = LB.f_bounceback(f, fcol, image, ny, nx)
         f = LB.f_streaming(fcol, ny, nx)
-        f = LB.f_zhohe(f, rho, ny, nx)
         
         if OutputDict['IMAGE_SAVE_INTERVAL'] != None:   
             if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
                 print '[Saving image: %i]' %i
-                u = [uy[1:-1], ux[1:-1]]
+                u = [uy[:], ux[:]]
                 pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
                                       vmin, vmax)
 
@@ -319,20 +321,17 @@ elif kernal == 'python':
         # call python subroutines to run lattice boltzmann
         rho = py_rho(f)
         uy, ux = py_u(f, rho)
-        eu = py_eu(uy, ux, ny, nx)
+        eu = py_eu(uy, ux, tau, g, ny, nx)
         usqr = py_usqr(uy, ux)
         feq = py_feq(eu, rho, usqr, wi, cs2, ny, nx)
         fcol = py_collision(f, feq, tau)
-        # fcol = py_zhohe(fcol, rho, ny, nx)
         fcol = py_bounceback(f, fcol, image, ny, nx)
         f = py_streaming(fcol, ny, nx)
-        f = py_zhohe(f, rho, ny, nx)
         
         if OutputDict['IMAGE_SAVE_INTERVAL'] != None:   
             if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
                 print '[Saving image: %i]' %i
-                uyp = uy * -1
-                u = [uyp[1:-1], ux[1:-1]]
+                u = [uy[:], ux[:]]
                 pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
                                       vmin, vmax)
 
@@ -346,12 +345,7 @@ else:
 macrho = py_rho(rho)/len(rho)
 mrho = mean_rho(macrho, rhob)
 
-if kernal == 'python':
-    uy = -1*uy
-    ux = ux
-    #image = np.flipud(image)
-
-u = [uy[1:-1], ux[1:-1]]
+u = [uy[:], ux[:]]
 
 output = HDF5_write(mrho, tau, u, f, delr, rhot, lbmodel)
 

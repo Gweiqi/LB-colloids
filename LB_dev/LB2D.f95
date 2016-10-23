@@ -34,20 +34,22 @@ subroutine f_usqr(uy, ux, ylen, xlen, usqr)
   usqr = uy*uy + ux*ux
 end subroutine f_usqr
 
-subroutine f_eu(uy, ux, ylen, xlen, eu)
+subroutine f_eu(uy, ux, tau, g, ylen, xlen, eu)
   ! function to apply eigenvectors to LB velocities in calculating eq. distribution
   integer, intent(in)							:: ylen, xlen
-  real, dimension(ylen, xlen), intent(in)		:: uy, ux
-  real, dimension(9, ylen, xlen), intent(out)	:: eu
-  
+  real, intent(in)							:: tau, g
+  real, dimension(ylen, xlen), intent(in)				:: uy, ux
+  real, dimension(9, ylen, xlen), intent(out)				:: eu
+  real, dimension(ylen, xlen)						:: duy
+  duy = uy - (tau*g)
   eu(1, :, :) = ux
-  eu(2, :, :) = ux + uy
-  eu(3, :, :) = uy
-  eu(4, :, :) = uy - ux
+  eu(2, :, :) = ux + duy
+  eu(3, :, :) = duy
+  eu(4, :, :) = duy - ux
   eu(5, :, :) = -ux
-  eu(6, :, :) = -ux - uy
-  eu(7, :, :) = -uy
-  eu(8, :, :) = ux - uy
+  eu(6, :, :) = -ux - duy
+  eu(7, :, :) = -duy
+  eu(8, :, :) = ux - duy
   eu(9, :, :) = ux * 0.
   
 end subroutine f_eu

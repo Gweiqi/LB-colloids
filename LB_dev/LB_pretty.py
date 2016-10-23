@@ -19,15 +19,18 @@ def velocity_image(u, img, name, numit, vel, vmin, vmax):
     	img = np.ma.masked_where(img == 0, img)
     	uxy = np.ma.masked_where(uxy == 0, uxy)
 
-    whichpython = sys.version_info
     
     plt.imshow(img, cmap=mpl.cm.Dark2_r, interpolation='nearest')
     plt.tick_params(axis='both', which='both',bottom='off',top='off',
                     labelbottom='off',right='off',left='off', labelleft='off')
-    if whichpython[0] > 2 or whichpython[2] >=10:
-        plt.imshow(uxy, cmap=mpl.cm.viridis, norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax))
+
+    
+    cmap = set_colormap(vel)
+    # if we plot y-velocity do not use log-normal distribution of colors
+    if vel == True:	    
+        plt.imshow(uxy, cmap=cmap, vmin=vmin, vmax=vmax)
     else:
-        plt.imshow(uxy, cmap=mpl.cm.jet)#, norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax))
+        plt.imshow(uxy, cmap=mpl.cm.jet, norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax))
     plt.colorbar()
     numit = str(numit)
     if len(numit) < 5:
@@ -36,4 +39,30 @@ def velocity_image(u, img, name, numit, vel, vmin, vmax):
     Figname = name[:-5]+'_'+numit+'.png'
     plt.savefig(Figname)
     plt.close()
+
+def set_colormap(yvel):
+    """
+    Set colormap based on python version and datatype
+
+    Input:
+    -----
+    yvel: (bool) Are we plotting a yvelocity image
+
+    Returns:
+    --------
+    cmap: (object) Matplotlib colormap object
+    """
+    whichpython = sys.version_info
+    if yvel == True:
+        if whichpython[0] > 2 or whichpython[2] >=10:
+	    cmap = mpl.cm.viridis_r
+	else:
+	    cmap = mpl.cm.jet_r
+    else:
+        # set the color map based on python version
+        if whichpython[0] > 2 or whichpython[2] >=10:
+            cmap = mpl.cm.viridis
+        else:
+            cmap = mpl.cm.jet
+    return cmap
     
