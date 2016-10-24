@@ -20,19 +20,20 @@ class Config:
         '''
         self.config = self._reader(fname)
         self._strtype = ('LBMODEL', 'ENDPOINT', 'PATHLINE', 'TIMESERIES')
-        self._inttype = ('NCOLS', 'ITERS', 'STORE_TIME', 'PRINT_TIME')
+        self._inttype = ('NCOLS', 'ITERS', 'STORE_TIME', 'PRINT_TIME', 'NCONFIG')
         self._floattype = ('LBRES', 'GRIDREF', 'AC', 'TIMESTEP', 'TEMPERATURE',
                            'RHO_WATER', 'RHO_COLLOID', 'VISCOSITY', 'I_INITIAL',
                            'I', 'EPSILON_R', 'SHEER_PLANE', 'LVDWST_WATER',
                            'LVDWST_COLLOID', 'LVDWST_SOLID', 'ZETA_COLLOID',
                            'ZETA_SOLID', 'PSI+_COLLOID', 'PSI+_WATER', 'PSI+_SOLID',
                            'PSI-_COLLOID', 'PSI-_WATER', 'PSI-_SOLID')
-        self._booltype = ('PLOT', 'ADJUST_ZETA', 'OVERWRITE')
+        self._booltype = ('PLOT', 'ADJUST_ZETA', 'OVERWRITE', 'MULTIPLE_CONFIG')
         self._dicttype = ('CONCENTRATION', 'VALENCE')
         self._required = ('LBMODEL', 'NCOLS', 'ITERS', 'LBRES', 'GRIDREF',
                           'TS')
         self.validmodelparams = ('LBMODEL', 'NCOLS', 'ITERS', 'LBRES',
-                                 'GRIDREF', 'AC', 'TIMESTEP', 'TEMPERATURE')
+                                 'GRIDREF', 'AC', 'TIMESTEP', 'TEMPERATURE',
+                                 'MULTIPLE_CONFIG', 'NCONFIG')
         self.validphysicalparams = ('RHO_WATER', 'RHO_COLLOID', 'VISCOSITY')
         self.validchemicalparams = ('CONCENTRATION', 'ADJUST_ZETA', 'I_INITIAL',
                                     'I', 'EPSILON_R', 'VALENCE', 'SHEER_PLANE',

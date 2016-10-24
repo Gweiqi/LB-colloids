@@ -9,7 +9,7 @@ import sys
 class HDF5_reader:
     def __init__(self, HDF_name):
         hdf = H.File(HDF_name, 'r+')
-        self.imarray = hdf['Binary_image'][()][1:-1]
+        self.imarray = hdf['Binary_image'][()]
         self.uarray = hdf['results/uarray'][()]
         self.yu = hdf['results/uarray'][()][0]
         self.xu = hdf['results/uarray'][()][1]
@@ -200,7 +200,7 @@ def LBVArray(LBv, img):
     vel = np.zeros((len(LBv),len(LBv[0])))
     invert = np.invert(img)
     vel = np.array([LBv[i]*invert[i] for i in range(len(LBv))])
-    print vel.shape
+    print(vel.shape)
     return vel
 
 def InterpV(LBv, gridsplit, img=False):
@@ -216,8 +216,8 @@ def InterpV(LBv, gridsplit, img=False):
 
     if img == True:
         # correct pore boundaries from interpolation
-        znew[znew >= ifactor] = 1
-        znew[znew < ifactor] = 0
+        znew[znew >= ifactor] = 1# 0] = 1# ifactor*gridsplit/2.] = 1
+        znew[znew < ifactor] = 0# 0] = 0# ifactor*gridsplit/2.] = 0
 
     return znew
 

@@ -107,8 +107,12 @@ class Colloid:
                     self._append_yposition(float("NaN"))
                     return
                 else:
-                    raise Exception('WTF?')
-
+                    self._append_flag(2)
+                    self._append_xposition(irx)
+                    self._append_yposition(iry)
+                    #print(ts)
+                    #raise Exception('WTF?')
+                    return
             xv = xvelocity[idxry][idxrx]
             yv = yvelocity[idxry][idxrx]
         
@@ -235,6 +239,11 @@ if __name__ == '__main__':
     iters = ModelDict['iters']
     ncols = ModelDict['ncols']
 
+    if 'multiple_config' in ModelDict:
+        assert 'nconfig' in ModelDict
+    else:
+        ModelDict['multiple_config'] = False
+
     # setup output and boolean flags.    
     if 'print_time' in OutputDict:
         print_time = OutputDict['print_time']
@@ -303,7 +312,7 @@ if __name__ == '__main__':
     velocity = cm.Velocity(LBx, LBy, gridres, **PhysicalDict)
     LBx = velocity.xvelocity
     LBy = velocity.yvelocity
-
+    
     # Initial setup block to estimate colloid velocity for drag_force calc. 
     drag_forces = cm.Drag(LBx, LBy, cfactor.f1, cfactor.f2, cfactor.f3,
                           cfactor.f4, xvArr, yvArr, **PhysicalDict)
@@ -330,10 +339,14 @@ if __name__ == '__main__':
     # get LB velocity to add to the physical forces calculated.
     LBx = velocity.xvelocity
     LBy = velocity.yvelocity
+    
+    vx = LBx #vx.velocity + LBx
+    vy = LBy # vy.velocity + LBy
 
-    vx = vx.velocity + LBx
-    vy = vy.velocity + LBy
-
+    #Col_img = cs.InterpV(LB.imarray, gridsplit, img=True)
+    #vx[Col_img == 1.] = np.nan
+    #vy[Col_img == 1.] = np.nan
+    
     ylen = len(Col_img)
     xlen = len(Col_img[0])
     x = [Colloid(xlen, ylen, gridres) for i in range(ncols)]
@@ -342,45 +355,45 @@ if __name__ == '__main__':
     timer = TrackTime(ts)
     run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isitpathline, isitendpoint)
 
-    blah = False
-    if blah is True:
-        config2 = IO.Config('Synthetic2.config')
-        ModelDict = config2.model_parameters()
-        PhysicalDict = config2.physical_parameters()
-        ChemicalDict = config2.chemical_parameters()
+    if ModelDict['multiple_config'] is True:
+        for confignumber in range(1, ModelDict['nconfig']):
+            config = IO.Config('Synthetic%i.config' % confignumber)
+            ModelDict = config.model_parameters()
+            PhysicalDict = config.physical_parameters()
+            ChemicalDict = config.chemical_parameters()
 
-        iters = ModelDict['iters']
+            iters = ModelDict['iters']
+            
+            drag_forces = cm.Drag(LBx, LBy, cfactor.f1, cfactor.f2, cfactor.f3,
+                                  cfactor.f4, xvArr, yvArr, **PhysicalDict)
 
-        drag_forces = cm.Drag(LBx, LBy, cfactor.f1, cfactor.f2, cfactor.f3,
-                          cfactor.f4, xvArr, yvArr, **PhysicalDict)
+            brownian = cm.Brownian(xArr, yArr, cfactor.f1, cfactor.f4, **PhysicalDict)
 
-        brownian = cm.Brownian(xArr, yArr, cfactor.f1, cfactor.f4, **PhysicalDict)
+            dlvo = cm.DLVO(xArr, yArr, xvArr=xvArr, yvArr=yvArr, **ChemicalDict)
 
-        dlvo = cm.DLVO(xArr, yArr, xvArr=xvArr, yvArr=yvArr, **ChemicalDict)
+            gravity = cm.Gravity(**PhysicalDict)
+            bouyancy = cm.Bouyancy(**PhysicalDict)
 
-        gravity = cm.Gravity(**PhysicalDict)
-        bouyancy = cm.Bouyancy(**PhysicalDict)
+            physicalx = brownian.brownian_x + drag_forces.drag_x
+            physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy #brownian.brownian_y +
 
-        physicalx = brownian.brownian_x + drag_forces.drag_x
-        physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy #brownian.brownian_y +
+            dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx 
+            dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
 
-        dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx 
-        dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
-
-        fx = dlvox + physicalx
-        fy = dlvoy + physicaly
+            fx = dlvox + physicalx
+            fy = dlvoy + physicaly
     
-        vx = cm.ForceToVelocity(fx, **PhysicalDict)
-        vy = cm.ForceToVelocity(fy, **PhysicalDict)
+            vx = cm.ForceToVelocity(fx, **PhysicalDict)
+            vy = cm.ForceToVelocity(fy, **PhysicalDict)
+            
+            LBx = velocity.xvelocity
+            LBy = velocity.yvelocity
+            
+            vx = LBx #vx.velocity + LBx
+            vy = LBy # vy.velocity + LBy
 
-        LBx = velocity.xvelocity
-        LBy = velocity.yvelocity
-
-        vx = vx.velocity + LBx
-        vy = vy.velocity + LBy
-
-        run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isitpathline, isitendpoint)
-        # recalculate all physical chemical forces and continue running model
+            run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isitpathline, isitendpoint)
+            # recalculate all physical chemical forces and continue running model
 
         
     if OutputDict['plot'] is True:
@@ -409,3 +422,15 @@ if __name__ == '__main__':
         cbar.set_label('m/s', rotation=270)
     
         plt.show()
+
+        plt.pcolormesh(xx, yy, LBx, cmap='jet')
+        for col in x:
+            plt.plot(np.array(col.storex)/gridres, np.array(col.storey)/-gridres, 'o',
+                     ms=8)
+        plt.xlim([0, xlen])
+        plt.ylim([ylen, 0])
+        cbar = plt.colorbar(format=ticker.FuncFormatter(fmt))
+        cbar.set_label('m/s', rotation=270)
+    
+        plt.show()
+        

@@ -14,8 +14,7 @@ do
     python LB_2Dimage.py -c Synth100_$i.config
 done
 
-#for i in {1..5};
-#do
-#    python LB_2Dgravity.py -c Synth100_$i.config
-#done
-python LB_2Dgravity.py -c Synth100_1.config
+for i in {1..5};
+do
+    python LB_2Dpermeability.py -c Synth100_$i.config
+done

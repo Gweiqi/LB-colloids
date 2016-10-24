@@ -48,7 +48,7 @@ def py_rho(f):
 def py_u(f, rho):
     # calculates velocity in the y-direction and x-direction
     uy = ((f[1] + f[2] + f[3]) - (f[5] + f[6] + f[7]))/rho
-    ux = ((f[0] + f[1] + f[7]) - (f[3] + f[4] + f[5]))/rho
+    ux = ((f[3] + f[4] + f[5]) - (f[0] + f[1] + f[7]))/rho
     return uy, ux
 
 def py_usqr(uy, ux):
