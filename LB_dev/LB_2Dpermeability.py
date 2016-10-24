@@ -307,7 +307,7 @@ if kernal == 'fortran':
         if OutputDict['IMAGE_SAVE_INTERVAL'] != None:   
             if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
                 print '[Saving image: %i]' %i
-                u = [uy[:], ux[:]]
+                u = [uy[:], ux[:]*-1]
                 pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
                                       vmin, vmax)
 
@@ -331,7 +331,7 @@ elif kernal == 'python':
         if OutputDict['IMAGE_SAVE_INTERVAL'] != None:   
             if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
                 print '[Saving image: %i]' %i
-                u = [uy[:], ux[:]]
+                u = [uy[:], ux[:]*-1]
                 pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
                                       vmin, vmax)
 
@@ -345,7 +345,7 @@ else:
 macrho = py_rho(rho)/len(rho)
 mrho = mean_rho(macrho, rhob)
 
-u = [uy[:], ux[:]]
+u = [uy[:], ux[:]*-1]
 
 output = HDF5_write(mrho, tau, u, f, delr, rhot, lbmodel)
 
