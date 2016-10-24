@@ -340,8 +340,8 @@ if __name__ == '__main__':
     LBx = velocity.xvelocity
     LBy = velocity.yvelocity
     
-    vx = LBx #vx.velocity + LBx
-    vy = LBy # vy.velocity + LBy
+    vx = vx.velocity + LBx
+    vy = vy.velocity + LBy
 
     #Col_img = cs.InterpV(LB.imarray, gridsplit, img=True)
     #vx[Col_img == 1.] = np.nan
@@ -389,8 +389,8 @@ if __name__ == '__main__':
             LBx = velocity.xvelocity
             LBy = velocity.yvelocity
             
-            vx = LBx #vx.velocity + LBx
-            vy = LBy # vy.velocity + LBy
+            vx = vx.velocity + LBx
+            vy = vy.velocity + LBy
 
             run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isitpathline, isitendpoint)
             # recalculate all physical chemical forces and continue running model
@@ -422,15 +422,5 @@ if __name__ == '__main__':
         cbar.set_label('m/s', rotation=270)
     
         plt.show()
-
-        plt.pcolormesh(xx, yy, LBx, cmap='jet')
-        for col in x:
-            plt.plot(np.array(col.storex)/gridres, np.array(col.storey)/-gridres, 'o',
-                     ms=8)
-        plt.xlim([0, xlen])
-        plt.ylim([ylen, 0])
-        cbar = plt.colorbar(format=ticker.FuncFormatter(fmt))
-        cbar.set_label('m/s', rotation=270)
-    
-        plt.show()
+        
         
