@@ -216,8 +216,8 @@ def InterpV(LBv, gridsplit, img=False):
 
     if img == True:
         # correct pore boundaries from interpolation
-        znew[znew >= ifactor] = 1# 0] = 1# ifactor*gridsplit/2.] = 1
-        znew[znew < ifactor] = 0# 0] = 0# ifactor*gridsplit/2.] = 0
+        znew[znew >= ifactor*gridsplit/2.]= 1 # 0] = 1# ifactor*gridsplit/2.] = 1
+        znew[znew < ifactor*gridsplit/2.] = 0 # 0] = 0# ifactor*gridsplit/2.] = 0
 
     return znew
 

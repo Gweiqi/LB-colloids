@@ -107,7 +107,7 @@ class Colloid:
                     self._append_yposition(float("NaN"))
                     return
                 else:
-                    self._append_flag(2)
+                    self._append_flag(3)
                     self._append_xposition(irx)
                     self._append_yposition(iry)
                     #print(ts)
@@ -295,14 +295,15 @@ if __name__ == '__main__':
     Grids = cs.Gridarray(Col_img, gridres, gridsplit)
     xArr = Grids.gridx
     yArr = Grids.gridy
-
+    
     xvArr = Grids.vector_x
     yvArr = Grids.vector_y
 
-    xArr[LBx == 0.] = np.nan
-    yArr[LBy == 0.] = np.nan
-    xvArr[LBx == 0.] = np.nan
-    yvArr[LBy == 0.] = np.nan
+    xArr[Col_img == 1.] = np.nan
+    yArr[Col_img == 1.] = np.nan
+    
+    xvArr[Col_img == 1.] = np.nan
+    yvArr[Col_img == 1.] = np.nan
 
     # Begin calling colloid mathematics
     cfactor = cm.Gap(xArr, yArr)
@@ -343,9 +344,9 @@ if __name__ == '__main__':
     vx = vx.velocity + LBx
     vy = vy.velocity + LBy
 
-    #Col_img = cs.InterpV(LB.imarray, gridsplit, img=True)
-    #vx[Col_img == 1.] = np.nan
-    #vy[Col_img == 1.] = np.nan
+    Col_img = cs.InterpV(LB.imarray, gridsplit, img=True)
+    vx[Col_img == 1.] = np.nan
+    vy[Col_img == 1.] = np.nan
     
     ylen = len(Col_img)
     xlen = len(Col_img[0])
@@ -409,7 +410,7 @@ if __name__ == '__main__':
 
         yy = np.array([np.arange(ylen + 1)])
         yy = np.tile(yy.T, (1, xlen + 1))
-                     
+        
         plt.pcolormesh(xx, yy, LBy, cmap='jet_r')
         
         for col in x:
