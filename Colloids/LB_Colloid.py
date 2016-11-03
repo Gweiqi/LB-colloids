@@ -238,6 +238,7 @@ if __name__ == '__main__':
     ts = ModelDict['ts']
     iters = ModelDict['iters']
     ncols = ModelDict['ncols']
+    preferential_flow = True
 
     if 'multiple_config' in ModelDict:
         assert 'nconfig' in ModelDict
@@ -340,9 +341,15 @@ if __name__ == '__main__':
     # get LB velocity to add to the physical forces calculated.
     LBx = velocity.xvelocity
     LBy = velocity.yvelocity
-    
-    vx = vx.velocity + LBx
-    vy = vy.velocity + LBy
+
+    if preferential_flow is True:
+        # quick and dirty method to account for boundary conditions at bottom of model
+        LBy[int(-3*gridsplit):] = -4e-4
+        vx = LBx
+        vy = LBy
+    else:   
+        vx = vx.velocity + LBx
+        vy = vy.velocity + LBy
 
     Col_img = cs.InterpV(LB.imarray, gridsplit, img=True)
     vx[Col_img == 1.] = np.nan
@@ -389,9 +396,15 @@ if __name__ == '__main__':
             
             LBx = velocity.xvelocity
             LBy = velocity.yvelocity
-            
-            vx = vx.velocity + LBx
-            vy = vy.velocity + LBy
+
+            if preferential_flow is True:
+                # quick and dirty method to account for boundary conditions at bottom of model
+                LBy[int(-3*gridsplit):] = -4e-4
+                vx = LBx
+                vy = LBy
+            else:   
+                vx = vx.velocity + LBx
+                vy = vy.velocity + LBy
 
             run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isitpathline, isitendpoint)
             # recalculate all physical chemical forces and continue running model
