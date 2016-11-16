@@ -88,9 +88,8 @@ class Colloid:
                 idxry = int(iry//-self.resolution)
            
             except ValueError:
-                self._append_flag(2)
-                self._append_xposition(irx)
-                self._append_yposition(iry)
+                self._append_xposition(self.xposition[-1])
+                self._append_yposition(self.yposition[-1])
                 return
 
         # if colloid breaks through domain change flag to 3  
@@ -238,7 +237,7 @@ if __name__ == '__main__':
     ts = ModelDict['ts']
     iters = ModelDict['iters']
     ncols = ModelDict['ncols']
-    preferential_flow = True
+    preferential_flow = False
 
     if 'multiple_config' in ModelDict:
         assert 'nconfig' in ModelDict
@@ -332,24 +331,22 @@ if __name__ == '__main__':
     dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx 
     dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
 
-    fx = dlvox + physicalx
-    fy = dlvoy + physicaly
-    
+    if preferential_flow is True:
+        fx = dlvox
+        fy = dlvoy
+    else:  
+        fx = dlvox + physicalx
+        fy = dlvoy + physicaly
+
     vx = cm.ForceToVelocity(fx, **PhysicalDict)
     vy = cm.ForceToVelocity(fy, **PhysicalDict)
 
     # get LB velocity to add to the physical forces calculated.
     LBx = velocity.xvelocity
     LBy = velocity.yvelocity
-
-    if preferential_flow is True:
-        # quick and dirty method to account for boundary conditions at bottom of model
-        LBy[int(-3*gridsplit):] = -4e-4
-        vx = LBx
-        vy = LBy
-    else:   
-        vx = vx.velocity + LBx
-        vy = vy.velocity + LBy
+  
+    vx = vx.velocity + LBx
+    vy = vy.velocity + LBy
 
     Col_img = cs.InterpV(LB.imarray, gridsplit, img=True)
     vx[Col_img == 1.] = np.nan
@@ -388,23 +385,21 @@ if __name__ == '__main__':
             dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx 
             dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
 
-            fx = dlvox + physicalx
-            fy = dlvoy + physicaly
+            if preferential_flow is True:
+                fx = dlvox
+                fy = dlvoy
+            else:
+                fx = dlvox + physicalx
+                fy = dlvoy + physicaly
     
             vx = cm.ForceToVelocity(fx, **PhysicalDict)
             vy = cm.ForceToVelocity(fy, **PhysicalDict)
             
             LBx = velocity.xvelocity
             LBy = velocity.yvelocity
-
-            if preferential_flow is True:
-                # quick and dirty method to account for boundary conditions at bottom of model
-                LBy[int(-3*gridsplit):] = -4e-4
-                vx = LBx
-                vy = LBy
-            else:   
-                vx = vx.velocity + LBx
-                vy = vy.velocity + LBy
+ 
+            vx = vx.velocity + LBx
+            vy = vy.velocity + LBy
 
             run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isitpathline, isitendpoint)
             # recalculate all physical chemical forces and continue running model
