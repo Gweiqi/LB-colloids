@@ -304,12 +304,13 @@ if kernal == 'fortran':
         fcol = LB.f_bounceback(f, fcol, image, ny, nx)
         f = LB.f_streaming(fcol, ny, nx)
         
-        if OutputDict['IMAGE_SAVE_INTERVAL'] != None:   
-            if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
-                print '[Saving image: %i]' %i
-                u = [uy[:], ux[:]*-1]
-                pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
-                                      vmin, vmax)
+        if OutputDict['SAVE_IMAGE'] != False:
+            if OutputDict['IMAGE_SAVE_INTERVAL'] != None:   
+                if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
+                    print '[Saving image: %i]' %i
+                    u = [uy[:], ux[:]*-1]
+                    pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
+                                          vmin, vmax)
 
         if OutputDict['VERBOSE'] is not False:
             if i%OutputDict['VERBOSE'] == 0:
@@ -327,13 +328,14 @@ elif kernal == 'python':
         fcol = py_collision(f, feq, tau)
         fcol = py_bounceback(f, fcol, image, ny, nx)
         f = py_streaming(fcol, ny, nx)
-        
-        if OutputDict['IMAGE_SAVE_INTERVAL'] != None:   
-            if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
-                print '[Saving image: %i]' %i
-                u = [uy[:], ux[:]*-1]
-                pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
-                                      vmin, vmax)
+
+        if OutputDict['SAVE_IMAGE'] != False:
+            if OutputDict['IMAGE_SAVE_INTERVAL'] != False:   
+                if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
+                    print '[Saving image: %i]' %i
+                    u = [uy[:], ux[:]*-1]
+                    pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
+                                          vmin, vmax)
 
         if OutputDict['VERBOSE'] is not False:
             if i%OutputDict['VERBOSE'] == 0:

@@ -8,15 +8,16 @@ class Config:
         types and required values are present for LBModel to run.
         """
         self.config = self._reader(fname)
-        self._strtype = ('LBMODEL', 'KERNAL', 'IMAGE_SAVE_FOLDER',
+        self.__strtype = ('LBMODEL', 'KERNAL', 'IMAGE_SAVE_FOLDER',
                          'IMAGE')
-        self._inttype = ('SOLID', 'VOID', 'NITERS', 'VERBOSE',
+        self.__inttype = ('SOLID', 'VOID', 'NITERS', 'VERBOSE',
                          'IMAGE_SAVE_INTERVAL', 'BOUNDARY')
-        self._floattype = ('LBRES', 'RHOT', 'RHOB', 'TAU', 'VMIN',
+        self.__listtype = ('SOLID', 'VOID')
+        self.__floattype = ('LBRES', 'RHOT', 'RHOB', 'TAU', 'VMIN',
                            'VMAX', 'GRAVITY')
-        self._booltype = ('PLOT_Y_VELOCITY', 'SAVE_IMAGE')
-        self._dicttype = ()
-        self._required = ('LBMODEL', 'LBRES')
+        self.__booltype = ('PLOT_Y_VELOCITY', 'SAVE_IMAGE')
+        self.__dicttype = ()
+        self.__required = ('LBMODEL', 'LBRES')
         self.validmodelparams = ('LBMODEL', 'LBRES', 'KERNAL')
         self.validimageparams = ('SOLID', 'VOID', 'IMAGE', 'BOUNDARY')
         self.validpermeabilityparmas = ('RHOT', 'RHOB', 'TAU', 'NITERS', 'GRAVITY')
@@ -132,23 +133,26 @@ class Config:
         pname, param = parameter.split(':')
         pname = pname.strip(' ')
         param = param.strip(' ')
+
+        if pname in self.__listtype:
+            param = self.list_param(pname, param)
         
-        if pname in self._strtype:
+        elif pname in self.__strtype:
             param = str(param)
             
-        elif pname in self._inttype:
+        elif pname in self.__inttype:
             param = int(param)
 
-        elif pname in self._floattype:
+        elif pname in self.__floattype:
             param = float(param)
 
-        elif pname in self._booltype:
+        elif pname in self.__booltype:
             if param.upper() == 'TRUE':
                 param = True
             else:
                 param = False
 
-        elif pname in self._dicttype:
+        elif pname in self.__dicttype:
             keyvalue = [i for i in param.split(' ') if i != ' ']
             param = {}
             for i in range(0, len(keyvalue), 2):
@@ -159,6 +163,20 @@ class Config:
             sys.exit(-1)
 
         return pname, param
+
+    def list_param(self, pname, param):
+        params = param.split(' ')
+
+        if pname in self.__strtype:
+            param = [str(i) for i in params if i != ' ']
+            
+        elif pname in self.__inttype:
+            param = [int(i) for i in params if i != ' ']
+
+        elif pname in self.__floattype:
+            param = [float(i) for i in params if i != ' ']
+
+        return param
 
     def check_if_valid(self, blockname, pname, validparams):
         '''
@@ -182,7 +200,7 @@ class Config:
         '''
         Check for required parameters. If not present inform the user which parameter(s) are needed
         '''
-        for key in self._required:
+        for key in self.__required:
             if key not in ModelDict:
                 print('%s is a required MODEL PARAMETER' % key)
                 sys.exit(-1)
