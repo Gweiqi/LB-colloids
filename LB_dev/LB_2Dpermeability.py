@@ -239,116 +239,286 @@ class HDF5_write:
             self.delr = self.fi.create_dataset('results/delr', data=delrho)
             self.rho = self.fi.create_dataset('results/rho', data=rho)
 
+class RunLB2D(object):
+    """
+    object oriented method to instantiate and run a Two-Dimensional
+    lattice boltzmann model. Calls upon either fortran or python
+    kernals to run a model.
 
+    Use protective programming to ensure data fits within normal model
+    parameters. 
 
-####Begin program with parser options####
-parser = optparse.OptionParser()
-parser.add_option('-c', '--config', dest = 'config', help='configuration file name')
-(opts,args)=parser.parse_args()
+    Parameters:
+    -----------
+    img: (ndarray) binarized image array
+    kernal: (str) the simulation kernal. Default is fortran
+    
+    Attributes:
+    -----------
+    # todo:
 
-config = LBIO.Config(opts.config)
-# define defaults
-ModelDict = {'KERNAL': 'fortan'}
-PermeabilityDict = {'RHOT': 1.001, 'RHOB': 0.999, 'TAU': 1.0, 'GRAVITY': 0.001}
-OutputDict = {'VMIN': 0.00001, 'VMAX': 0.01, 'VERBOSE': False, 'IMAGE_SAVE_INTERVAL': None,
-              'IMAGE_SAVE_FOLDER': os.path.expanduser('~/Desktop/LBimages'), 'PLOT_Y_VELOCITY': False,
-              'SAVE_IMAGE': False}
+    Methods:
+    --------
+    
+    run: property method to run the lb model and return a distribution function
+    
+    """
+    def __init__(self, img, kernal='fortran'):
+        self.__img = img
+        self.__kernal = kernal
+        self.__gravity = 0.001
+        self.__tau = 1.
+        self.__rho = 1.
+        self.__niters = 0
+        self.__cs = 0.577350269
+        self.__cs2 = self.__cs * self.__cs
+        self.__ny = len(img)
+        self.__nx = len(img[0])
+        self.__wi = np.array([1./9., 1./36., 1./9., 1./36., 1./9.,
+                              1./36., 1./9., 1./36., 4./9.])
 
-ModelDict = addIO(ModelDict, config.model_parameters())
-PermeabilityDict = addIO(PermeabilityDict, config.permeability_parameters())
-OutputDict = addIO(OutputDict, config.output_parameters())
+    def __setattr__(self, obj, value):
 
-####Open saved image data; set initial variables####
-lbmodel = ModelDict['LBMODEL']
-vmax = OutputDict['VMAX']
-vmin = OutputDict['VMIN']
-image = HDF5_readarray(lbmodel, 'Binary_image')
+        if obj == 'img':
+            raise NotImplementedError('Please re-instantiate LB2D to change images')
 
-rhot = PermeabilityDict['RHOT'] #add through opts.input
-rhob = PermeabilityDict['RHOB']
-rhoarray = [rhot, rhob]
-delr = rhot - rhob
-cs = 0.577350269
-cs2 = cs*cs
-q = 9
-g = PermeabilityDict['GRAVITY']
-ny = len(image)
-nx = len(image[0])
-tau = PermeabilityDict['TAU']
-vis = 1./3.*(tau-0.5)
-niters = PermeabilityDict['NITERS']
-kernal = ModelDict['KERNAL'].lower()
-if OutputDict['SAVE_IMAGE'] is True:
-    check_directory(OutputDict['IMAGE_SAVE_FOLDER'])
-    image_name = OutputDict['IMAGE_SAVE_FOLDER'] + '/' + lbmodel
+        if obj == 'kernal':
+            if value.lower() not in ('python', 'fortran'):
+                raise AssertionError('kernal type not recognized')
+            super(RunLB2D, self).__setattr__('__kernal', value.lower())
+
+        elif obj == 'gravity':
+            super(RunLB2D, self).__setattr__('__gravity', float(value))
+
+        elif obj == 'tau':
+            if 0.5 > tau < 2.0:
+                raise AssertionError('Tau is out of stable bounds')
+            super(RunLB2D, self).__setattr__('__tau', float(value))
+
+        elif obj == 'rho':
+            super(RunLB2D, self).__setattr__('__rho', float(value))
+
+        elif obj == 'niters':
+            super(RunLB2D, self).__setattr__('__niters', int(value))
+
+        elif obj == 'cs':
+            raise NotImplementedError('cs is implemented as constant')
+
+        elif obj == 'cs2':
+            raise NotImplementedError('cs2 is implemented as constant')
+
+        elif obj == 'nx':
+            raise NotImplementedError('nx is a constant based on image properties')
+
+        elif obj == 'ny':
+            raise NotImplementedError('ny is a constant based on image properies')
+
+    @property
+    def img(self):
+        return self.__img
+
+    @property
+    def kernal(self):
+        return self.__kernal
+
+    @property
+    def gravity(self):
+        return self.__gravity
+
+    @property
+    def tau(self):
+        return self.__tau
+
+    @property
+    def rho(self):
+        return self.__rho
+
+    @property
+    def niters(self):
+        return self.__niters
+
+    @property
+    def cs(self):
+        return self.__cs
+
+    @property
+    def cs2(self):
+        return self.__cs2
+
+    @property
+    def nx(self):
+        return self.__nx
+
+    @property
+    def ny(self):
+        return self.__ny
+
+    @property
+    def viscosity(self):
+        return (1./3.)*(self.__tau - 0.5)
+
+    @property
+    def q(self):
+        return 9
+
+    @property
+    def run(self):
+        """
+        user method to run the lattice Boltzmann model and return the resulting
+        distribution function. 
+        """
+        if self.__kernal == 'fortan':
+            f = self.__run_fortran
+        else:
+            f = self.__run_python
+
+        return f
+
+    def __run__fortran(self):
+        """
+        Object oriented fortran based D2Q9 LB method
+        """
+        f = initial_distribution(9, self.__ny, self.__nx, self.__rho, 0., self.viscosity,
+                                 self.__img, self.__wi)
+        for i in range(self.__niters):
+            rho = LB.f_rho(f, self.__ny, self.__nx)
+            uy, ux = LB.f_u(f, rho, self.__ny, self.__nx)
+            eu = LB.f_eu(uy, ux, self.__tau, self.__gravity, self.__ny, self.__nx)
+            usqr = LB.f_usqr(uy, ux)
+            feq = LB.f_feq(eu, rho, usqr, self.__wi, self.__cs2, self.__ny, self.__nx)
+            fcol = LB.f_collision(f, feq, self.__tau, self.__ny, self.__nx)
+            fcol = LB.f_bounceback(f, fcol, self.__img, self.__ny, self.__nx)
+            f = LB.f_streaming(fcol, self.__ny, self.__nx)
+
+        return f
+
+    def __run__python(self)
+    """
+        Object oriented python based D2Q9 LB method
+        """
+        f = initial_distribution(9, self.__ny, self.__nx, self.__rho, 0, self.viscosity,
+                                 self.__img, self.__wi)
+        for i in range(niters):
+            rho = py_rho(f)
+            uy, ux = py_u(f, rho)
+            eu = py_eu(uy, ux, self.__tau, self.__gravity, self.__ny, self.__nx)
+            usqr = py_usqr(uy, ux)
+            feq = py_feq(eu, rho, usqr, self.__wi, self.__cs2, self.__ny, self.__nx)
+            fcol = py_collision(f, feq, self.__tau)
+            fcol = py_bounceback(f, fcol, self.__img, self.__ny, self.__nx)
+            f = py_streaming(fcol, self.__ny, self.__nx)
+
+        return f
+    
+if __name__ == '__main__':
+    ####Begin program with parser options####
+    parser = optparse.OptionParser()
+    parser.add_option('-c', '--config', dest = 'config', help='configuration file name')
+    (opts,args)=parser.parse_args()
+
+    config = LBIO.Config(opts.config)
+    # define defaults
+    ModelDict = {'KERNAL': 'fortan'}
+    PermeabilityDict = {'RHOT': 1.001, 'RHOB': 0.999, 'TAU': 1.0, 'GRAVITY': 0.001}
+    OutputDict = {'VMIN': 0.00001, 'VMAX': 0.01, 'VERBOSE': False,
+                  'IMAGE_SAVE_INTERVAL': None,
+                  'IMAGE_SAVE_FOLDER': os.path.expanduser('~/Desktop/LBimages'),
+                  'PLOT_Y_VELOCITY': False, 'SAVE_IMAGE': False}
+
+    ModelDict = addIO(ModelDict, config.model_parameters())
+    PermeabilityDict = addIO(PermeabilityDict, config.permeability_parameters())
+    OutputDict = addIO(OutputDict, config.output_parameters())
+
+    ####Open saved image data; set initial variables####
+    lbmodel = ModelDict['LBMODEL']
+    vmax = OutputDict['VMAX']
+    vmin = OutputDict['VMIN']
+    image = HDF5_readarray(lbmodel, 'Binary_image')
+
+    rhot = PermeabilityDict['RHOT'] #add through opts.input
+    rhob = PermeabilityDict['RHOB']
+    rhoarray = [rhot, rhob]
+    delr = rhot - rhob
+    cs = 0.577350269
+    cs2 = cs*cs
+    q = 9
+    g = PermeabilityDict['GRAVITY']
+    ny = len(image)
+    nx = len(image[0])
+    tau = PermeabilityDict['TAU']
+    vis = 1./3.*(tau-0.5)
+    niters = PermeabilityDict['NITERS']
+    kernal = ModelDict['KERNAL'].lower()
+    if OutputDict['SAVE_IMAGE'] is True:
+        check_directory(OutputDict['IMAGE_SAVE_FOLDER'])
+        image_name = OutputDict['IMAGE_SAVE_FOLDER'] + '/' + lbmodel
                     
     
-
-# weights are consistant with up,right == positive
-# down, left == negative. position 9 == 0.
-wi = np.array([1./9., 1./36., 1./9., 1./36., 1./9.,
-               1./36., 1./9., 1./36., 4./9.])
-
+    # weights are consistant with up,right == positive
+    # down, left == negative. position 9 == 0.
+    wi = np.array([1./9., 1./36., 1./9., 1./36., 1./9.,
+                   1./36., 1./9., 1./36., 4./9.])
 
 
-if kernal == 'fortran':
-    f = initial_distribution(q, ny, nx, rhot, delr, vis, image, wi)
-    for i in range(niters):
-        # call fortran subroutines to run lattice boltzmann
-        rho = LB.f_rho(f, ny, nx)
-        uy, ux = LB.f_u(f, rho, ny, nx)
-        eu = LB.f_eu(uy, ux, tau, g, ny, nx)
-        usqr = LB.f_usqr(uy, ux)
-        feq = LB.f_feq(eu, rho, usqr, wi, cs2, ny, nx)
-        fcol = LB.f_collision(f, feq, tau, ny, nx)
-        fcol = LB.f_bounceback(f, fcol, image, ny, nx)
-        f = LB.f_streaming(fcol, ny, nx)
+
+    if kernal == 'fortran':
+        f = initial_distribution(q, ny, nx, rhot, delr, vis, image, wi)
+        for i in range(niters):
+            # call fortran subroutines to run lattice boltzmann
+            rho = LB.f_rho(f, ny, nx)
+            uy, ux = LB.f_u(f, rho, ny, nx)
+            eu = LB.f_eu(uy, ux, tau, g, ny, nx)
+            usqr = LB.f_usqr(uy, ux)
+            feq = LB.f_feq(eu, rho, usqr, wi, cs2, ny, nx)
+            fcol = LB.f_collision(f, feq, tau, ny, nx)
+            fcol = LB.f_bounceback(f, fcol, image, ny, nx)
+            f = LB.f_streaming(fcol, ny, nx)
         
-        if OutputDict['SAVE_IMAGE'] != False:
-            if OutputDict['IMAGE_SAVE_INTERVAL'] != None:   
-                if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
-                    print '[Saving image: %i]' %i
-                    u = [uy[:], ux[:]*-1]
-                    pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
+            if OutputDict['SAVE_IMAGE'] != False:
+                if OutputDict['IMAGE_SAVE_INTERVAL'] != None:   
+                    if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
+                        print '[Saving image: %i]' %i
+                        u = [uy[:], ux[:]*-1]
+                        pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
                                           vmin, vmax)
 
-        if OutputDict['VERBOSE'] is not False:
-            if i%OutputDict['VERBOSE'] == 0:
-                print '[Iter: %i]' % i
+            if OutputDict['VERBOSE'] is not False:
+                if i%OutputDict['VERBOSE'] == 0:
+                    print '[Iter: %i]' % i
 
-elif kernal == 'python':
-    f = initial_distribution(q, ny, nx, rhot, delr, vis, image, wi)
-    for i in range(niters):
-        # call python subroutines to run lattice boltzmann
-        rho = py_rho(f)
-        uy, ux = py_u(f, rho)
-        eu = py_eu(uy, ux, tau, g, ny, nx)
-        usqr = py_usqr(uy, ux)
-        feq = py_feq(eu, rho, usqr, wi, cs2, ny, nx)
-        fcol = py_collision(f, feq, tau)
-        fcol = py_bounceback(f, fcol, image, ny, nx)
-        f = py_streaming(fcol, ny, nx)
+    elif kernal == 'python':
+        f = initial_distribution(q, ny, nx, rhot, delr, vis, image, wi)
+        for i in range(niters):
+            # call python subroutines to run lattice boltzmann
+            rho = py_rho(f)
+            uy, ux = py_u(f, rho)
+            eu = py_eu(uy, ux, tau, g, ny, nx)
+            usqr = py_usqr(uy, ux)
+            feq = py_feq(eu, rho, usqr, wi, cs2, ny, nx)
+            fcol = py_collision(f, feq, tau)
+            fcol = py_bounceback(f, fcol, image, ny, nx)
+            f = py_streaming(fcol, ny, nx)
 
-        if OutputDict['SAVE_IMAGE'] != False:
-            if OutputDict['IMAGE_SAVE_INTERVAL'] != False:   
-                if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
-                    print '[Saving image: %i]' %i
-                    u = [uy[:], ux[:]*-1]
-                    pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
+            if OutputDict['SAVE_IMAGE'] != False:
+                if OutputDict['IMAGE_SAVE_INTERVAL'] != False:   
+                    if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
+                        print '[Saving image: %i]' %i
+                        u = [uy[:], ux[:]*-1]
+                        pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
                                           vmin, vmax)
 
-        if OutputDict['VERBOSE'] is not False:
-            if i%OutputDict['VERBOSE'] == 0:
-                print '[Iter: %i]' % i
+            if OutputDict['VERBOSE'] is not False:
+                if i%OutputDict['VERBOSE'] == 0:
+                    print '[Iter: %i]' % i
 
-else:
-    raise Exception('Kernal type not supported')
+    else:
+        raise Exception('Kernal type not supported')
     
-macrho = py_rho(rho)/len(rho)
-mrho = mean_rho(macrho, rhob)
+    macrho = py_rho(rho)/len(rho)
+    mrho = mean_rho(macrho, rhob)
 
-u = [uy[:], ux[:]*-1]
+    u = [uy[:], ux[:]*-1]
 
-output = HDF5_write(mrho, tau, u, f, delr, rhot, lbmodel)
+    output = HDF5_write(mrho, tau, u, f, delr, rhot, lbmodel)
 
-print "[Done]"
+    print "[Done]"
