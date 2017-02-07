@@ -6,60 +6,68 @@ import LB2D as LB
 import LBIO
 import os
 
+
 def HDF5_readarray(filename, data):
-    ###import saved array data from LB_2Dimages####
+    # import saved array data from LB_2Dimages
     f = H.File(filename, "r+")
     dset = f[data][()]
     f.close()
     return dset
 
-####initiate distribution and apply Zho he boundary to top####
-def initial_distribution(q,ny,nx,rho,rhoI,vis,img,wi):
-    fd = np.zeros((q,ny,nx))
+
+def initial_distribution(q, ny, nx, rho, rhoI, vis, img, wi):
+    # initiate distribution and apply Zho he boundary to top
+    fd = np.zeros((q, ny, nx))
     for j in range(q):
         for i in range(ny):
-            fd[j,i,:] = (rho-(rhoI * (i/(ny-1.))))* wi[j]
+            fd[j, i, :] = (rho - (rhoI * (i / (ny - 1.)))) * wi[j]
     # fd = initiate_model(fd,rho,vis)    
-    ###sets solid boundaries from image data####
-    #fd = set_solids(fd,img)
+    # sets solid boundaries from image data
+    # fd = set_solids(fd,img)
     return fd
 
-def initiate_model(fd,rho,vis):
-    ###function solves Zho He boundary condition against a top boundary###
+
+def initiate_model(fd, rho, vis):
+    # function solves Zho He boundary condition against a top boundary###
     # gives the model it's initial kick to start running! Could develop a fortran version
     # depreciated, not used with gravity driven flow
-    fd[6,0,:] = fd[2,0,:]*2./3.*rho*vis
-    fd[5,0,:] = fd[1,0,:]+ 0.5*rho*vis
-    fd[7,0,:] = fd[3,0,:]+ 0.5*rho*vis
+    fd[6, 0, :] = fd[2, 0, :] * 2. / 3. * rho * vis
+    fd[5, 0, :] = fd[1, 0, :] + 0.5 * rho * vis
+    fd[7, 0, :] = fd[3, 0, :] + 0.5 * rho * vis
     return fd
 
-def set_solids(fs,img):
-    ###sets/reinforces solid boundaries from image data, not used####
-    solids = np.zeros((q,ny,nx))
+
+def set_solids(fs, img):
+    # sets/reinforces solid boundaries from image data, not used
+    solids = np.zeros((q, ny, nx))
     for i in range(q):
-        fs[i,img] = solids[i,img]
+        fs[i, img] = solids[i, img]
     return fs
+
 
 def py_rho(f):
     # function calculates density
     rho = np.sum(f, axis=0)
     return rho
 
+
 def py_u(f, rho):
     # calculates velocity in the y-direction and x-direction
-    uy = ((f[1] + f[2] + f[3]) - (f[5] + f[6] + f[7]))/rho
-    ux = ((f[3] + f[4] + f[5]) - (f[0] + f[1] + f[7]))/rho
+    uy = ((f[1] + f[2] + f[3]) - (f[5] + f[6] + f[7])) / rho
+    ux = ((f[3] + f[4] + f[5]) - (f[0] + f[1] + f[7])) / rho
     return uy, ux
+
 
 def py_usqr(uy, ux):
     # calculates velocity squared
-    usqr = uy*uy + ux*ux
+    usqr = uy * uy + ux * ux
     return usqr
+
 
 def py_eu(uy, ux, tau, g, ny, nx):
     # calculate the einstein velocities of lattice boltzmann domain
     eu = np.zeros((9, ny, nx))
-    uy = uy - (tau*g)
+    uy = uy - (tau * g)
     eu[0, :, :] = ux
     eu[1, :, :] = ux + uy
     eu[2, :, :] = uy
@@ -72,35 +80,38 @@ def py_eu(uy, ux, tau, g, ny, nx):
 
     return eu
 
+
 def py_feq(eu, rho, usqr, wi, csqr, ny, nx):
     # calculate the lattice boltzmann equalibrium distribution function
     feq = np.zeros((9, ny, nx))
     for i in range(9):
-        feq[i, :, :] = wi[i]*rho*(1 + eu[i]/csqr + 0.5*(eu[i]/csqr)**2 - usqr/(2*csqr))
+        feq[i, :, :] = wi[i]*rho*(1 + eu[i] / csqr + 0.5 * (eu[i] / csqr) ** 2 - usqr / (2 * csqr))
     return feq
+
 
 def py_collision(f, feq, tau):
     # calculate the LB collision operator
-    fcol = f - ((f - feq)/tau)
+    fcol = f - ((f - feq) / tau)
     return fcol
+
 
 def py_zhohe(f, rho, ny, nx):
     # calculate zho he boundary condions, not used at present.
     fzhe = np.zeros((9, ny, nx))
 
-    vy_lb = 1. - ((f[8] + f[0] + f[4] + 2.*(f[5] + f[6] + f[7]))/rho)
-    vy_ub = -(1. - ((f[8] + f[0] + f[4] + 2.*(f[1] + f[2] + f[3]))/rho))
-    
+    vy_lb = 1. - ((f[8] + f[0] + f[4] + 2.*(f[5] + f[6] + f[7])) / rho)
+    vy_ub = -(1. - ((f[8] + f[0] + f[4] + 2.*(f[1] + f[2] + f[3])) / rho))
+
     # compute the unkown distributions on the upper domain
     # naming based on python zero based indexing
-    f1 = (1./6.)*rho*vy_lb + (f[4] - f[0])/2. + f[5]
-    f2 = (2./3.)*rho*vy_lb + f[6]
-    f3 = (1./6.)*rho*vy_lb + (f[0] - f[4])/2. + f[7]
+    f1 = (1. / 6.) * rho * vy_lb + (f[4] - f[0]) / 2. + f[5]
+    f2 = (2. / 3.) * rho * vy_lb + f[6]
+    f3 = (1. / 6.) * rho*vy_lb + (f[0] - f[4]) / 2. + f[7]
     
     # compute the unkown distribution on the lower domain
-    f5 = -(1./6.)*rho*vy_ub + (f[0] - f[4])/2. + f[1]
-    f6 = -(2./3.)*rho*vy_ub + f[2]
-    f7 = -(1./6.)*rho*vy_ub + (f[4] - f[0])/2. + f[3]
+    f5 = -(1. / 6.) * rho * vy_ub + (f[0] - f[4]) / 2. + f[1]
+    f6 = -(2. / 3.) * rho * vy_ub + f[2]
+    f7 = -(1. / 6.) * rho * vy_ub + (f[4] - f[0]) / 2. + f[3]
 
     for j in range(ny):
         for k in range(nx):
@@ -143,6 +154,7 @@ def py_zhohe(f, rho, ny, nx):
 
     return fzhe
 
+
 def py_bounceback(f, fcol, image, ny, nx):
     # apply bounceback conditions to LB-model collision function
     fbounce = np.zeros((9, ny, nx))
@@ -152,7 +164,7 @@ def py_bounceback(f, fcol, image, ny, nx):
     for j in range(ny):
         for k in range(nx):
             
-            if image[j,k] == True:
+            if image[j, k] == True:
                 fbounce[0, j, k] = f[4, j, k]
                 fbounce[1, j, k] = f[5, j, k]
                 fbounce[2, j, k] = f[6, j, k]
@@ -166,6 +178,7 @@ def py_bounceback(f, fcol, image, ny, nx):
             else:
                 fbounce[:, j, k] = fcol[:, j, k]
     return fbounce
+
 
 def py_streaming(fcol, ny, nx):
     # stream the LB-model
@@ -194,52 +207,73 @@ def py_streaming(fcol, ny, nx):
                 jp = j + 1
                 jn = j - 1
 
-            fstream[0, j, kp]  = fcol[0, j, k]
+            fstream[0, j, kp] = fcol[0, j, k]
             fstream[1, jp, kp] = fcol[1, j, k]
-            fstream[2, jp, k]  = fcol[2, j, k]
+            fstream[2, jp, k] = fcol[2, j, k]
             fstream[3, jp, kn] = fcol[3, j, k]
-            fstream[4, j, kn]  = fcol[4, j, k]
+            fstream[4, j, kn] = fcol[4, j, k]
             fstream[5, jn, kn] = fcol[5, j, k]
-            fstream[6, jn, k]  = fcol[6, j, k]
+            fstream[6, jn, k] = fcol[6, j, k]
             fstream[7, jn, kp] = fcol[7, j, k]
-            fstream[8, j, k]   = fcol[8, j, k]
+            fstream[8, j, k] = fcol[8, j, k]
     return fstream
+
     
 def mean_u(x):
-    ###calculates mean velocity in the y and x directions####
-    ###remeber to pop off ghost layers####
-    ###remeber to take off -1's also####
+    # calculates mean velocity in the y and x directions
+    # remeber to pop off ghost layers
+    # remeber to take off -1's also
     uy = np.average(x[0])
     ux = np.average(x[1])
-    return uy,ux
+    return uy, ux
+
 
 def mean_rho(f, delrho):
-    ###calculates a mean rho over the entire volume####
+    # calculates a mean rho over the entire volume
     img = np.ma.masked_where(f <= delrho, f)
     mrho = np.ma.mean(img)
     return mrho
 
+
 def check_directory(path):
     if not os.path.exists(path):
         os.makedirs(path)
+
 
 def addIO(defaults, config):
     for key in config:
         defaults[key] = config[key]
     return defaults
 
+
 class HDF5_write:
     def __init__(self, mrho, tau, u, f, delrho, rho, output):
-        with H.File(output,"r+") as self.fi:
-            print '[Writing to: %s]' % output
-            self.wmrho = self.fi.create_dataset('results/mrho', data=mrho)
-            self.wtau = self.fi.create_dataset('results/tau', data=tau)
-            self.wuarray = self.fi.create_dataset('results/uarray', data=u)
-            self.wf = self.fi.create_dataset('results/f', data=f)
-            self.delr = self.fi.create_dataset('results/delr', data=delrho)
-            self.rho = self.fi.create_dataset('results/rho', data=rho)
+        """
+        Hdf5 model write class
 
-class RunLB2D(object):
+        Parameters:
+        -----------
+            mrho: (float) mean fluid density
+            tau: (float) lb relaxation time
+            u: (np.ndarray) fluid velocity array
+            f: (np.ndarray) distribution function
+            delrho: (float) density distribution
+            rho: (np.ndarray) density array
+            output: (str) hdf file name
+        
+        """
+        self.__x = None
+        with H.File(output, "r+") as fi:
+            print '[Writing to: %s]' % output
+            fi.create_dataset('results/mrho', data=mrho)
+            fi.create_dataset('results/tau', data=tau)
+            fi.create_dataset('results/uarray', data=u)
+            fi.create_dataset('results/f', data=f)
+            fi.create_dataset('results/delr', data=delrho)
+            fi.create_dataset('results/rho', data=rho)
+
+
+class LB2DModel(object):
     """
     object oriented method to instantiate and run a Two-Dimensional
     lattice boltzmann model. Calls upon either fortran or python
@@ -260,7 +294,7 @@ class RunLB2D(object):
     Methods:
     --------
     
-    run: property method to run the lb model and return a distribution function
+    run:  method to run the lb model and return a distribution function
     
     """
     def __init__(self, img, kernal='fortran'):
@@ -269,14 +303,14 @@ class RunLB2D(object):
         self.__gravity = 0.001
         self.__tau = 1.
         self.__rho = 1.
-        self.__niters = 0
+        self.__niters = None
         self.__cs = 0.577350269
         self.__cs2 = self.__cs * self.__cs
         self.__ny = len(img)
         self.__nx = len(img[0])
         self.__wi = np.array([1./9., 1./36., 1./9., 1./36., 1./9.,
                               1./36., 1./9., 1./36., 4./9.])
-
+    
     def __setattr__(self, obj, value):
 
         if obj == 'img':
@@ -285,21 +319,21 @@ class RunLB2D(object):
         if obj == 'kernal':
             if value.lower() not in ('python', 'fortran'):
                 raise AssertionError('kernal type not recognized')
-            super(RunLB2D, self).__setattr__('__kernal', value.lower())
+            super(LB2DModel, self).__setattr__('_LB2DModel__kernal', value.lower())
 
         elif obj == 'gravity':
-            super(RunLB2D, self).__setattr__('__gravity', float(value))
+            super(LB2DModel, self).__setattr__('_LB2DModel__gravity', float(value))
 
         elif obj == 'tau':
             if 0.5 > tau < 2.0:
                 raise AssertionError('Tau is out of stable bounds')
-            super(RunLB2D, self).__setattr__('__tau', float(value))
+            super(LB2DModel, self).__setattr__('_LB2DModel__tau', float(value))
 
         elif obj == 'rho':
-            super(RunLB2D, self).__setattr__('__rho', float(value))
+            super(LB2DModel, self).__setattr__('_LB2DModel__rho', float(value))
 
         elif obj == 'niters':
-            super(RunLB2D, self).__setattr__('__niters', int(value))
+            super(LB2DModel, self).__setattr__('_LB2DModel__niters', int(value))
 
         elif obj == 'cs':
             raise NotImplementedError('cs is implemented as constant')
@@ -312,7 +346,10 @@ class RunLB2D(object):
 
         elif obj == 'ny':
             raise NotImplementedError('ny is a constant based on image properies')
-
+        
+        else:
+            super(LB2DModel, self).__setattr__(obj, value)
+            
     @property
     def img(self):
         return self.__img
@@ -355,32 +392,64 @@ class RunLB2D(object):
 
     @property
     def viscosity(self):
-        return (1./3.)*(self.__tau - 0.5)
+        return (1. / 3.)*(self.__tau - 0.5)
 
     @property
     def q(self):
         return 9
 
-    @property
-    def run(self):
+    def run(self, output='LBModel.hdf5', image_int=None, image_folder=None,
+            image_name="LB_", vmax=0, vmin=-0.005, verbose=None):
         """
         user method to run the lattice Boltzmann model and return the resulting
-        distribution function. 
+        distribution function.
+
+       Parameters:
+        -----------
+            image_int (int) interval to dump velocity images to a file folder
+            image_folder (str) path to folder to dump images to
+            image_name (int) base name for images
+            vmax (float) matplotlib vmax
+            vmin (float) matplotlib vmin
+            verbose (int) print interval for iterations
         """
-        if self.__kernal == 'fortan':
-            f = self.__run_fortran
+        if self.__kernal == 'fortran':
+            f = self.__run_fortran(output=output, image_int=image_int, image_folder=image_folder,
+                                   image_name=image_name, vmax=vmax, vmin=vmin, verbose=verbose)
         else:
-            f = self.__run_python
+            f = self.__run_python(output=output, image_int=image_int, image_folder=image_folder,
+                                  image_name=image_name, vmax=vmax, vmin=vmin, verbose=verbose)
 
         return f
+    
+    def __run_fortran(self, output='LBModel.hdf5', image_int=None, image_folder=None,
+                      image_name="LB_", vmax=0, vmin=-0.005, verbose=None):
+        """
+        Object oriented fortran based D2Q9 LB method, uses the fortran kernal
 
-    def __run__fortran(self):
+        Parameters:
+        -----------
+            image_int (int) interval to dump velocity images to a file folder
+            image_folder (str) path to folder to dump images to
+            image_name (int) base name for images
+            vmax (float) matplotlib vmax
+            vmin (float) matplotlib vmin
+            verbose (int) print interval for iterations
         """
-        Object oriented fortran based D2Q9 LB method
-        """
+        if image_int is not None:
+            if image_folder is not None:
+                if not os.path.exists(image_folder):
+                    os.makedirs(image_folder)
+                # need to add the 'xxxxx' to comply with naming from config file
+                image_name = "/".join([image_folder, image_name + 'xxxxx'])
+            else:
+                raise AssertionError("image_folder must be supplied")
+
+        print self.__niters
+        
         f = initial_distribution(9, self.__ny, self.__nx, self.__rho, 0., self.viscosity,
                                  self.__img, self.__wi)
-        for i in range(self.__niters):
+        for i in range(self.__niters + 1):
             rho = LB.f_rho(f, self.__ny, self.__nx)
             uy, ux = LB.f_u(f, rho, self.__ny, self.__nx)
             eu = LB.f_eu(uy, ux, self.__tau, self.__gravity, self.__ny, self.__nx)
@@ -390,15 +459,48 @@ class RunLB2D(object):
             fcol = LB.f_bounceback(f, fcol, self.__img, self.__ny, self.__nx)
             f = LB.f_streaming(fcol, self.__ny, self.__nx)
 
+            if verbose is not None:
+                if i > 0:
+                    if i % verbose == 0:
+                        print("Iter: {:05d}".format(i))
+
+            if image_int is not None:
+                if i > 0:
+                    if i % image_int == 0:
+                        u = [uy[:], ux[:] * -1]
+                        print image_name
+                        pretty.velocity_image(u, self.__img, image_name, i, True,
+                                              vmin, vmax)
+
         return f
 
-    def __run__python(self)
-    """
-        Object oriented python based D2Q9 LB method
+    def __run_python(self, output='LBModel.hdf5', image_int=None, image_folder=None,
+                     image_name="LB_", vmax=0, vmin=-0.005, verbose=None):
         """
+        Object oriented python based D2Q9 LB method, uses the python kernal
+        
+        Parameters:
+        -----------
+            image_int (int) interval to dump velocity images to a file folder
+            image_folder (str) path to folder to dump images to
+            image_name (int) base name for images
+            vmax (float) matplotlib vmax
+            vmin (float) matplotlib vmin
+            verbose (int) print interval for iterations
+        """
+        if image_int is not None:
+            if image_folder is not None:
+                if not os.path.exists(image_folder):
+                    os.makedirs(image_folder)
+                # need to add the 'xxxxx' to comply with naming from config file
+                image_name = "/".join([image_folder, image_name + 'xxxxx'])
+            else:
+                raise AssertionError("image_folder must be supplied")
+                    
+        
         f = initial_distribution(9, self.__ny, self.__nx, self.__rho, 0, self.viscosity,
                                  self.__img, self.__wi)
-        for i in range(niters):
+        for i in range(self.__niters + 1):
             rho = py_rho(f)
             uy, ux = py_u(f, rho)
             eu = py_eu(uy, ux, self.__tau, self.__gravity, self.__ny, self.__nx)
@@ -408,13 +510,24 @@ class RunLB2D(object):
             fcol = py_bounceback(f, fcol, self.__img, self.__ny, self.__nx)
             f = py_streaming(fcol, self.__ny, self.__nx)
 
+            if verbose is not None:
+                if verbose % i == 0:
+                    print("Iter: {:05d}".format(i))
+            
+            if image_int is not None:
+                if i > 0:
+                    if image_int % i == 0:
+                        u = [uy[:], ux[:] * -1]
+                        pretty.velocity_image(u, self.__img, image_name, i, True,
+                                              vmin, vmax)
+
         return f
     
 if __name__ == '__main__':
-    ####Begin program with parser options####
+    # Begin program with parser options
     parser = optparse.OptionParser()
-    parser.add_option('-c', '--config', dest = 'config', help='configuration file name')
-    (opts,args)=parser.parse_args()
+    parser.add_option('-c', '--config', dest='config', help='configuration file name')
+    (opts, args) = parser.parse_args()
 
     config = LBIO.Config(opts.config)
     # define defaults
@@ -429,37 +542,35 @@ if __name__ == '__main__':
     PermeabilityDict = addIO(PermeabilityDict, config.permeability_parameters())
     OutputDict = addIO(OutputDict, config.output_parameters())
 
-    ####Open saved image data; set initial variables####
+    # Open saved image data; set initial variables
     lbmodel = ModelDict['LBMODEL']
     vmax = OutputDict['VMAX']
     vmin = OutputDict['VMIN']
     image = HDF5_readarray(lbmodel, 'Binary_image')
 
-    rhot = PermeabilityDict['RHOT'] #add through opts.input
+    rhot = PermeabilityDict['RHOT']  # add through opts.input
     rhob = PermeabilityDict['RHOB']
     rhoarray = [rhot, rhob]
     delr = rhot - rhob
     cs = 0.577350269
-    cs2 = cs*cs
+    cs2 = cs * cs
     q = 9
     g = PermeabilityDict['GRAVITY']
     ny = len(image)
     nx = len(image[0])
     tau = PermeabilityDict['TAU']
-    vis = 1./3.*(tau-0.5)
+    vis = 1./3. * (tau - 0.5)
     niters = PermeabilityDict['NITERS']
     kernal = ModelDict['KERNAL'].lower()
+
     if OutputDict['SAVE_IMAGE'] is True:
         check_directory(OutputDict['IMAGE_SAVE_FOLDER'])
         image_name = OutputDict['IMAGE_SAVE_FOLDER'] + '/' + lbmodel
-                    
     
     # weights are consistant with up,right == positive
     # down, left == negative. position 9 == 0.
     wi = np.array([1./9., 1./36., 1./9., 1./36., 1./9.,
                    1./36., 1./9., 1./36., 4./9.])
-
-
 
     if kernal == 'fortran':
         f = initial_distribution(q, ny, nx, rhot, delr, vis, image, wi)
@@ -476,14 +587,14 @@ if __name__ == '__main__':
         
             if OutputDict['SAVE_IMAGE'] != False:
                 if OutputDict['IMAGE_SAVE_INTERVAL'] != None:   
-                    if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
-                        print '[Saving image: %i]' %i
-                        u = [uy[:], ux[:]*-1]
+                    if i % OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
+                        print '[Saving image: %i]' % i
+                        u = [uy[:], ux[:] * -1]
                         pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
-                                          vmin, vmax)
+                                              vmin, vmax)
 
             if OutputDict['VERBOSE'] is not False:
-                if i%OutputDict['VERBOSE'] == 0:
+                if i % OutputDict['VERBOSE'] == 0:
                     print '[Iter: %i]' % i
 
     elif kernal == 'python':
@@ -501,23 +612,23 @@ if __name__ == '__main__':
 
             if OutputDict['SAVE_IMAGE'] != False:
                 if OutputDict['IMAGE_SAVE_INTERVAL'] != False:   
-                    if i%OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
-                        print '[Saving image: %i]' %i
-                        u = [uy[:], ux[:]*-1]
+                    if i % OutputDict['IMAGE_SAVE_INTERVAL'] == 0:
+                        print '[Saving image: %i]' % i
+                        u = [uy[:], ux[:] * -1]
                         pretty.velocity_image(u, image, image_name, i, OutputDict['PLOT_Y_VELOCITY'],
-                                          vmin, vmax)
+                                              vmin, vmax)
 
             if OutputDict['VERBOSE'] is not False:
-                if i%OutputDict['VERBOSE'] == 0:
+                if i % OutputDict['VERBOSE'] == 0:
                     print '[Iter: %i]' % i
 
     else:
         raise Exception('Kernal type not supported')
     
-    macrho = py_rho(rho)/len(rho)
+    macrho = py_rho(rho) / len(rho)
     mrho = mean_rho(macrho, rhob)
 
-    u = [uy[:], ux[:]*-1]
+    u = [uy[:], ux[:] * -1]
 
     output = HDF5_write(mrho, tau, u, f, delr, rhot, lbmodel)
 

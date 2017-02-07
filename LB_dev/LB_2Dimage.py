@@ -47,6 +47,12 @@ class BoundaryCondition:
                    bottom of the image array. 
     """
     def __init__(self, data, fluidvx, solidvx, nlayers):
+
+        if isinstance(fluidvx, int):
+            fluidvx = [fluidvx]
+
+        if isinstance(solidvx, int):
+            solidvx = [solidvx]
                 
         self.__fluidvx = fluidvx
         self.__solidvx = solidvx
@@ -56,7 +62,7 @@ class BoundaryCondition:
         self.image = data
         self.binarized = None
         self.__set_boundary_conditions()
-        print(self.__porosity())
+        print("Porosity: ", self.__porosity())
         
     def __set_boundary_conditions(self):
         setup_bc = np.zeros((self.__dimy, self.__dimx))
@@ -103,13 +109,43 @@ class BoundaryCondition:
 
 class HDF5_write:
     def __init__(self, arr, porosity, boundary, output):
-        with H.File(output,"w") as self.fi:
+        """
+        Write class for LB2d_image.
+
+        Parameters:
+        ----------
+        arr (np.ndarray) binarized image data
+        porosity (float) porosity of the image
+        boundary (int) number of boundary layers
+        output (str) output hdf5 file name
+        """
+        self.__x = None
+        with H.File(output, "w") as fi:
             print '[Writing to %s]' % output
-            self.imwrite = self.fi.create_dataset('Binary_image', data=arr)
-            self.pwrite = self.fi.create_dataset('results/porosity', data=porosity)
-            self.bwrite = self.fi.create_dataset('results/boundary', data=boundary)
+            fi.create_dataset('Binary_image', data=arr)
+            fi.create_dataset('results/porosity', data=porosity)
+            fi.create_dataset('results/boundary', data=boundary)
 
+def run(image, solid, fluid, output, boundary=5):
+    """
+    Object oriented approach to run the LB-Colloids script
 
+    Parameters:
+    -----------
+        image: (str) image file name
+        solid: (list, int) list of interger grey scale values corresponding
+            to the solid phase
+        fluid: (list, int) list of interger grey scale values corresponding
+            to the fluid phase
+        output: (str) output hdf5 file name
+        boundary: (int) number of boundary layers for the model
+    """
+    img = Images(image)
+    bc = BoundaryCondition(img, fluid, solid, boundary)
+    HDF5_write(bc.binarized, bc.porosity, boundary, output)
+    plt.imshow(bc.binarized, interpolation = 'nearest')
+    plt.show()
+    
 ####Test definition for later use####
 def HDF5_readarray(filename, data):
     f = H.File(filename, "r+")
