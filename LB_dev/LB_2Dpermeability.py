@@ -263,14 +263,28 @@ class HDF5_write:
         
         """
         self.__x = None
-        with H.File(output, "r+") as fi:
-            print '[Writing to: %s]' % output
-            fi.create_dataset('results/mrho', data=mrho)
-            fi.create_dataset('results/tau', data=tau)
-            fi.create_dataset('results/uarray', data=u)
-            fi.create_dataset('results/f', data=f)
-            fi.create_dataset('results/delr', data=delrho)
-            fi.create_dataset('results/rho', data=rho)
+        try:
+            with H.File(output, "r+") as fi:
+                print '[Writing to: %s]' % output
+                fi.create_dataset('results/mrho', data=mrho)
+                fi.create_dataset('results/tau', data=tau)
+                fi.create_dataset('results/uarray', data=u)
+                fi.create_dataset('results/f', data=f)
+                fi.create_dataset('results/delr', data=delrho)
+                fi.create_dataset('results/rho', data=rho)
+        except:
+            if os.path.isfile(output):
+                os.remove(output)
+
+            with H.File(output, "w") as fi:
+                # need to add more to this to include output from LB2D_Image
+                print '[Writing to: %s]' % output
+                fi.create_dataset('results/mrho', data=mrho)
+                fi.create_dataset('results/tau', data=tau)
+                fi.create_dataset('results/uarray', data=u)
+                fi.create_dataset('results/f', data=f)
+                fi.create_dataset('results/delr', data=delrho)
+                fi.create_dataset('results/rho', data=rho)
 
 
 class LB2DModel(object):
@@ -468,9 +482,15 @@ class LB2DModel(object):
                 if i > 0:
                     if i % image_int == 0:
                         u = [uy[:], ux[:] * -1]
-                        print image_name
                         pretty.velocity_image(u, self.__img, image_name, i, True,
                                               vmin, vmax)
+
+        macrho = py_rho(rho) / len(rho)
+        mrho = mean_rho(macrho, self.rho)
+
+        u = [uy[:], ux[:] * -1]
+
+        HDF5_write(mrho, self.tau, u, f, 1., rho, output)
 
         return f
 
@@ -520,7 +540,12 @@ class LB2DModel(object):
                         u = [uy[:], ux[:] * -1]
                         pretty.velocity_image(u, self.__img, image_name, i, True,
                                               vmin, vmax)
+        macrho = py_rho(rho) / len(rho)
+        mrho = mean_rho(macrho, self.rho)
 
+        u = [uy[:], ux[:] * -1]
+
+        HDF5_write(mrho, self.tau, u, f, 1., rho, output)
         return f
     
 if __name__ == '__main__':
