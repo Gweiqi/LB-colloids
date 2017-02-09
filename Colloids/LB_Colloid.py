@@ -211,7 +211,7 @@ def run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isit
                 timeseries.write_output(timer, x, pathline=False)
 
             else:
-                col.store_positions(timer)
+                col.store_position(timer)
                 col.strip_positions()
                 
         # check if user wants an endpoint file
@@ -419,7 +419,7 @@ if __name__ == '__main__':
         yy = np.array([np.arange(ylen + 1)])
         yy = np.tile(yy.T, (1, xlen + 1))
         
-        plt.pcolormesh(xx, yy, LBy, cmap='jet_r')
+        plt.pcolormesh(xx, yy, LBy, cmap='viridis_r') 
         
         for col in x:
             plt.plot(np.array(col.storex)/gridres, np.array(col.storey)/-gridres, 'o',

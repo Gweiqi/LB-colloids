@@ -108,6 +108,7 @@ subroutine f_zhohe(f, rho, ylen, xlen, fzhe)
   f7 = -(2/3) * rho * vy_ub + f(3, :, :)
   f8 = -(1/6) * rho * vy_ub + (f(5, :, :) - f(1, :, :))/2 + f(4, :, :)
   
+  !$OMP PARALLEL DO
   do k=1, xlen
     do j=1, ylen
       
@@ -146,6 +147,7 @@ subroutine f_zhohe(f, rho, ylen, xlen, fzhe)
 
     enddo
   enddo
+  !$OMP END PARALLEL DO
   
 end subroutine f_zhohe
 
@@ -158,6 +160,7 @@ subroutine f_bounceback(f, fcol, image, ylen, xlen, fbounce)
   real, dimension(9, ylen, xlen), intent(out)	:: fbounce
   integer 										:: j, k
   
+  !$OMP PARALLEL DO
   do k=1, xlen
     do j=1, ylen
     
@@ -184,7 +187,8 @@ subroutine f_bounceback(f, fcol, image, ylen, xlen, fbounce)
         
       endif
     enddo
-  enddo  
+  enddo
+  !$OMP END PARALLEL DO  
 
 end subroutine f_bounceback
 
@@ -195,6 +199,7 @@ subroutine f_streaming(fcol, ylen, xlen, fstream)
   real, dimension(9, ylen, xlen), intent(out)   :: fstream
   integer										:: j, k, jp, jn, kp, kn
   
+  !$OMP PARALLEL DO
   do k=1, xlen
     do j=1, ylen
       
@@ -231,5 +236,6 @@ subroutine f_streaming(fcol, ylen, xlen, fstream)
       fstream(9, j, k)   = fcol(9, j, k)
     enddo
   enddo
+  !$OMP END PARALLEL DO
 
 end subroutine f_streaming
