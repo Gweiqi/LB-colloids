@@ -1,10 +1,8 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib as mpl
 from scipy import interpolate
-import Colloid_Math as cm
 import h5py as H
 import sys
+
 
 class HDF5_reader:
     def __init__(self, HDF_name):
@@ -14,9 +12,10 @@ class HDF5_reader:
         self.yu = hdf['results/uarray'][()][0]
         self.xu = hdf['results/uarray'][()][1]
 
+
 class Gridarray:
     def __init__(self, arr, gridres, gridsplit, solid=True):
-        '''
+        """
         Gridarray class creates arrays of distances from pore spaces, corrects for
         interpolation effects at pore boundaries, and creates vector arrays that are
         later used to give direction to forces.
@@ -39,17 +38,17 @@ class Gridarray:
         vector_x: (np.array, np.float) Array of specific vector directions in the x-direction (-1 == left, 1 == right)
         vector_y: (np.array, np.float) Array of specific vector directions in the y-direction (-1 == down, 1 == up)
         
-        '''
+        """
         self.yarr = np.copy(arr.T)
         self._vimgx, self._vimgy = self._create_vector_array(arr, solid)
         self.gridx, self.vector_x = self._arrx(arr, self._vimgx, gridres, gridsplit)
         self.gridy, self.vector_y = self._arry(self.yarr, self._vimgy, gridres, gridsplit)
 
     def _create_vector_array(self, img, solid):
-        '''
+        """
         creates an x-dir copy and y-dir copy of the image domain for vector
         directions to populate.
-        '''
+        """
         vimgx = np.copy(img)
         vimgy = np.copy(img.T)
         vimgx[vimgx == solid] = np.nan
@@ -57,29 +56,29 @@ class Gridarray:
         return vimgx, vimgy
 
     def _arrx(self, arr, vector_x, gridres, gridsplit):
-        '''
+        """
         Method that handles looping through array and sends it to distance_gridx
-        '''
+        """
         for line in range(len(arr)):
             arr[line], vector_x[line] = self._distance_gridx(arr[line], vector_x[line], gridres, gridsplit)
         return arr, vector_x
 
     def _arry(self, yarr, vector_y, gridres, gridsplit):
-        '''
+        """
         Method that handles looping through array and sends it to distance_gridy
-        '''
+        """
         for line in range(len(yarr)):
             ylen = len(yarr[0])
             yarr[line], vector_y[line] = self._distance_gridy(yarr[line], vector_y[line], gridres, ylen, gridsplit)
         return yarr.T, vector_y.T
     
     def _distance_gridx(self, line, vline, gridres, gridsplit):
-        '''
+        """
         Method uses linear interpolation to correct pore boundary space
 
         Follows by creating an array of pore boundaries and then counts the distance
         from the nearest solid. It also creates a a vector direction array that corresponds.
-        '''
+        """
 
         # Saner(?) method which does not raise warnings from Python 2.7.12
         # Forward compatable with Python 3.5.2
@@ -102,11 +101,11 @@ class Gridarray:
 
                 if gap % 2 == 0:
                     gap = gap//2
-                    left = np.arange(1, gap + 1)*gridres
+                    left = np.arange(1, gap + 1) * gridres
                     right = left[::-1]
                     line[lbound:rbound] = np.append(left, right)
 
-                    left = np.ones(gap)*-1
+                    left = np.ones(gap) * -1
                     # print left
                     right = np.ones(gap)
                     # print right
@@ -115,13 +114,13 @@ class Gridarray:
 
                 else:
                     gap = gap//2
-                    left = np.arange(1, gap + 1)*gridres
+                    left = np.arange(1, gap + 1) * gridres
                     right = left[::-1]
-                    adjust = (len(left) + 1)*gridres
+                    adjust = (len(left) + 1) * gridres
                     left = np.append(left, adjust)
                     line[lbound:rbound] = np.append(left, right)
 
-                    left = np.ones(gap + 1)*-1
+                    left = np.ones(gap + 1) * -1
                     right = np.ones(gap)
                     vline[lbound:rbound] = np.append(left, right)
                     
@@ -148,12 +147,12 @@ class Gridarray:
         np.array(line)
         
         # create an array of pore boundaries from binary system
-        boundary= np.where(np.abs(np.diff(line)) >= 1)[0]
+        boundary = np.where(np.abs(np.diff(line)) >= 1)[0]
 
         if len(boundary) > 0:
             rbound = boundary[0] + 1 
             lbound = 0
-            top = np.arange(rbound, lbound, -1)*gridres
+            top = np.arange(rbound, lbound, -1) * gridres
             line[lbound:rbound] = top
             vtop = np.ones(len(top)) * -1
             vline[lbound:rbound] = vtop
@@ -163,25 +162,25 @@ class Gridarray:
                 lbound = boundary[i - 1] + 1
                 gap = rbound - lbound
                 if gap % 2 == 0:
-                    gap = gap//2
-                    left = np.arange(1, gap + 1)*gridres
+                    gap = gap // 2
+                    left = np.arange(1, gap + 1) * gridres
                     right = left[::-1]
                     line[lbound:rbound] = np.append(left, right)
 
                     left = np.ones(gap)
-                    right = np.ones(gap)*-1
+                    right = np.ones(gap) * -1
                     vline[lbound:rbound] = np.append(left, right)
                     
                 else:
-                    gap = gap//2
-                    left = np.arange(1, gap + 1)*gridres
+                    gap = gap // 2
+                    left = np.arange(1, gap + 1) * gridres
                     right = left[::-1]
-                    adjust = (len(left) + 1)*gridres
+                    adjust = (len(left) + 1) * gridres
                     left = np.append(left, adjust)
                     line[lbound:rbound] = np.append(left, right)
 
                     left = np.ones(gap + 1)
-                    right = np.ones(gap)*-1
+                    right = np.ones(gap) * -1
                     vline[lbound:rbound] = np.append(left, right)
                     
             rbound = ylen
@@ -196,29 +195,32 @@ class Gridarray:
             pass
         return line, vline
 
+
 def LBVArray(LBv, img):
-    vel = np.zeros((len(LBv),len(LBv[0])))
+    vel = np.zeros((len(LBv), len(LBv[0])))
     invert = np.invert(img)
-    vel = np.array([LBv[i]*invert[i] for i in range(len(LBv))])
+    vel = np.array([LBv[i] * invert[i] for i in range(len(LBv))])
     print(vel.shape)
     return vel
+
 
 def InterpV(LBv, gridsplit, img=False):
     ylen = len(LBv)
     xlen = len(LBv[0])
-    xindex = np.arange(0,xlen)
-    yindex = np.arange(0,ylen)
-    ifactor = 1./gridsplit
-    xnew = np.arange(0, xlen-1+(ifactor), ifactor)
-    ynew = np.arange(0, ylen-1+(ifactor), ifactor)
+    xindex = np.arange(0, xlen)
+    yindex = np.arange(0, ylen)
+    ifactor = 1. / gridsplit
+    xnew = np.arange(0, xlen - 1 + (ifactor), ifactor)
+    ynew = np.arange(0, ylen - 1 + (ifactor), ifactor)
     f = interpolate.interp2d(xindex, yindex, LBv, kind='linear')
     znew = f(xnew, ynew)
 
-    if img == True:
+    if img:
         # correct pore boundaries from interpolation
-        znew[znew >= ifactor*gridsplit/2.]= 1 # 0] = 1# ifactor*gridsplit/2.] = 1
-        znew[znew < ifactor*gridsplit/2.] = 0 # 0] = 0# ifactor*gridsplit/2.] = 0
+        znew[znew >= ifactor * gridsplit / 2.] = 1  # 0] = 1# ifactor*gridsplit/2.] = 1
+        znew[znew < ifactor * gridsplit / 2.] = 0  # 0] = 0# ifactor*gridsplit/2.] = 0
 
     return znew
+
 
 

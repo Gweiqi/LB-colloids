@@ -284,8 +284,8 @@ if __name__ == '__main__':
     LBy = cs.LBVArray(LB.yu, LB.imarray)
     LBx = cs.LBVArray(LB.xu, LB.imarray)
     
-    #### interpolate over grid array and interpolate veloctity profiles ####
-    #Col_vp = interp_v(LBvp, gridsplit)
+    # interpolate over grid array and interpolate veloctity profiles
+    # Col_vp = interp_v(LBvp, gridsplit)
     LBy = cs.InterpV(LBy, gridsplit)
     LBx = cs.InterpV(LBx, gridsplit)
     Col_img = cs.InterpV(LB.imarray, gridsplit, img=True)
