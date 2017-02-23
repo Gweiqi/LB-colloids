@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import interpolate
+from copy import copy
 import h5py as H
 import sys
 
@@ -41,8 +42,24 @@ class Gridarray:
         """
         self.yarr = np.copy(arr.T)
         self._vimgx, self._vimgy = self._create_vector_array(arr, solid)
-        self.gridx, self.vector_x = self._arrx(arr, self._vimgx, gridres, gridsplit)
-        self.gridy, self.vector_y = self._arry(self.yarr, self._vimgy, gridres, gridsplit)
+        self.__gridx, self.__vector_x = self._arrx(arr, self._vimgx, gridres, gridsplit)
+        self.__gridy, self.__vector_y = self._arry(self.yarr, self._vimgy, gridres, gridsplit)
+
+    @property
+    def gridx(self):
+        return copy(self.__gridx)
+
+    @property
+    def gridy(self):
+        return copy(self.__gridy)
+
+    @property
+    def vector_x(self):
+        return copy(self.__vector_x)
+
+    @property
+    def vector_y(self):
+        return copy(self.__vector_y)
 
     def _create_vector_array(self, img, solid):
         """
@@ -198,7 +215,7 @@ class Gridarray:
 
 def LBVArray(LBv, img):
     vel = np.zeros((len(LBv), len(LBv[0])))
-    invert = np.invert(img)
+    invert = np.invert(img.astype(bool))
     vel = np.array([LBv[i] * invert[i] for i in range(len(LBv))])
     print(vel.shape)
     return vel

@@ -23,7 +23,7 @@ class Config:
         if isinstance(fname, str):
             self.config = self._reader(fname)
         elif isinstance(fname, list):
-            self.config = fname
+            self.config = [line.strip('\n') for line in fname]
         elif fname is None:
             pass
         else:
@@ -254,12 +254,13 @@ class Config:
         """
         for key in self._required:
             if key.lower() not in ModelDict:
-                if key.lower() == 'ts':
-                    key = 'TIMESTEP'
+                if key.upper() not in ModelDict:
+                    if key.lower() == 'ts':
+                        key = 'TIMESTEP'
+                    else:
+                        raise AssertionError('%s is a required MODEL PARAMETER' % key)
                 else:
                     pass
-                print('%s is a required MODEL PARAMETER' % key)
-                sys.exit(-1)
             else:
                 pass
 
@@ -354,7 +355,7 @@ class ColloidsConfig(dict):
         Override method that assures the key is in uppercase notation:
         """
         key = key.upper()
-        return self[key]
+        return super(ColloidsConfig, self).__getitem__(key)
 
     @property
     def config(self):
@@ -384,7 +385,7 @@ class ColloidsConfig(dict):
             valid_parameters: (tuple) tuple of valid parameters for the model block
             block_name: (str) configuration file block name
         """
-        self.__config.append(['START {}\n'.format(block_name.upper())])
+        self.__config.append('START {}\n'.format(block_name.upper()))
         for key in self:
             if key in valid_parameters:
                 self.__config.append('{}: {}\n'.format(key, self[key]))
@@ -430,5 +431,5 @@ class ColloidsConfig(dict):
         return self.__get_parameters(self.__formats.validoutputparams)
 
     def write(self, fname):
-        with open(fname) as f:
+        with open(fname, "w") as f:
             f.writelines(self.config)

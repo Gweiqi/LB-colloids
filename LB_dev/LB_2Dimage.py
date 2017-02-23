@@ -83,7 +83,7 @@ class BoundaryCondition:
                             print 'Fluid Values: ', self.fluid_voxels
                             raise ValueError('Grey Value not in solid or fluid voxel values')
 
-        self.binarized = setup_bc
+        self.binarized = setup_bc.astype(bool)
 
     def __porosity(self):
         img = self.binarized[self.__nlayers:-self.__nlayers, 1:-1]
@@ -105,6 +105,10 @@ class BoundaryCondition:
     @property
     def porosity(self):
         return self.__porosity()
+
+    @property
+    def nlayers(self):
+        return self.__nlayers
     
 
 class HDF5_write:
@@ -145,6 +149,7 @@ def run(image, solid, fluid, output, boundary=5):
     HDF5_write(bc.binarized, bc.porosity, boundary, output)
     plt.imshow(bc.binarized, interpolation = 'nearest')
     plt.show()
+
     
 ####Test definition for later use####
 def HDF5_readarray(filename, data):
@@ -153,14 +158,16 @@ def HDF5_readarray(filename, data):
     f.close()
     return dset
 
+
 # Facilitates defaults through kwargs
 def addIO(defaults, config):
     for key in config:
         defaults[key] = config[key]
     return defaults
 
+
 def prep_conponents(components):
-    components = componets.split(',')
+    components = components.split(',')
     solid = [int(i[1:]) for i in components if 's' in i]
     fluid = [int(i[1:]) for i in components if 'f' in i]
     return solid, fluid
@@ -187,6 +194,7 @@ if __name__ == '__main__':
 
         components = opts.components.split(',')
         boundary = int(opts.boundary)
+        # todo: fix this issue with soil, fluid, boundary
         bc = BoundaryCondition(img.arr, solid, fluid, boundary)
         plt.imshow(bc.binarized, interpolation = 'nearest')
         plt.show()

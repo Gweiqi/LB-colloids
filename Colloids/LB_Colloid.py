@@ -9,6 +9,7 @@ import sys
 import optparse
 import random
 
+
 class Colloid:
     """
     Wrapper class to initiate and track colloid position through the LB Model
@@ -124,7 +125,7 @@ class Colloid:
             # Use a check to make sure colloid does not leave domain on first iteration
             # move colloid to a new location to if it leaves domain in the vertical y-direction
             if ry >= 0.:
-                rx = random.uniform(0.05,0.95)*xlen*self.resolution
+                rx = random.uniform(0.05,0.95)*self.xlen*self.resolution
                 ry = -self.resolution
             else:
                 pass
@@ -181,7 +182,9 @@ def fmt(x, pos):
     b = int(b)
     return r'${} \times 10^{{{}}}$'.format(a, b)
 
-def run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isitpathline, isitendpoint):
+
+def run_save_model(x, iters, vx, vy, ts, timer, print_time, store_time,
+                   pathline=None, timeseries=None, endpoint=None):
     """
     definition to allow the use of multiple ionic strengths ie. attachment then flush, etc....
     """
@@ -192,19 +195,19 @@ def run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isit
         timer.update_time()
 
         # check for a printing prompt
-        if timer.time%print_time == 0.:
+        if timer.time % print_time == 0.:
             timer.print_time()
             
         # check store_times and strip younger time steps from memory
-        if timer.time%store_time == 0.:
-            if isitpathline is True:
+        if timer.time % store_time == 0.:
+            if pathline is not None:
                 pathline.write_output(timer, x)
                 timer.strip_time()
                 for col in x:
                     col.store_position(timer) # use this for plotting functionality
                     col.strip_positions()
             
-            elif isittimeseries is True:
+            elif timeseries is not None:
                 for col in x:
                     col.store_position(timer) # use this for plotting functionality
                     col.strip_positions()
@@ -216,14 +219,28 @@ def run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isit
                 
         # check if user wants an endpoint file
         if timer.time == iters:
-            if isitendpoint is True:
+            if endpoint is not None:
                 for col in x:
                     col.store_position(timer)
                     col.strip_positions()
                 endpoint.write_output(timer, x, pathline=False)
 
-if __name__ == '__main__':
-    config = IO.Config('Synthetic.config')
+
+def run(config):
+    """
+    Model definition to setup and run the LB_Colloids from config file
+    or from OO.
+
+    config: (class colloid_IO.Config) object or list of colloid_IO.Config objects
+    :return:
+    """
+
+    if isinstance(config, list):
+        multiple_config = config[1:]
+        config = config
+    else:
+        multiple_config = []
+
     ModelDict = config.model_parameters()
     PhysicalDict = config.physical_parameters()
     ChemicalDict = config.chemical_parameters()
@@ -240,7 +257,10 @@ if __name__ == '__main__':
     preferential_flow = False
 
     if 'multiple_config' in ModelDict:
-        assert 'nconfig' in ModelDict
+        if ModelDict['multiple_config']:
+            assert 'nconfig' in ModelDict
+        else:
+            ModelDict['multiple_config'] = False
     else:
         ModelDict['multiple_config'] = False
 
@@ -250,24 +270,21 @@ if __name__ == '__main__':
     else:
         print_time = iters
 
-    isitpathline = False
-    isittimeseries = False
-    isitendpoint = False
+    pathline = None
+    timeseries = None
+    endpoint = None
     
     if 'pathline'  in OutputDict:
         pathline = IO.Output(OutputDict['pathline'], **OutputDict)
-        isitpathline = True
         if 'store_time' not in OutputDict:
             OutputDict['store_time'] = 100
             
     if 'timeseries' in OutputDict:
         timeseries = IO.Output(OutputDict['timeseries'], **OutputDict)
-        isittimeseries = True
         assert 'store_time' in OutputDict, 'please provide STORE_TIME as interval time'
         
     if 'endpoint' in OutputDict:
         endpoint = IO.Output(OutputDict['endpoint'], **OutputDict)
-        isitendpoint = True
         if 'store_time' not in OutputDict:
             OutputDict['store_time'] = 100
 
@@ -358,17 +375,19 @@ if __name__ == '__main__':
 
     #start model timer
     timer = TrackTime(ts)
-    run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isitpathline, isitendpoint)
+    run_save_model(x, iters, vx, vy, ts, timer, print_time,
+                   store_time, pathline, timeseries, endpoint)
 
     if ModelDict['multiple_config'] is True:
-        for confignumber in range(1, ModelDict['nconfig']):
-            config = IO.Config('Synthetic%i.config' % confignumber)
+        for confignumber in range(0, ModelDict['nconfig']-1):
+            config = IO.Config(multiple_config[confignumber])
             ModelDict = config.model_parameters()
             PhysicalDict = config.physical_parameters()
             ChemicalDict = config.chemical_parameters()
 
             iters = ModelDict['iters']
-            
+
+            # recalculate all physical chemical forces and continue running model
             drag_forces = cm.Drag(LBx, LBy, cfactor.f1, cfactor.f2, cfactor.f3,
                                   cfactor.f4, xvArr, yvArr, **PhysicalDict)
 
@@ -401,8 +420,9 @@ if __name__ == '__main__':
             vx = vx.velocity + LBx
             vy = vy.velocity + LBy
 
-            run_save_model(x, iters, timer, print_time, store_time, isittimeseries, isitpathline, isitendpoint)
-            # recalculate all physical chemical forces and continue running model
+            run_save_model(x, iters, vx, vy, ts, timer, print_time,
+                           store_time, pathline, timeseries, endpoint)
+
 
         
     if OutputDict['plot'] is True:
@@ -431,5 +451,13 @@ if __name__ == '__main__':
         cbar.set_label('m/s', rotation=270)
     
         plt.show()
-        
-        
+
+
+if __name__ == '__main__':
+    # todo: Need to fix this issue to check for multiple config
+    # todo: and then send it through as a list of dictionaries
+    config = IO.Config('Synthetic.config')
+    run(config)
+
+else:
+    pass

@@ -5,6 +5,7 @@ import optparse
 import LB2D as LB
 import LBIO
 import os
+from LB_2Dimage import BoundaryCondition
 
 
 def HDF5_readarray(filename, data):
@@ -85,7 +86,7 @@ def py_feq(eu, rho, usqr, wi, csqr, ny, nx):
     # calculate the lattice boltzmann equalibrium distribution function
     feq = np.zeros((9, ny, nx))
     for i in range(9):
-        feq[i, :, :] = wi[i]*rho*(1 + eu[i] / csqr + 0.5 * (eu[i] / csqr) ** 2 - usqr / (2 * csqr))
+        feq[i, :, :] = wi[i] * rho * (1 + eu[i] / csqr + 0.5 * (eu[i] / csqr) ** 2 - usqr / (2 * csqr))
     return feq
 
 
@@ -247,7 +248,8 @@ def addIO(defaults, config):
 
 
 class HDF5_write:
-    def __init__(self, mrho, tau, u, f, delrho, rho, output):
+    def __init__(self, mrho, tau, u, f, delrho, rho, output, img=None,
+                 porosity=None, boundary=None):
         """
         Hdf5 model write class
 
@@ -260,6 +262,9 @@ class HDF5_write:
             delrho: (float) density distribution
             rho: (np.ndarray) density array
             output: (str) hdf file name
+            img: (np.ndarray) binary image array
+            porosity: (float) porosity
+            boundary: (int) nlayers boundaty condition
         
         """
         self.__x = None
@@ -285,6 +290,9 @@ class HDF5_write:
                 fi.create_dataset('results/f', data=f)
                 fi.create_dataset('results/delr', data=delrho)
                 fi.create_dataset('results/rho', data=rho)
+                fi.create_dataset('Binary_image', data=img)
+                fi.create_dataset('results/porosity', data=porosity)
+                fi.create_dataset('results/boundary', data=boundary)
 
 
 class LB2DModel(object):
@@ -313,13 +321,15 @@ class LB2DModel(object):
     """
     def __init__(self, img, kernal='fortran'):
         self.__img = img
+        self.__nlayers = None
+        self.__porosity = None
         self.__kernal = kernal
         self.__gravity = 0.001
-        self.__tau = 1.
-        self.__rho = 1.
+        self.__tau = 1.0
+        self.__rho = 1.0
         self.__niters = None
         self.__cs = 0.577350269
-        self.__cs2 = self.__cs * self.__cs
+        self.__cs2 = self.cs * self.cs
         self.__ny = len(img)
         self.__nx = len(img[0])
         self.__wi = np.array([1./9., 1./36., 1./9., 1./36., 1./9.,
@@ -406,14 +416,43 @@ class LB2DModel(object):
 
     @property
     def viscosity(self):
-        return (1. / 3.)*(self.__tau - 0.5)
+        return (1. / 3.) * (self.tau - 0.5)
 
     @property
     def q(self):
         return 9
 
+    @property
+    def porosity(self):
+        if self.__porosity is None:
+            self.__get_image_attributes()
+        return self.__porosity
+
+    @property
+    def nlayers(self):
+        if self.__nlayers is None:
+            self.__get_image_attributes()
+        return self.__nlayers
+
+    def __get_image_attributes(self):
+        """
+        Method to extract the number of boundary layers and porosity from the
+        model domain
+        """
+        nbound = 0
+        for line in self.img:
+            if True in line[1:-1]:
+                pass
+            else:
+                nbound += 1
+        self.__nlayers = nbound//2
+
+        img = self.img[self.__nlayers:-self.__nlayers, 1:-1]
+        nsolid = np.count_nonzero(img)
+        self.__porosity = (img.size - nsolid) / float(img.size)
+
     def run(self, output='LBModel.hdf5', image_int=None, image_folder=None,
-            image_name="LB_", vmax=0, vmin=-0.005, verbose=None):
+            image_name="LB_", vmax=0, vmin=-0.010, verbose=None):
         """
         user method to run the lattice Boltzmann model and return the resulting
         distribution function.
@@ -437,7 +476,7 @@ class LB2DModel(object):
         return f
     
     def __run_fortran(self, output='LBModel.hdf5', image_int=None, image_folder=None,
-                      image_name="LB_", vmax=0, vmin=-0.005, verbose=None):
+                      image_name="LB_", vmax=0, vmin=-0.010, verbose=None):
         """
         Object oriented fortran based D2Q9 LB method, uses the fortran kernal
 
@@ -461,7 +500,7 @@ class LB2DModel(object):
 
         print self.__niters
         
-        f = initial_distribution(9, self.__ny, self.__nx, self.__rho, 0., self.viscosity,
+        f = initial_distribution(9, self.__ny, self.__nx, self.__rho , 0., self.viscosity,
                                  self.__img, self.__wi)
         for i in range(self.__niters + 1):
             rho = LB.f_rho(f, self.__ny, self.__nx)
@@ -486,16 +525,17 @@ class LB2DModel(object):
                                               vmin, vmax)
 
         macrho = py_rho(rho) / len(rho)
-        mrho = mean_rho(macrho, self.rho)
+        mrho = mean_rho(macrho, self.__rho)
 
         u = [uy[:], ux[:] * -1]
 
-        HDF5_write(mrho, self.tau, u, f, 1., rho, output)
+        HDF5_write(mrho, self.__tau, u, f, 0., 1., output, self.img, self.porosity,
+                   self.nlayers)
 
         return f
 
     def __run_python(self, output='LBModel.hdf5', image_int=None, image_folder=None,
-                     image_name="LB_", vmax=0, vmin=-0.005, verbose=None):
+                     image_name="LB_", vmax=0, vmin=-0.010, verbose=None):
         """
         Object oriented python based D2Q9 LB method, uses the python kernal
         
@@ -516,9 +556,8 @@ class LB2DModel(object):
                 image_name = "/".join([image_folder, image_name + 'xxxxx'])
             else:
                 raise AssertionError("image_folder must be supplied")
-                    
         
-        f = initial_distribution(9, self.__ny, self.__nx, self.__rho, 0, self.viscosity,
+        f = initial_distribution(9, self.__ny, self.__nx, self.__rho, 0., self.viscosity,
                                  self.__img, self.__wi)
         for i in range(self.__niters + 1):
             rho = py_rho(f)
@@ -531,12 +570,13 @@ class LB2DModel(object):
             f = py_streaming(fcol, self.__ny, self.__nx)
 
             if verbose is not None:
-                if verbose % i == 0:
-                    print("Iter: {:05d}".format(i))
+                if i > 0:
+                    if i % verbose == 0:
+                        print("Iter: {:05d}".format(i))
             
             if image_int is not None:
                 if i > 0:
-                    if image_int % i == 0:
+                    if i % image_int == 0:
                         u = [uy[:], ux[:] * -1]
                         pretty.velocity_image(u, self.__img, image_name, i, True,
                                               vmin, vmax)
@@ -545,7 +585,8 @@ class LB2DModel(object):
 
         u = [uy[:], ux[:] * -1]
 
-        HDF5_write(mrho, self.tau, u, f, 1., rho, output)
+        HDF5_write(mrho, self.tau, u, f, 0., 1., output, self.img, self.porosity,
+                   self.nlayers)
         return f
     
 if __name__ == '__main__':
