@@ -1,12 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-import matplotlib as mpl
 import Colloid_Setup as cs
 import Colloid_Math as cm
 import Colloid_IO as IO
-import sys
-import optparse
 import random
 
 
@@ -32,7 +29,7 @@ class Colloid:
     yposition: (list, float) a list of y-position values normalized to grid resolution (top left is 0,0)
     """
     def __init__(self, xlen, ylen, resolution):
-        self.xposition = [random.uniform(0.05,0.95)*xlen*resolution]
+        self.xposition = [random.uniform(0.05, 0.95)*xlen*resolution]
         self.yposition = [-resolution]
         self.resolution = resolution
         self.storey = [self.yposition[0]]
@@ -110,9 +107,8 @@ class Colloid:
                     self._append_flag(3)
                     self._append_xposition(irx)
                     self._append_yposition(iry)
-                    #print(ts)
-                    #raise Exception('WTF?')
                     return
+
             xv = xvelocity[idxry][idxrx]
             yv = yvelocity[idxry][idxrx]
         
@@ -165,7 +161,7 @@ class TrackTime:
         self.totim = [self.time*self.ts]
 
     def update_time(self):
-        self.time = self.time + 1
+        self.time += 1
         self.timer.append(self.time)
         self.totim.append(self.time*self.ts)
 
@@ -176,8 +172,9 @@ class TrackTime:
     def print_time(self):
         print(self.timer[-1], "%.3f" % self.totim[-1])
 
+
 def fmt(x, pos):
-    # functionformatter for matplotlib graphs
+    # function formatter for matplotlib graphs
     a, b = '{:.2e}'.format(x).split('e')
     b = int(b)
     return r'${} \times 10^{{{}}}$'.format(a, b)
@@ -204,12 +201,12 @@ def run_save_model(x, iters, vx, vy, ts, timer, print_time, store_time,
                 pathline.write_output(timer, x)
                 timer.strip_time()
                 for col in x:
-                    col.store_position(timer) # use this for plotting functionality
+                    col.store_position(timer)  # use this for plotting functionality
                     col.strip_positions()
             
             elif timeseries is not None:
                 for col in x:
-                    col.store_position(timer) # use this for plotting functionality
+                    col.store_position(timer)  # use this for plotting functionality
                     col.strip_positions()
                 timeseries.write_output(timer, x, pathline=False)
 
@@ -274,7 +271,7 @@ def run(config):
     timeseries = None
     endpoint = None
     
-    if 'pathline'  in OutputDict:
+    if 'pathline' in OutputDict:
         pathline = IO.Output(OutputDict['pathline'], **OutputDict)
         if 'store_time' not in OutputDict:
             OutputDict['store_time'] = 100
@@ -333,9 +330,9 @@ def run(config):
     
     # Initial setup block to estimate colloid velocity for drag_force calc. 
     drag_forces = cm.Drag(LBx, LBy, cfactor.f1, cfactor.f2, cfactor.f3,
-                          cfactor.f4, xvArr, yvArr, **PhysicalDict)
+                          cfactor.f4, **PhysicalDict)
 
-    brownian = cm.Brownian(xArr, yArr, cfactor.f1, cfactor.f4, **PhysicalDict)
+    brownian = cm.Brownian(cfactor.f1, cfactor.f4, **PhysicalDict)
 
     dlvo = cm.DLVO(xArr, yArr, xvArr=xvArr, yvArr=yvArr, **ChemicalDict)
 
@@ -343,7 +340,7 @@ def run(config):
     bouyancy = cm.Bouyancy(**PhysicalDict)
 
     physicalx = brownian.brownian_x + drag_forces.drag_x
-    physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy #brownian.brownian_y +
+    physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy
 
     dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx 
     dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
@@ -373,7 +370,7 @@ def run(config):
     xlen = len(Col_img[0])
     x = [Colloid(xlen, ylen, gridres) for i in range(ncols)]
 
-    #start model timer
+    # start model timer
     timer = TrackTime(ts)
     run_save_model(x, iters, vx, vy, ts, timer, print_time,
                    store_time, pathline, timeseries, endpoint)
@@ -389,9 +386,9 @@ def run(config):
 
             # recalculate all physical chemical forces and continue running model
             drag_forces = cm.Drag(LBx, LBy, cfactor.f1, cfactor.f2, cfactor.f3,
-                                  cfactor.f4, xvArr, yvArr, **PhysicalDict)
+                                  cfactor.f4, **PhysicalDict)
 
-            brownian = cm.Brownian(xArr, yArr, cfactor.f1, cfactor.f4, **PhysicalDict)
+            brownian = cm.Brownian(cfactor.f1, cfactor.f4, **PhysicalDict)
 
             dlvo = cm.DLVO(xArr, yArr, xvArr=xvArr, yvArr=yvArr, **ChemicalDict)
 
@@ -399,7 +396,7 @@ def run(config):
             bouyancy = cm.Bouyancy(**PhysicalDict)
 
             physicalx = brownian.brownian_x + drag_forces.drag_x
-            physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy #brownian.brownian_y +
+            physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy
 
             dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx 
             dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
@@ -423,9 +420,7 @@ def run(config):
             run_save_model(x, iters, vx, vy, ts, timer, print_time,
                            store_time, pathline, timeseries, endpoint)
 
-
-        
-    if OutputDict['plot'] is True:
+    if OutputDict['plot']:
         # set up option for vy vs. LBy plotting
         # re-interpolate Coloid image object to get binary array
         Col_img = cs.InterpV(LB.imarray, gridsplit, img=True)
@@ -456,8 +451,8 @@ def run(config):
 if __name__ == '__main__':
     # todo: Need to fix this issue to check for multiple config
     # todo: and then send it through as a list of dictionaries
-    config = IO.Config('Synthetic.config')
-    run(config)
+    config_file = IO.Config('Synthetic.config')
+    run(config_file)
 
 else:
     pass
