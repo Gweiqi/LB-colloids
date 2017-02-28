@@ -433,3 +433,69 @@ class ColloidsConfig(dict):
     def write(self, fname):
         with open(fname, "w") as f:
             f.writelines(self.config)
+
+
+class HDF5WriteArray(object):
+    """
+    Class to write 1d chemical and physical force arrays to the Model HDF5 object
+    for later use in sensitivity analysis.
+
+    model: (str) hdf5 model name for the project
+    """
+    def __init__(self, ux, uy, model_dict, chemical_dict, physical_dict):
+        import numpy as np
+        import Colloid_Math as cm
+        import h5py as H
+
+        self.__model = model_dict['lbmodel']
+        arr = np.array([np.arange(1, 101) * model_dict['lbres'] / model_dict['gridref']])
+        varr = np.array([np.ones(100)])
+        gravity = cm.Gravity(**model_dict)
+        bounancy = cm.Bouyancy(**model_dict)
+        cf = cm.Gap(arr, arr, **model_dict)
+        brownian = cm.Brownian(cf.f1, cf.f4, **physical_dict)
+
+        # pop and store the existing vector profiles until dummy data has been
+        # used, then add the model profile back to the chemical dict for writing
+        xvArr = chemical_dict.pop('xvArr')
+        yvArr = chemical_dict.pop('yvArr')
+        dlvo = cm.DLVO(arr, arr, xvArr=varr, yvArr=varr, **chemical_dict)
+        chemical_dict['xvArr'] = xvArr
+        chemical_dict['yvArr'] = yvArr
+
+        with H.File(self.__model, 'r+') as h:
+            for key, value in model_dict.items():
+                h.create_dataset('colloids/model_dict/{}'.format(key), data=value)
+            for key, value in chemical_dict.items():
+                if key in ('concentration', 'valence'):
+                    for species, species_value in value.items():
+                        h.create_dataset('colloids/chemical_dict/{}/{}'
+                                         .format(key, species), data=species_value)
+                else:
+                    h.create_dataset('colloids/chemical_dict/{}'.format(key), data=value)
+            for key, value in physical_dict.items():
+                h.create_dataset('colloids/physical_dict/{}'.format(key), data=value)
+            h.create_dataset('colloids/mock_arr', data=arr)
+            h.create_dataset('colloids/gravity', data=gravity.gravity)
+            h.create_dataset('colloids/bouyancy', data=bounancy.bouyancy)
+
+            cf_dict = {'f1': cf.f1, 'f2': cf.f2, 'f3': cf.f3, 'f4': cf.f4}
+            for key, value in cf_dict.items():
+                h.create_dataset('colloids/cf/{}'.format(key), data=value)
+
+            dlvo_profiles = {'brownian/x': brownian.brownian_x,
+                             'brownian/y': brownian.brownian_y,
+                             'edl/x': dlvo.EDLx,
+                             'edl/y': dlvo.EDLy,
+                             'lewis_acid_base/x': dlvo.LewisABx,
+                             'lewis_acid_base/y': dlvo.LewisABy,
+                             'lvdw/x': dlvo.LVDWx,
+                             'lvdw/y': dlvo.LVDWy}
+            for key, value in dlvo_profiles.items():
+                h.create_dataset('colloids/{}'.format(key), data=value)
+
+            h.create_dataset('colloids/ux', data=ux)
+            h.create_dataset('colloids/uy', data=uy)
+
+            # todo: add the drag force arrays to the dataset.
+            h.close()

@@ -7,7 +7,7 @@ import os
 
 path =  os.path.dirname(os.path.realpath(__file__))
 lbname = os.path.join(path, "LBModel.hdf5")
-"""
+
 imgname = os.path.join(path, "Synth100_2.png")
 
 
@@ -24,7 +24,7 @@ plt.show()
 lbmodel = LB2D.LB2DModel(binary.binarized)
 lbmodel.niters = 1000
 lbmodel.run(output=lbname, verbose=10, image_int=10, image_folder='test')
-"""
+
 # now we work with LB_colloids.py
 # need to think about namespace now.
 # now we can use this to do other analysis such as sensitivity analysis

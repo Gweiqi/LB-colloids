@@ -1,5 +1,6 @@
 import numpy as np
 import sys
+import copy
 
 
 class ForceToVelocity:
@@ -21,7 +22,7 @@ class ForceToVelocity:
 
         Returns:
         --------
-        xvelocity (np.array, np.float) Array of velocities calc. from forces
+        velocity (np.array, np.float) Array of velocities calc. from forces
         """
         params = {'rho_colloid': 2650., 'ac': 1e-6, 'ts': 1.}
         for kwarg in kwargs:
@@ -216,7 +217,8 @@ class Drag:
         drag_x: (np.array, np.float) vectorized drag forces in the x-direction non-vectorized
         drag_y: (np.array, np.float) vectorized drag forces in the y-direction non-vectorized
         """
-        params = {'ac': 1e-6, 'viscosity': 1.002e-3, 'rho_colloid': 2650., 'rho_water': 1000.}
+        params = {'ac': 1e-6, 'viscosity': 1.002e-3, 'rho_colloid': 2650., 'rho_water': 1000.,
+                  'T': 298.17, 'ts': 1.}
         for kwarg in kwargs:
             params[kwarg] = kwargs[kwarg]        
         
@@ -228,6 +230,8 @@ class Drag:
         self.Vcol = -((self.rho_colloid - self.rho_water)*((2*self.ac)**2)*9.81)/(18*self.viscosity)
         self.drag_x = self.drag_xforce(ux, self.Vcol, self.epsilon, f3, f4)  # *xvArr
         self.drag_y = self.drag_yforce(uy, self.Vcol, self.epsilon, f1, f2)  # *yvArr
+
+        self.all_physical_params = copy.copy(params)
         
     def drag_xforce(self, ux, Vx, epsilon, f3, f4):
         Fdt = (epsilon / f4) * ((f3 * ux) - Vx)
@@ -362,7 +366,7 @@ class DLVO:
         LewisABy: (np.array, float) vectorized np.array of lewis acid base force values in the y-direction
         """
 
-        params = {'concentration': {'Na': 10e-4}, 'adjust_zeta': False, 'I_initial': None, 'I': 10e-4, 'ac': 1e-6,
+        params = {'concentration': {'Na': 10e-4}, 'adjust_zeta': False, 'I_initial': False, 'I': 10e-4, 'ac': 1e-6,
                   'epsilon_r': 78.304, 'valence': {'Na': 1.}, 'sheer_plane': 3e-10, 'T': 298.17,
                   'lvdwst_water': 21.8e-3, 'lvdwst_colloid': 39.9e-3, 'lvdwst_solid': 33.7e-3, 'zeta_colloid': -40.5e-3,
                   'zeta_solid': -60.9e-3, 'psi+_colloid': 0.4e-3, 'psi-_colloid': 34.3e-3, 'psi+_water': 25.5e-3,
@@ -394,8 +398,10 @@ class DLVO:
         self.xvArr = params['xvArr']*-1
         self.yvArr = params['yvArr']*-1
 
-        if params['adjust_zeta'] is not False:
-            if params['I_initial'] is not None:
+        self.all_chemical_params = copy.copy(params)
+
+        if params['adjust_zeta']:
+            if params['I_initial']:
                 self.k_debye_init = self.debye(self.epsilon_0, self.epsilon_r, self.boltzmann, self.T, self.e,
                                                params['I_initial'])
                 
@@ -403,7 +409,7 @@ class DLVO:
                                                                       self.stern_z)
                 self.surface_potential_init = self._surface_potential(self.zeta_solid, self.k_debye_init, self.stern_z)
 
-                if params['I'] is not None:
+                if params['I']:
                     self.ionic_strength = 2*params['I']  # 2I is what is used in the debye equation
                 else:
                     self.ionic_strength = self.ionic(params['valence'], params['concentration'])
@@ -423,7 +429,7 @@ class DLVO:
         else: 
             pass
         
-        if params['I'] is not None:
+        if params['I']:
             self.ionic_strength = 2*params['I']  # 2I is what is used in the debye equation
         else:
             self.ionic_strength = self.ionic(params['valence'], params['concentration'])
@@ -574,3 +580,5 @@ class DLVO:
 
         lab = lab0*lab1*(lab2+lab3-lab4-lab5)
         return lab
+
+# todo: colloid-colloid interaction forces

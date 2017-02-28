@@ -342,7 +342,7 @@ def run(config):
     physicalx = brownian.brownian_x + drag_forces.drag_x
     physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy
 
-    dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx 
+    dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx
     dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
 
     if preferential_flow is True:
@@ -447,6 +447,11 @@ def run(config):
     
         plt.show()
 
+    IO.HDF5WriteArray(velocity.xvelocity,
+                      velocity.yvelocity,
+                      ModelDict,
+                      dlvo.all_chemical_params,
+                      drag_forces.all_physical_params)
 
 if __name__ == '__main__':
     # todo: Need to fix this issue to check for multiple config
