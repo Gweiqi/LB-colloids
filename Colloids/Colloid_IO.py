@@ -498,4 +498,6 @@ class HDF5WriteArray(object):
             h.create_dataset('colloids/uy', data=uy)
 
             # todo: add the drag force arrays to the dataset.
+            # todo: add method to convert dlvo forces to kT (first to J then 4.11*10^-21)
+            # todo: check the DLVO adjustments that I included on Monday
             h.close()

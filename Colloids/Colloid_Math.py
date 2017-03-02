@@ -400,6 +400,8 @@ class DLVO:
 
         self.all_chemical_params = copy.copy(params)
 
+        self.__resolution = params['lbres']/params['gridref']
+
         if params['adjust_zeta']:
             if params['I_initial']:
                 self.k_debye_init = self.debye(self.epsilon_0, self.epsilon_r, self.boltzmann, self.T, self.e,
@@ -440,7 +442,7 @@ class DLVO:
         self.colloid_potential = self._colloid_potential(self.zeta_colloid, self.ac, self.k_debye, self.stern_z)
         self.surface_potential = self._surface_potential(self.zeta_solid, self.k_debye, self.stern_z)
 
-        # Calculate the chemical forces
+        # Calculate the chemical potential
         self.EDLx = self._EDL_energy(self.epsilon_0, self.epsilon_r, self.ac, self.colloid_potential,
                                      self.surface_potential, self.k_debye, xarr)/xarr*self.xvArr
 
@@ -581,4 +583,144 @@ class DLVO:
         lab = lab0*lab1*(lab2+lab3-lab4-lab5)
         return lab
 
+
 # todo: colloid-colloid interaction forces
+class ColloidColloid(object):
+    """
+    Class to include colloid-colloid interaction forces via DLVO chemical
+    potential forces.
+
+    Parameters:
+    ----------
+        arr: (np.ndarray) Any nd.array that represents the shape of the colloid
+            domain
+        colloids: (list, <class: Colloids.LB_Colloid.Colloid)
+    """
+    def __init__(self, arr, resolution, **kwargs):
+
+        self.__params = {'concentration': False, 'adjust_zeta': False, 'I_initial': False,
+                         'I': 10e-4, 'ac': 1e-6, 'epsilon_0': 8.85e-12 , 'epsilon_r': 78.304, 'valence': {'Na': 1.},
+                         'sheer_plane': 3e-10, 'T': 298.17, 'lvdwst_water': 21.8e-3, 'lvdwst_colloid': 39.9e-3,
+                         'lvdwst_solid': 33.7e-3, 'zeta_colloid': -40.5e-3, 'zeta_solid': -60.9e-3,
+                         'psi+_colloid': 0.4e-3, 'psi-_colloid': 34.3e-3, 'psi+_water': 25.5e-3,
+                         'psi-_water': 25.5e-3, 'psi+_solid': 1.3e-3, 'psi-_solid': 62.2e-3, 'kb': 1.38e-23,
+                         'e': 1.6e-19}
+
+        for kwarg, value in kwargs.items():
+            self.__params[kwarg] = value
+
+        self.__arr = arr
+        self.__xarr = np.zeros(arr.shape)
+        self.__yarr = np.zeros(arr.shape)
+        self.__debye = False
+        self.__colloid_potential = False
+        self.__ionic_strength = False
+        self.__resolution = resolution
+        self.__colloids = []
+        self.__pos = []
+
+    def __reset(self):
+        """
+        Resets the calculation arrays
+        """
+        self.__xarr = np.zeros(self.__arr.shape)
+        self.__yarr = np.zeros(self.__arr.shape)
+        self.__colloids = []
+        self.__pos = []
+
+    def __get_colloid_positions(self):
+        """
+        Get the specific x, y positions of each colloid in the system
+
+        Parameters:
+        -----------
+            colloids: (list, <class: Colloids.LB_Colloid.Colloid)
+
+        Returns:
+        --------
+            pos: (list) list of colloid positions within the model space
+        """
+        for colloid in self.__colloids:
+            self.__pos.append([colloid.xposition[-1]/self.__resolution,
+                        colloid.yposition[-1]/self.__resolution])
+        return self.__pos
+
+    def update(self, colloids):
+        """
+        Updates the colloidal positions and force arrays for the system
+
+        Parameters:
+        ----------
+            colloids: (list, <class: Colloids.LB_Colloid.Colloid)
+        """
+        self.__reset()
+        self.__colloids = colloids
+        pos = self.positions
+
+
+    @property
+    def positions(self):
+        """
+        Property method to generate colloid positions if they are not stored yet
+        """
+        if not self.__pos:
+            self.__get_colloid_positions()
+        return self.__pos
+
+    @property
+    def ionic_strength(self):
+        """
+        Property method to calculate ionic_strength on the fly
+        """
+        if not self.__params['concentration']:
+            return self.__params['I']*2
+        else:
+            I = 0
+            for key in self.__params['concentration']:
+                I += (float(self.__params['concentration'][key])
+                      * (float(self.__params['valence'][key]) ** 2))
+            return I
+
+    @property
+    def debye(self):
+        """
+        Property method to calculate the inverse debye length on the fly
+        """
+        if not self.__debye:
+            na = 6.02e23
+            k_inverse = np.sqrt((self.__params['epsilon_r']*self.__params['epsilon_r']
+                                *self.__params['kb']*self.__params['T'])/
+                                (self.__params['e']*self.__params['e']*na*self.ionic_strength))
+            self.__debye = 1./k_inverse
+        return self.__debye
+
+    @property
+    def colloid_potential(self):
+        if not self.__colloid_potential:
+            self.__colloid_potential = self.__params['zeta_colloid']*(1. +
+                                       (self.__params['sheer_plane']/self.__params['ac']))\
+                                        *np.exp(self.debye*self.__params['zeta_colloid'])
+        return self.__colloid_potential
+
+    def dlvo_interaction_energy(self, colloid_arr):
+        """
+        Uses formulation of Israelachvili 1992 Intermolecular surface forces
+        to calculate DLVO energy of colloid-colloid interaction.
+
+        """
+        A = 384. * np.pi * colloid_arr * self.debye * self.__params['T']\
+            * self.ionic_strength * self.colloid_potential*self.colloid_potential\
+            * np.exp(-self.debye*np.abs(colloid_arr))
+
+        dlvo = (((64 * np.pi * self.debye * self.__params['T'] * self.__params['ac']
+                * self.ionic_strength * self.colloid_potential * self.colloid_potential) /
+                (self.debye * self.debye)) * np.exp(-self.debye* np.abs(colloid_arr)))\
+                - ((A * self.__params['ac'])/(6 * np.abs(colloid_arr)))
+        # todo: generate a tortional field based upon the sin or cos to get 3d influence of sphere.
+        return dlvo
+
+
+# todo: write conversion of force to chemical potential
+def force_to_kT(arr, T):
+    k = 1.38e-23
+    return
