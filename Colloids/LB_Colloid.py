@@ -5,6 +5,7 @@ import Colloid_Setup as cs
 import Colloid_Math as cm
 import Colloid_IO as IO
 import random
+import copy.copy as copy
 
 
 class Colloid:
@@ -185,6 +186,9 @@ def run_save_model(x, iters, vx, vy, ts, timer, print_time, store_time,
     """
     definition to allow the use of multiple ionic strengths ie. attachment then flush, etc....
     """
+    vx0 = copy(vx)
+    vy0 = copy(vy)
+
     while timer.time <= iters:
         # update colloid position and time
         for col in x:

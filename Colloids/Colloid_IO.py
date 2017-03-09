@@ -43,14 +43,14 @@ class Config:
                           'TS')
         self.validmodelparams = ('LBMODEL', 'NCOLS', 'ITERS', 'LBRES',
                                  'GRIDREF', 'AC', 'TIMESTEP', 'TEMPERATURE',
-                                 'MULTIPLE_CONFIG', 'NCONFIG')
+                                 'MULTIPLE_CONFIG', 'NCONFIG', 'RHO_COLLOID')
         self.validphysicalparams = ('RHO_WATER', 'RHO_COLLOID', 'VISCOSITY')
         self.validchemicalparams = ('CONCENTRATION', 'ADJUST_ZETA', 'I_INITIAL',
                                     'I', 'EPSILON_R', 'VALENCE', 'SHEER_PLANE',
                                     'LVDWST_WATER', 'LVDWST_COLLOID', 'LVDWST_SOLID',
                                     'ZETA_COLLOID', 'ZETA_SOLID', 'PSI+_COLLOID',
                                     'PSI+_WATER', 'PSI+_SOLID', 'PSI-_COLLOID',
-                                    'PSI-_WATER', 'PSI-_SOLID')
+                                    'PSI-_WATER', 'PSI-_SOLID', 'RHO_COLLOID')
         self.validoutputparams = ('STORE_TIME', 'PRINT_TIME', 'PLOT',
                                   'ENDPOINT', 'PATHLINE', 'TIMESERIES',
                                   'OVERWRITE', 'PLOT')

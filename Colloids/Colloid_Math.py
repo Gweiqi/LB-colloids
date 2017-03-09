@@ -370,11 +370,12 @@ class DLVO:
                   'epsilon_r': 78.304, 'valence': {'Na': 1.}, 'sheer_plane': 3e-10, 'T': 298.17,
                   'lvdwst_water': 21.8e-3, 'lvdwst_colloid': 39.9e-3, 'lvdwst_solid': 33.7e-3, 'zeta_colloid': -40.5e-3,
                   'zeta_solid': -60.9e-3, 'psi+_colloid': 0.4e-3, 'psi-_colloid': 34.3e-3, 'psi+_water': 25.5e-3,
-                  'psi-_water': 25.5e-3, 'psi+_solid': 1.3e-3, 'psi-_solid': 62.2e-3}
+                  'psi-_water': 25.5e-3, 'psi+_solid': 1.3e-3, 'psi-_solid': 62.2e-3, 'rho_colloid': 2650.}
 
         for kwarg in kwargs:
             params[kwarg] = kwargs[kwarg]
-                  
+
+        self.rho_colloid = params['rho_colloid']
         self.epsilon_0 = 8.85e-12
         self.epsilon_r = params['epsilon_r']
         self.ac = params['ac']
@@ -594,9 +595,27 @@ class ColloidColloid(object):
     ----------
         arr: (np.ndarray) Any nd.array that represents the shape of the colloid
             domain
-        colloids: (list, <class: Colloids.LB_Colloid.Colloid)
+        resolution (float) Colloid model resolution
+        **kwargs: Please see DLVO class for documentation on kwarg options
+
+    Properties:
+    -----------
+        x: (np.ndarray) full model colloidal force array for the x direction
+        y: (np.ndarray) full model colloidal force array for the y direction
+        x_distance_array: (np.ndarray) Calculated angular distance array for
+            a colloid in x direction
+        y_distance_array: (np.ndarray) Calculated angular distance array for
+            a colloid in y direction
+        positions: (list) Nx2 list of all colloid positions in model space
+        ionic_strength: (float) fluid ionic strength calculated as 2I
+        debye: (float) the inverse debye length of the system
+        colloid_potential: (float) the calculated colloid surface potential
+
+    Methods:
+    -------
+        update(colloids):
     """
-    def __init__(self, arr, resolution, **kwargs):
+    def __init__(self, arr, **kwargs):
 
         self.__params = {'concentration': False, 'adjust_zeta': False, 'I_initial': False,
                          'I': 10e-4, 'ac': 1e-6, 'epsilon_0': 8.85e-12 , 'epsilon_r': 78.304, 'valence': {'Na': 1.},
@@ -604,7 +623,7 @@ class ColloidColloid(object):
                          'lvdwst_solid': 33.7e-3, 'zeta_colloid': -40.5e-3, 'zeta_solid': -60.9e-3,
                          'psi+_colloid': 0.4e-3, 'psi-_colloid': 34.3e-3, 'psi+_water': 25.5e-3,
                          'psi-_water': 25.5e-3, 'psi+_solid': 1.3e-3, 'psi-_solid': 62.2e-3, 'kb': 1.38e-23,
-                         'e': 1.6e-19}
+                         'e': 1.6e-19, 'rho_colloid': 2650.}
 
         for kwarg, value in kwargs.items():
             self.__params[kwarg] = value
@@ -615,9 +634,13 @@ class ColloidColloid(object):
         self.__debye = False
         self.__colloid_potential = False
         self.__ionic_strength = False
-        self.__resolution = resolution
+        self.__resolution = self.__params['lbres']/self.__params['gridref']
         self.__colloids = []
         self.__pos = []
+        self.__x_distance = False
+        self.__y_distance = False
+        self.__x = False
+        self.__y = False
 
     def __reset(self):
         """
@@ -627,6 +650,8 @@ class ColloidColloid(object):
         self.__yarr = np.zeros(self.__arr.shape)
         self.__colloids = []
         self.__pos = []
+        self.__x = False
+        self.__y = False
 
     def __get_colloid_positions(self):
         """
@@ -642,7 +667,7 @@ class ColloidColloid(object):
         """
         for colloid in self.__colloids:
             self.__pos.append([colloid.xposition[-1]/self.__resolution,
-                        colloid.yposition[-1]/self.__resolution])
+                        colloid.yposition[-1]/-self.__resolution])
         return self.__pos
 
     def update(self, colloids):
@@ -657,6 +682,41 @@ class ColloidColloid(object):
         self.__colloids = colloids
         pos = self.positions
 
+    @property
+    def x(self):
+        """
+        Property method to generate the x force array for colloid-colloid interaction
+        """
+        if not self.__x:
+            self.__x = self.__dlvo_interaction_energy("x")
+        return self.__x
+
+    @property
+    def y(self):
+        """
+        Property method to generate or return the y force array for colloid-colloid interaction
+        """
+        if not self.__y:
+            self.__y = self.__dlvo_interaction_energy("y")
+        return self.__y
+
+    @property
+    def x_distance_array(self):
+        """
+        Generates an angular distance array in the x direction.
+        """
+        if not self.__x_distance:
+            self.__x_distance = self.__angular_array("x")
+        return self.__x_distance
+
+    @property
+    def y_distance_array(self):
+        """
+        Generates an angular distance array in the y direction
+        """
+        if not self.__y_distance:
+            self.__y_distance = self.__angular_array("y")
+        return self.__y_distance
 
     @property
     def positions(self):
@@ -702,22 +762,211 @@ class ColloidColloid(object):
                                         *np.exp(self.debye*self.__params['zeta_colloid'])
         return self.__colloid_potential
 
-    def dlvo_interaction_energy(self, colloid_arr):
+    def __get_full_dlvo_array(self, arr_type):
+        """
+        Handler definition to call subroutes to generate dvlo_force_array
+
+        Parameters:
+            arr_type: (str) x direction or y direction , "x", "y"
+
+        Returns:
+            dvlo: (np.ndarray) full array of dlvo interaction forces from colloids
+        """
+        if arr_type.lower() == "x":
+            arr = self.__xarr
+        elif arr_type.lower() == "y":
+            arr = self.__yarr
+        else:
+            raise TypeError("arr_type {} is not valid".format(arr_type))
+
+        dlvo_colloid = self.__dlvo_interaction_energy(arr_type)
+        dlvo = self.__create_colloid_colloid_array(arr, dlvo_colloid)
+
+        return dlvo
+
+    def __dlvo_interaction_energy(self, arr_type):
         """
         Uses formulation of Israelachvili 1992 Intermolecular surface forces
-        to calculate DLVO energy of colloid-colloid interaction.
+        to calculate Hamaker constant, followed by the Liang et. al. 2007 to calc
+        attractive and repulsive forces
 
+        Parameters:
+            arr_type: (str) x direction or y direction , "x", "y"
+
+        Returns:
+            dvlo: (np.ndarray) dlvo interaction force from colloids
         """
-        A = 384. * np.pi * colloid_arr * self.debye * self.__params['T']\
-            * self.ionic_strength * self.colloid_potential*self.colloid_potential\
-            * np.exp(-self.debye*np.abs(colloid_arr))
+        if arr_type.lower() == "x":
+            c_arr = self.x_distance_array
+        elif arr_type.lower() == "y":
+            c_arr = self.y_distance_array
+        else:
+            raise TypeError("arr_type {} is not valid".format(arr_type))
 
-        dlvo = (((64 * np.pi * self.debye * self.__params['T'] * self.__params['ac']
-                * self.ionic_strength * self.colloid_potential * self.colloid_potential) /
-                (self.debye * self.debye)) * np.exp(-self.debye* np.abs(colloid_arr)))\
-                - ((A * self.__params['ac'])/(6 * np.abs(colloid_arr)))
-        # todo: generate a tortional field based upon the sin or cos to get 3d influence of sphere.
+        A = 384. * np.pi * c_arr * self.debye * self.__params['T']\
+            * self.ionic_strength * self.colloid_potential*self.colloid_potential\
+            * np.exp(-self.debye * np.abs(c_arr))
+
+        lwdv0 = -A / 6.
+        lvdw1 = (2. * self.__params['ac'] ** 2.) / (self.__params['ac'] ** 2. + 4. * self.__params['ac'] * c_arr)
+        lvdw2 = (2. * self.__params['ac'] ** 2.)/ (c_arr + 2. * self.__params['ac']) ** 2.
+        lvdw3 = np.log(1. - ((4. * self.__params['ac'] ** 2.) / (c_arr + 2. * self.__params['ac']) ** 2.))
+
+        lewis_vdw = lwdv0 * (lvdw1 + lvdw2 + lvdw3)
+
+        edl0 = 32. * np.pi * self.__params['ac'] * self.__params['ac'] *\
+               self.ionic_strength * self.debye * self.__params['T']
+        edl1 = (2. * self.__params['ac']) * self.debye ** 2.
+
+        z = 0.
+        for key, value in self.__params['valence']:
+            z += float(value)
+
+        edl2 = np.tanh((z * 1.6e-19 * self.colloid_potential)/(4. * self.debye * self.__params['T']))
+        edl3 = np.exp(-self.debye * c_arr)
+
+        edl = (edl0 / edl1) * (edl2 ** 2.) * edl3
+
+        dlvo = (edl + lewis_vdw)/c_arr  # go from chemical potential to force by dividing by c_arr
+
         return dlvo
+
+    def __angular_array(self, arr_type):
+        """
+        Calculates the angular proportion of the force a colloid particle
+        exerts in grid space, with regard to distance from the colloid.
+
+        Parameters:
+            arr_type: (str) delimiter to determine if the array is in the
+                x-direction or y-direction
+
+        Return:
+            arr (np.ndarray) Array of angular distances adjusted for the proportion
+                of force the colloid would be exposed to.
+        """
+
+        if 5e-6 > self.__resolution >= 5e-7:
+            arr = np.ones((5, 5))
+            center = 2
+
+        elif 5e-7 > self.__resolution >= 5e-8:
+            arr = np.ones((51, 51))
+            center = 25
+
+        elif 5e-8 > self.__resolution >= 1e-9:
+            arr = np.ones((501, 501))
+            center = 250
+
+        else:
+            raise AssertionError("model resolution is out of bounds")
+
+        # todo: left -- right case, this is the up -- down case
+        if arr_type.lower() == "x":
+            for i, n in enumerate(arr):
+                for j, m in enumerate(n):
+                    y = i - center
+                    x = j - center
+                    if x == 0:
+                        arr[i, j] = 1
+                    elif y <= 0:
+                        arr[i, j] = x * (1 - (m * (np.arctan(y / x) / (np.pi / 2))))
+                    else:
+                        arr[i, j] = x * (-1 + (m * (np.arctan(y / x)/ (np.pi / 2))))
+
+        elif arr_type.lower() == "y":
+            for i, n in enumerate(arr):
+                for j, m in enumerate(n):
+                    y = i - center
+                    x = j - center
+                    if x == 0:
+                        arr[i, j] = 1
+                    elif y <= 0:
+                        arr[i, j] = y * (-(m * (np.arctan(y / x) / (np.pi / 2))))
+                    else:
+                        arr[i, j] = y * m * (np.arctan(y / x)/ (np.pi / 2))
+
+        else:
+            raise TypeError("arr_type {} is not valid".format(arr_type))
+
+        return arr * self.__resolution
+
+    def __create_colloid_colloid_array(self, f_arr, c_arr):
+        """
+        Method to set colloidal forces to a model array.
+
+        Parameters:
+        -----------
+            f_arr: (np.ndarray) np.zeros array to calculate foces into
+            c_arr: (np.ndarray) calculated colloid force array
+
+        Return:
+            f_arr: (np.ndarray) an array of colloidal forces in a single primary
+                dimension
+        """
+        center = c_arr.shape[0] - 1 // 2
+        colloids = self.positions
+
+        for colloid in colloids:
+            x, y = colloid
+
+            if np.isnan(x) or np.isnan(y):
+                pass
+
+            else:
+                if x - center < 0.:
+                    adjx = center - x
+                    posx = 0
+                    xidx = x + center
+
+                else:
+                    adjx = False
+                    posx = x - center
+                    xidx = x + center
+
+                if x + center > c_arr.shape[1]:
+                    adjx1 = c_arr.shape - (x + center)
+
+                else:
+                    adjx1 = False
+
+                if y - center < 0.:
+                    adjy = center - y
+                    posy = 0
+                    yidx = y + center
+
+                else:
+                    adjy = False
+                    posy = y - center
+                    yidx = y + center
+
+                if y + center > c_arr.shape[0]:
+                    adjy1 = c_arr.shape - (y + center)
+
+                else:
+                    adjy1 = False
+
+                if adjx and adjy:
+                    f_arr[posy:yidx, posx:xidx] += c_arr[adjy:, adjx:]
+
+                elif adjx1 and adjy1:
+                    f_arr[posy:, posx:] += c_arr[:-adjy1, :-adjx1]
+
+                elif adjy and adjx1:
+                    f_arr[posy:yidx, posx:] += c_arr[adjy:, :-adjx1]
+
+                elif adjy1 and adjx:
+                    f_arr[posy:, posx:xidx] += c_arr[:-adjy1, adjx:]
+
+                elif adjy:
+                    f_arr[posy:yidx, :] += c_arr[adjy:, :]
+
+                elif adjx:
+                    f_arr[:, posx:xidx] += c_arr[:, adjx:]
+
+                else:
+                    f_arr[posy:yidx, posx:xidx] += c_arr[:, :]
+
+        return f_arr
 
 
 # todo: write conversion of force to chemical potential
