@@ -680,7 +680,7 @@ class ColloidColloid(object):
         """
         self.__reset()
         self.__colloids = colloids
-        pos = self.positions
+        self.__pos = self.positions
 
     @property
     def x(self):
@@ -819,7 +819,7 @@ class ColloidColloid(object):
         edl1 = (2. * self.__params['ac']) * self.debye ** 2.
 
         z = 0.
-        for key, value in self.__params['valence']:
+        for key, value in self.__params['valence'].items():
             z += float(value)
 
         edl2 = np.tanh((z * 1.6e-19 * self.colloid_potential)/(4. * self.debye * self.__params['T']))
@@ -845,45 +845,59 @@ class ColloidColloid(object):
                 of force the colloid would be exposed to.
         """
 
-        if 5e-6 > self.__resolution >= 5e-7:
+        if 1e-6 > self.__resolution >= 1e-7:
             arr = np.ones((5, 5))
             center = 2
 
-        elif 5e-7 > self.__resolution >= 5e-8:
+        elif 1e-7 > self.__resolution >= 5e-8:
             arr = np.ones((51, 51))
             center = 25
 
-        elif 5e-8 > self.__resolution >= 1e-9:
+        elif 1e-8 > self.__resolution >= 1e-9:
             arr = np.ones((501, 501))
             center = 250
 
         else:
             raise AssertionError("model resolution is out of bounds")
 
-        # todo: left -- right case, this is the up -- down case
-        if arr_type.lower() == "x":
+        if arr_type.lower() == "y":
             for i, n in enumerate(arr):
                 for j, m in enumerate(n):
-                    y = i - center
-                    x = j - center
-                    if x == 0:
-                        arr[i, j] = 1
-                    elif y <= 0:
-                        arr[i, j] = x * (1 - (m * (np.arctan(y / x) / (np.pi / 2))))
-                    else:
-                        arr[i, j] = x * (-1 + (m * (np.arctan(y / x)/ (np.pi / 2))))
+                    y = float(i - center)
+                    x = float(j - center)
+                    if x == 0 and y == 0:
+                        arr[i, j] = 0.1
 
-        elif arr_type.lower() == "y":
+                    elif x == 0:
+                        arr[i, j] = 1. * np.abs(y)
+
+                    elif y == 0:
+                        # fake a significant distance from colloid to minimize inpact of DLVO in area that
+                        # has no sig. influence
+                        arr[i, j] = len(arr)
+                    else:
+                        arr[i, j] = np.abs(y * (m * (np.arctan(y / x) / (np.pi / 2.))))
+
+
+
+        elif arr_type.lower() == "x":
             for i, n in enumerate(arr):
                 for j, m in enumerate(n):
-                    y = i - center
-                    x = j - center
-                    if x == 0:
-                        arr[i, j] = 1
-                    elif y <= 0:
-                        arr[i, j] = y * (-(m * (np.arctan(y / x) / (np.pi / 2))))
+                    y = float(i - center)
+                    x = float(j - center)
+                    if y == 0 and x == 0:
+                        arr[i, j] = 0.1
+
+                    elif y == 0:
+                        arr[i, j] = 1 * np.abs(x)
+
+                    elif x == 0.:
+                        arr[i, j] = len(arr)
+
                     else:
-                        arr[i, j] = y * m * (np.arctan(y / x)/ (np.pi / 2))
+                        arr[i, j] = np.abs(y * m * (np.arctan(y / x)/ (np.pi / 2)))
+
+            print('break')
 
         else:
             raise TypeError("arr_type {} is not valid".format(arr_type))

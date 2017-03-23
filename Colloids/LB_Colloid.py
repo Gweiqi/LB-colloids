@@ -5,7 +5,7 @@ import Colloid_Setup as cs
 import Colloid_Math as cm
 import Colloid_IO as IO
 import random
-import copy.copy as copy
+from copy import copy
 
 
 class Colloid:
@@ -348,6 +348,9 @@ def run(config):
 
     dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx
     dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
+    colloidcolloid = cm.ColloidColloid(Col_img, **ChemicalDict)
+    x = colloidcolloid.x
+    y = colloidcolloid.y
 
     if preferential_flow is True:
         fx = dlvox
