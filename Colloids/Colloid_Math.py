@@ -804,7 +804,7 @@ class ColloidColloid(object):
             raise TypeError("arr_type {} is not valid".format(arr_type))
 
         A = 384. * np.pi * c_arr * self.debye * self.__params['T']\
-            * self.ionic_strength * self.colloid_potential*self.colloid_potential\
+            * self.ionic_strength * self.colloid_potential * self.colloid_potential\
             * np.exp(-self.debye * np.abs(c_arr))
 
         lwdv0 = -A / 6.
@@ -814,20 +814,22 @@ class ColloidColloid(object):
 
         lewis_vdw = lwdv0 * (lvdw1 + lvdw2 + lvdw3)
 
-        edl0 = 32. * np.pi * self.__params['ac'] * self.__params['ac'] *\
-               self.ionic_strength * self.debye * self.__params['T']
+        edl0 = 128. * np.pi * self.__params['ac'] * self.__params['ac'] *\
+               self.ionic_strength * 1.38e-23 * self.__params['T']
         edl1 = (2. * self.__params['ac']) * self.debye ** 2.
 
         z = 0.
         for key, value in self.__params['valence'].items():
             z += float(value)
 
-        edl2 = np.tanh((z * 1.6e-19 * self.colloid_potential)/(4. * self.debye * self.__params['T']))
+        z = z / 58.44
+
+        edl2 = np.tanh((z * 1.6e-19 * self.colloid_potential)/(4. * 1.38e-23 * self.__params['T']))
         edl3 = np.exp(-self.debye * c_arr)
 
         edl = (edl0 / edl1) * (edl2 ** 2.) * edl3
 
-        dlvo = (edl + lewis_vdw)/c_arr  # go from chemical potential to force by dividing by c_arr
+        dlvo = (lewis_vdw + edl)
 
         return dlvo
 
@@ -849,7 +851,7 @@ class ColloidColloid(object):
             arr = np.ones((5, 5))
             center = 2
 
-        elif 1e-7 > self.__resolution >= 5e-8:
+        elif 1e-7 > self.__resolution >= 1e-8:
             arr = np.ones((51, 51))
             center = 25
 
@@ -860,49 +862,32 @@ class ColloidColloid(object):
         else:
             raise AssertionError("model resolution is out of bounds")
 
-        if arr_type.lower() == "y":
-            for i, n in enumerate(arr):
-                for j, m in enumerate(n):
-                    y = float(i - center)
-                    x = float(j - center)
-                    if x == 0 and y == 0:
-                        arr[i, j] = 0.1
 
-                    elif x == 0:
-                        arr[i, j] = 1. * np.abs(y)
+        for i, n in enumerate(arr):
+            for j, m in enumerate(n):
+                y = float(i - center)
+                x = float(j - center)
+                if x == 0 and y == 0:
+                    arr[i, j] = 0.1
 
-                    elif y == 0:
-                        # fake a significant distance from colloid to minimize inpact of DLVO in area that
-                        # has no sig. influence
-                        arr[i, j] = len(arr)
-                    else:
-                        arr[i, j] = np.abs(y * (m * (np.arctan(y / x) / (np.pi / 2.))))
+                elif x == 0:
+                    arr[i, j] = 1 * np.abs(y)
 
+                elif y == 0:
+                    arr[i, j] = 1 * np.abs(x)
+                else:
+                    arr[i, j] = np.sqrt(x**2 + y**2) + np.abs((m * (np.arctan(y / x) / (np.pi / 2.))))
 
+        if arr_type.lower() == 'x':
+            arr = arr.T
 
-        elif arr_type.lower() == "x":
-            for i, n in enumerate(arr):
-                for j, m in enumerate(n):
-                    y = float(i - center)
-                    x = float(j - center)
-                    if y == 0 and x == 0:
-                        arr[i, j] = 0.1
-
-                    elif y == 0:
-                        arr[i, j] = 1 * np.abs(x)
-
-                    elif x == 0.:
-                        arr[i, j] = len(arr)
-
-                    else:
-                        arr[i, j] = np.abs(y * m * (np.arctan(y / x)/ (np.pi / 2)))
-
-            print('break')
+        elif arr_type.lower() == 'y':
+            pass
 
         else:
             raise TypeError("arr_type {} is not valid".format(arr_type))
 
-        return arr * self.__resolution
+        return arr * self.__resolution / 1e-6
 
     def __create_colloid_colloid_array(self, f_arr, c_arr):
         """
