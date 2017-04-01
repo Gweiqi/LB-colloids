@@ -31,25 +31,29 @@ lbmodel.run(output=lbname, verbose=10, image_int=10, image_folder='test')
 # now we work with LB_colloids.py
 # need to think about namespace now.
 # now we can use this to do other analysis such as sensitivity analysis
+# sensitivity analysis, do this soonish!
+
+# todo: add a lb_timestep parameter to calibrate the lb dimensionalization process
 
 io = cIO.ColloidsConfig()
 print io.valid_model_parameters
 io['lbmodel'] = lbname
 io['ncols'] = 500
-io['iters'] = 3000
+io['iters'] = 50000
 io['lbres'] = 1e-6
 io['gridref'] = 10
-io['ac'] = 1e-6
+io['ac'] = 1e-7
 io['timestep'] = 1e-5
 io['temperature'] = 298.
 io['multiple_config'] = False
 
-io['i'] = 0.0001
+io['i'] = 0.1
 
-io['print_time'] = 100
+io['print_time'] = 50
 io['plot'] = True
 io['endpoint'] = os.path.join(path, 'Synth100_3.endpoint')
-io['store_time'] = 100
+io['pathline'] = os.path.join(path, 'Synth100_3.pathline')
+io['store_time'] = 50
 
 print io.model_parameters
 print io.chemical_parameters
@@ -57,9 +61,10 @@ print io.physical_parameters
 print io.output_control_parameters
 
 # config = os.path.join(path, 'Synth100_3.config')
-"""
+
 config = cIO.Config(io.config)
 Colloid.run(config)
+
 """
 import matplotlib.pyplot as plt
 d = {}
@@ -76,6 +81,7 @@ xarr = np.array([arr])
 varr = np.array([np.ones(100)])
 
 i = [6.0, 1.0, 0.1, 0.01, 0.001]
+"""
 """
 for j in i:
     d['I'] = j
@@ -124,7 +130,7 @@ plt.legend(loc=4, fontsize=12)
 plt.show()
 """
 d['lbres'] = 1e-8
-
+"""
 for j in i:
     d['I'] = j
     dlvo = cm.ColloidColloid(arr, **d)
@@ -137,3 +143,4 @@ for j in i:
     plt.xlabel('nm')
     plt.ylabel('nm')
     plt.show()
+"""

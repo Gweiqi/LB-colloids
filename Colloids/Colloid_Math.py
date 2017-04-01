@@ -31,8 +31,8 @@ class ForceToVelocity:
         rho_colloid = params['rho_colloid']
         ac = params['ac']
         ts = params['ts']
-        self.mass_colloid = (4./3.)*np.pi*(ac*ac*ac)*rho_colloid
-        self.velocity = (forces*ts)/self.mass_colloid 
+        self.mass_colloid = (4. / 3.) * np.pi * (ac * ac * ac) * rho_colloid
+        self.velocity = (forces * ts) / self.mass_colloid
         
         
 class Velocity:
@@ -52,14 +52,15 @@ class Velocity:
         xVelocity: (np.array, np.float) array of dimensionalized velocities in the x-direction
         yVelocity: (np.array, np.float) array of dimensionalized velocities in the y-direction
         """
+        # add a lb time step for dimensionalization?
 
-        params = {'ts': 1.}
+        params = {'lb_timestep': 0.0001}
         for kwarg in kwargs:
             params[kwarg] = kwargs[kwarg]
 
-        ts = params['ts']
-        self.xvelocity = (LBx*gridres)*(1./ts)
-        self.yvelocity = (LBy*gridres)*(1./ts)
+        ts = params['lb_timestep']
+        self.xvelocity = (LBx * gridres) * (1./ts)
+        self.yvelocity = (LBy * gridres) * (1./ts)
         
 
 class Gravity:
@@ -402,38 +403,9 @@ class DLVO:
         self.all_chemical_params = copy.copy(params)
 
         self.__resolution = params['lbres']/params['gridref']
-
-        if params['adjust_zeta']:
-            if params['I_initial']:
-                self.k_debye_init = self.debye(self.epsilon_0, self.epsilon_r, self.boltzmann, self.T, self.e,
-                                               params['I_initial'])
-                
-                self.colloid_potential_init = self._colloid_potential(self.zeta_colloid, self.ac, self.k_debye_init,
-                                                                      self.stern_z)
-                self.surface_potential_init = self._surface_potential(self.zeta_solid, self.k_debye_init, self.stern_z)
-
-                if params['I']:
-                    self.ionic_strength = 2*params['I']  # 2I is what is used in the debye equation
-                else:
-                    self.ionic_strength = self.ionic(params['valence'], params['concentration'])
-
-                self.k_debye = self.debye(self.epsilon_0, self.epsilon_r, self.boltzmann, self.T, self.e,
-                                          self.ionic_strength)
-
-                self.zeta_colloid = self._adjust_zeta_colloid(self.colloid_potential_init, self.ac, self.k_debye,
-                                                              self.stern_z)
-
-                self.zeta_solid = self._adjust_zeta_surface(self.surface_potential_init, self.k_debye,
-                                                            self.stern_z)
-            else:
-                print('Please suppy initial ionic strength')
-                sys.exit(-1)
-
-        else: 
-            pass
         
         if params['I']:
-            self.ionic_strength = 2*params['I']  # 2I is what is used in the debye equation
+            self.ionic_strength = 2 * params['I']  # 2I is what is used in the debye equation
         else:
             self.ionic_strength = self.ionic(params['valence'], params['concentration'])
         

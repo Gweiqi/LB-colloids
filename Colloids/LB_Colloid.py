@@ -30,11 +30,15 @@ class Colloid:
     yposition: (list, float) a list of y-position values normalized to grid resolution (top left is 0,0)
     """
     def __init__(self, xlen, ylen, resolution):
-        self.xposition = [random.uniform(0.05, 0.95)*xlen*resolution]
+        self.xposition = [random.uniform(0.1, 0.9)*xlen*resolution]
         self.yposition = [-resolution]
         self.resolution = resolution
         self.storey = [self.yposition[0]]
         self.storex = [self.xposition[0]]
+        self.idx_rx = [int(self.xposition[-1]//resolution)]
+        self.idx_ry = [int(self.yposition[-1]//resolution)]
+        self.idx_ry = []
+        self.__cell_time = [0.]
         self.time = [0]
         self.flag = [1]
         self.ylen = ylen
@@ -58,11 +62,25 @@ class Colloid:
     def _append_flag(self, item):
         self.flag.append(item)
 
+    def _append_idx_rx(self, item):
+        self.idx_rx.append(item)
+
+    def _append_idx_ry(self, item):
+        self.idx_ry.append(item)
+
+    def __update_cell_time(self, item, new_cell=False):
+        if new_cell:
+            self.__cell_time = [item]
+        else:
+            cell_time = self.__cell_time[-1] + item
+            self.__cell_time.append(cell_time)
+
     def update_position(self, xvelocity, yvelocity, ts):
         """
         grid index method to update continuous colloid system using the discete grid forces.
         idxry must be inverted because we assume (0,0) at top left corner and down is negitive.
         """
+
         irx = self.xposition[-1]
         iry = self.yposition[-1]
         flag = self.flag[-1]
@@ -78,6 +96,11 @@ class Colloid:
             iry = float('NaN')
             self.update_special(irx, iry, 3)
 
+        elif flag == 4:
+            irx = float('NaN')
+            iry = float('NaN')
+            self.update_special(irx, iry, 4)
+
         else:
             # normal streaming conditions
             
@@ -89,6 +112,7 @@ class Colloid:
             except ValueError:
                 self._append_xposition(self.xposition[-1])
                 self._append_yposition(self.yposition[-1])
+                self.__update_cell_time(ts, new_cell=True)
                 return
 
         # if colloid breaks through domain change flag to 3  
@@ -105,27 +129,33 @@ class Colloid:
                     self._append_yposition(float("NaN"))
                     return
                 else:
-                    self._append_flag(3)
+                    self._append_flag(2)
                     self._append_xposition(irx)
                     self._append_yposition(iry)
                     return
 
+            # track time each colloid spends in a cell to account for acceleration effects
+            if idxrx == self.idx_rx[-1] and idxry == self.idx_ry[-1]:
+                self.__update_cell_time(ts)
+            else:
+                self.__update_cell_time(ts, new_cell=True)
+
             xv = xvelocity[idxry][idxrx]
             yv = yvelocity[idxry][idxrx]
         
-            # velocity is L/T therefore multiply by T
-            deltarx = xv*ts 
-            deltary = yv*ts
+            # velocity is L/T, but since we are dealing with acceleration fields 0.5*(a)t^2 is used
+            deltarx = xv * ts  # self.__cell_time[-1]
+            deltary = yv * ts  # self.__cell_time[-1]
+
             rx = irx + deltarx
             ry = iry + deltary
             
             # Use a check to make sure colloid does not leave domain on first iteration
             # move colloid to a new location to if it leaves domain in the vertical y-direction
             if ry >= 0.:
-                rx = random.uniform(0.05,0.95)*self.xlen*self.resolution
+                rx = random.uniform(0.1, 0.9)*self.xlen*self.resolution
                 ry = -self.resolution
-            else:
-                pass
+                self.__update_cell_time(ts, new_cell=True)
 
             self._append_xposition(rx)
             self._append_yposition(ry)
@@ -379,6 +409,7 @@ def run(config):
 
     # start model timer
     timer = TrackTime(ts)
+
     run_save_model(x, iters, vx, vy, ts, timer, print_time,
                    store_time, pathline, timeseries, endpoint)
 
