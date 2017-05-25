@@ -85,11 +85,11 @@ class Colloid:
         flag = self.flag[-1]
         # find grid indexes and look up velocity (negative y accounts for grid indexes bc of vector direction).
 
-        if flag == 2:
+        #if flag == 2:
             # this is a NaN condition
-            self.update_special(irx, iry, 2)
+        #    self.update_special(irx, iry, 2)
 
-        elif flag == 3:
+        if flag == 3:
             # this is the breakthrough condition
             irx = float('NaN')
             iry = float('NaN')
@@ -109,9 +109,14 @@ class Colloid:
                 idxry = int(iry//-self.resolution)
            
             except ValueError:
-                self._append_xposition(self.xposition[-1])
-                self._append_yposition(self.yposition[-1])
-                self.__update_cell_time(ts, new_cell=True)
+                if not np.isnan(self.xposition[-1]) and not np.isnan(self.yposition[-1]):
+                    self._append_xposition(self.xposition[-1])
+                    self._append_yposition(self.yposition[-1])
+                    self.__update_cell_time(ts, new_cell=True)
+                else:
+                    self._append_xposition(random.uniform(0.1, 0.9) * self.xlen * self.resolution)
+                    self._append_yposition(-self.resolution)
+                    self._append_flag(2)
                 return
 
         # if colloid breaks through domain change flag to 3  
@@ -128,9 +133,12 @@ class Colloid:
                     self._append_yposition(float("NaN"))
                     return
                 else:
+                    self._append_xposition(random.uniform(0.1, 0.9) * self.xlen * self.resolution)
+                    self._append_yposition(-self.resolution)
                     self._append_flag(2)
-                    self._append_xposition(irx)
-                    self._append_yposition(iry)
+                    # self._append_flag(2)
+                    # self._append_xposition(irx)
+                    # self._append_yposition(iry)
                     return
 
             # track time each colloid spends in a cell to account for acceleration effects

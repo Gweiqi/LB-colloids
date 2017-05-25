@@ -52,15 +52,19 @@ class Velocity:
         xVelocity: (np.array, np.float) array of dimensionalized velocities in the x-direction
         yVelocity: (np.array, np.float) array of dimensionalized velocities in the y-direction
         """
-        # add a lb time step for dimensionalization?
+        # todo: add a lb time step for dimensionalization? What is the best way to recover this?
+        # todo: Maybe look at reynolds number for dimensionalization
 
-        params = {'lb_timestep': 0.0001}
+        params = {'lb_timestep': 1e-5, 'ts': 1}
+
         for kwarg in kwargs:
             params[kwarg] = kwargs[kwarg]
 
-        ts = params['lb_timestep']
-        self.xvelocity = (LBx * gridres) * (1./ts)
-        self.yvelocity = (LBy * gridres) * (1./ts)
+        # ts = params['lb_timestep']
+        ts = params['ts']
+        # todo: use the reynolds number calculation and then divide by gridref!
+        self.xvelocity = LBx * 0.018
+        self.yvelocity = LBy * 0.018
         
 
 class Gravity:
