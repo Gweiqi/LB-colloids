@@ -21,7 +21,8 @@ subroutine f_u(f, rho, ylen, xlen, uy, ux)
   real, dimension(ylen, xlen), intent(out)      :: uy, ux
   
   uy = (SUM(f((/2,3,4/),:,:), DIM=1) - SUM(f((/6,7,8/),:,:), DIM=1))/rho
-  ux = (SUM(f((/1,2,8/),:,:), DIM=1) - SUM(f((/4,5,6/),:,:), DIM=1))/rho
+  ! ux = (SUM(f((/1,2,8/),:,:), DIM=1) - SUM(f((/4,5,6/),:,:), DIM=1))/rho
+  ux = (SUM(f((/4,5,6/),:,:), DIM=1) - SUM(f((/1,2,8/),:,:), DIM=1))/rho
 end subroutine f_u
 
 		

@@ -5,7 +5,6 @@ import optparse
 import LB2D as LB
 import LBIO
 import os
-from LB_2Dimage import BoundaryCondition
 
 
 def HDF5_readarray(filename, data):
@@ -22,9 +21,6 @@ def initial_distribution(q, ny, nx, rho, rhoI, vis, img, wi):
     for j in range(q):
         for i in range(ny):
             fd[j, i, :] = (rho - (rhoI * (i / (ny - 1.)))) * wi[j]
-    # fd = initiate_model(fd,rho,vis)    
-    # sets solid boundaries from image data
-    # fd = set_solids(fd,img)
     return fd
 
 
@@ -220,20 +216,89 @@ def py_streaming(fcol, ny, nx):
     return fstream
 
     
-def mean_u(x):
+def mean_u(x, img):
     # calculates mean velocity in the y and x directions
     # remeber to pop off ghost layers
-    # remeber to take off -1's also
-    uy = np.average(x[0])
-    ux = np.average(x[1])
+    uy = np.ma.masked_where(x[0] == img, x[0])
+    ux = np.ma.masked_where(x[1] == img, x[1])
+    uy = np.ma.mean(uy)
+    ux = np.ma.mean(ux)
     return uy, ux
 
 
-def mean_rho(f, delrho):
+def mean_rho(rho, img):
     # calculates a mean rho over the entire volume
-    img = np.ma.masked_where(f <= delrho, f)
-    mrho = np.ma.mean(img)
+    rho = np.ma.masked_where(rho == img, rho)
+    mrho = np.ma.mean(rho)
     return mrho
+
+
+def get_mean_pore_size(img, nx):
+    """
+    Finds the mean pore diameter of the domain
+
+    Parameters:
+        img: (np.ndarray) binary image array of domain
+        nx: (int) number of pixels in x direction of fluid domain
+    """
+    pores = []
+    for line in img:
+        pore = 0
+        previous_value = True
+        for value in line:
+            if value and previous_value:
+                pass
+
+            elif value and not previous_value:
+                if pore > nx * 0.9:
+                    pore = 0
+                else:
+                    pores.append(pore)
+
+            elif not value and previous_value:
+                pore = 1
+
+            elif not value and not previous_value:
+                pore += 1
+
+            previous_value = value
+
+    mean_pore_size = sum(pores) / float(len(pores))
+    return mean_pore_size
+
+
+def get_reynolds_number(pore_diameter, uy, porosity, rho, viscosity):
+    """
+    Calculate the model's reynolds number after simulation
+    based off of mean velocity and mean fluid density
+
+    Parameters:
+        pore_diameter: (float) calculated lb pore diameter
+        uy: (float) lb mean fluid velocity in y direction
+        porosity: (float) porosity of the medium
+        rho: (float) lb mean fluid density
+        viscosity: (float) lb fluid viscosity
+    """
+    reynolds = (pore_diameter * abs(uy) * porosity * rho) / viscosity
+    return reynolds
+
+
+def get_velocity_conversion(reynolds_number, uy, rho,
+                            pore_diameter, viscosity):
+    """
+    Calculates the physical velocity conversion factor from
+    LB reynolds number and user supplied physical parameters.
+
+    Parameters:
+        reynolds_number: (float) Model reynolds number
+        uy: (float) mean y velocity from LB model
+        rho: (float) physical density of the fluid
+        pore_diameter: (float) physical pore diameter
+        viscosity: (float) physical fluid viscosity
+    """
+    phys_u = (reynolds_number * viscosity)/(rho * pore_diameter)
+    factor = phys_u / abs(uy)
+    return factor
 
 
 def check_directory(path):
@@ -248,8 +313,9 @@ def addIO(defaults, config):
 
 
 class HDF5_write:
-    def __init__(self, mrho, tau, u, f, delrho, rho, output, img=None,
-                 porosity=None, boundary=None):
+    def __init__(self, mrho, tau, u, f, rho, output,
+                 mean_uy, mean_ux, pore_diameter, reynolds_number,
+                 velocity_factor, img=None, porosity=None, boundary=None):
         """
         Hdf5 model write class
 
@@ -259,9 +325,14 @@ class HDF5_write:
             tau: (float) lb relaxation time
             u: (np.ndarray) fluid velocity array
             f: (np.ndarray) distribution function
-            delrho: (float) density distribution
             rho: (np.ndarray) density array
             output: (str) hdf file name
+            mean_uy: (float) mean fluid velocity y direction
+            mean_ux: (float) mean fluid velocity x direction
+            pore_diameter: (float) mean pore diameter
+            reynolds_number: (float) calculated reynolds number
+            velocity_factor: (float) calculation velocity
+                conversion factor
             img: (np.ndarray) binary image array
             porosity: (float) porosity
             boundary: (int) nlayers boundaty condition
@@ -275,8 +346,12 @@ class HDF5_write:
                 fi.create_dataset('results/tau', data=tau)
                 fi.create_dataset('results/uarray', data=u)
                 fi.create_dataset('results/f', data=f)
-                fi.create_dataset('results/delr', data=delrho)
                 fi.create_dataset('results/rho', data=rho)
+                fi.create_dataset('results/mean_uy', data=mean_uy)
+                fi.create_dataset('results/mean_ux', data=mean_ux)
+                fi.create_dataset('results/pore_diameter', data=pore_diameter)
+                fi.create_dataset('results/reynolds_number', data=reynolds_number)
+                fi.create_dataset('results/velocity_factor', data=velocity_factor)
 
         except:
             if os.path.isfile(output):
@@ -288,11 +363,15 @@ class HDF5_write:
                 fi.create_dataset('results/tau', data=tau)
                 fi.create_dataset('results/uarray', data=u)
                 fi.create_dataset('results/f', data=f)
-                fi.create_dataset('results/delr', data=delrho)
                 fi.create_dataset('results/rho', data=rho)
                 fi.create_dataset('Binary_image', data=img)
                 fi.create_dataset('results/porosity', data=porosity)
                 fi.create_dataset('results/boundary', data=boundary)
+                fi.create_dataset('results/mean_uy', data=mean_uy)
+                fi.create_dataset('results/mean_ux', data=mean_ux)
+                fi.create_dataset('results/pore_diameter', data=pore_diameter)
+                fi.create_dataset('results/reynolds_number', data=reynolds_number)
+                fi.create_dataset('results/velocity_factor', data=velocity_factor)
 
 
 class LB2DModel(object):
@@ -327,6 +406,9 @@ class LB2DModel(object):
         self.__gravity = 0.001
         self.__tau = 1.0
         self.__rho = 1.0
+        self.__resolution = 1e-6
+        self.__physical_rho = 1000.
+        self.__physical_viscosity = 8.9e-4
         self.__niters = None
         self.__cs = 0.577350269
         self.__cs2 = self.cs * self.cs
@@ -334,7 +416,10 @@ class LB2DModel(object):
         self.__nx = len(img[0])
         self.__wi = np.array([1./9., 1./36., 1./9., 1./36., 1./9.,
                               1./36., 1./9., 1./36., 4./9.])
-    
+        self.mean_rho = False
+        self.mean_uy = False
+        self.mean_ux = False
+
     def __setattr__(self, obj, value):
 
         if obj == 'img':
@@ -353,8 +438,17 @@ class LB2DModel(object):
                 raise AssertionError('Tau is out of stable bounds')
             super(LB2DModel, self).__setattr__('_LB2DModel__tau', float(value))
 
+        elif obj == 'resolution':
+            super(LB2DModel, self).__setattr__('_LB2DModel__resolution', float(value))
+
         elif obj == 'rho':
             super(LB2DModel, self).__setattr__('_LB2DModel__rho', float(value))
+
+        elif obj == 'physical_rho':
+            super(LB2DModel, self).__setattr__('_LB2DModel__physical_rho', float(value))
+
+        elif obj == 'physical_viscosity':
+            super(LB2DModel, self).__setattr__('_LB2DModel__physical_viscosity', float(value))
 
         elif obj == 'niters':
             super(LB2DModel, self).__setattr__('_LB2DModel__niters', int(value))
@@ -395,6 +489,14 @@ class LB2DModel(object):
         return self.__rho
 
     @property
+    def resolution(self):
+        return self.__resolution
+
+    @property
+    def physical_rho(self):
+        return self.__physical_rho
+
+    @property
     def niters(self):
         return self.__niters
 
@@ -419,6 +521,10 @@ class LB2DModel(object):
         return (1. / 3.) * (self.tau - 0.5)
 
     @property
+    def physical_viscosity(self):
+        return self.__physical_viscosity
+
+    @property
     def q(self):
         return 9
 
@@ -433,6 +539,39 @@ class LB2DModel(object):
         if self.__nlayers is None:
             self.__get_image_attributes()
         return self.__nlayers
+
+    def get_reynolds_number(self):
+        """
+        Returns the model's reynolds number after simulation
+        """
+        if not self.mean_rho or not self.mean_uy:
+            print('Please run model before calculating reynolds number')
+            return
+        else:
+            pore_diameter = self.get_mean_pore_size()
+            return get_reynolds_number(pore_diameter,
+                                       self.mean_uy,
+                                       self.porosity,
+                                       self.mean_rho,
+                                       self.viscosity)
+
+    def get_mean_pore_size(self):
+        """
+        Returns the mean pore diameter of the domain
+        """
+        return get_mean_pore_size(self.__img, self.__nx)
+
+    def get_velocity_conversion(self):
+        """
+        Returns the conversion factor from LB velocity to Phys.
+        """
+        pore_diameter = self.get_mean_pore_size() * self.resolution
+        reynolds_number = self.get_reynolds_number()
+        return get_velocity_conversion(reynolds_number,
+                                       self.mean_uy,
+                                       self.physical_rho,
+                                       pore_diameter,
+                                       self.physical_viscosity)
 
     def __get_image_attributes(self):
         """
@@ -524,13 +663,19 @@ class LB2DModel(object):
                         pretty.velocity_image(u, self.__img, image_name, i, True,
                                               vmin, vmax)
 
-        macrho = py_rho(rho) / len(rho)
-        mrho = mean_rho(macrho, self.__rho)
+        # macrho = py_rho(rho) / len(rho)
+        self.mean_rho = mean_rho(rho, self.__img)
 
         u = [uy[:], ux[:] * -1]
 
-        HDF5_write(mrho, self.__tau, u, f, 0., 1., output, self.img, self.porosity,
-                   self.nlayers)
+        self.mean_uy, self.mean_ux = mean_u(u, self.__img)
+        pore_diameter = self.get_mean_pore_size()
+        reynolds_number = self.get_reynolds_number()
+        velocity_factor = self.get_velocity_conversion()
+
+        HDF5_write(self.mean_rho, self.__tau, u, f, rho, output,
+                   self.mean_uy, self.mean_ux, pore_diameter, reynolds_number,
+                   velocity_factor, self.img, self.porosity, self.nlayers)
 
         return f
 
@@ -580,13 +725,19 @@ class LB2DModel(object):
                         u = [uy[:], ux[:] * -1]
                         pretty.velocity_image(u, self.__img, image_name, i, True,
                                               vmin, vmax)
-        macrho = py_rho(rho) / len(rho)
-        mrho = mean_rho(macrho, self.rho)
+        # macrho = py_rho(rho) / len(rho)
+        self.mean_rho = mean_rho(rho, self.__img)
 
         u = [uy[:], ux[:] * -1]
 
-        HDF5_write(mrho, self.tau, u, f, 0., 1., output, self.img, self.porosity,
-                   self.nlayers)
+        self.mean_uy, self.mean_ux = mean_u(u, self.__img)
+        pore_diameter = self.get_mean_pore_size()
+        reynolds_number = self.get_reynolds_number()
+        velocity_factor = self.get_velocity_conversion()
+
+        HDF5_write(self.mean_rho, self.tau, u, f, rho, output,
+                   self.mean_uy, self.mean_ux, pore_diameter, reynolds_number,
+                   velocity_factor, self.img, self.porosity, self.nlayers)
         return f
     
 if __name__ == '__main__':
@@ -613,6 +764,7 @@ if __name__ == '__main__':
     vmax = OutputDict['VMAX']
     vmin = OutputDict['VMIN']
     image = HDF5_readarray(lbmodel, 'Binary_image')
+    porosity = HDF5_readarray(lbmodel, 'results/porosity')
 
     rhot = PermeabilityDict['RHOT']  # add through opts.input
     rhob = PermeabilityDict['RHOB']
@@ -628,11 +780,20 @@ if __name__ == '__main__':
     vis = 1./3. * (tau - 0.5)
     niters = PermeabilityDict['NITERS']
     kernal = ModelDict['KERNAL'].lower()
+    physical_rho = 1000.
+    physical_viscosity = 8.9e-4
+    resolution = ModelDict["LBRES"]
 
     if OutputDict['SAVE_IMAGE'] is True:
         check_directory(OutputDict['IMAGE_SAVE_FOLDER'])
         image_name = OutputDict['IMAGE_SAVE_FOLDER'] + '/' + lbmodel
-    
+
+    if 'PHYSICAL_VISCOSITY' in ModelDict:
+        physical_viscosity = ModelDict['PHYSICAL_VISCOSITY']
+
+    if 'PHYSICAL_RHO' in ModelDict:
+        physical_rho = ModelDict['PHYSICAL_RHO']
+
     # weights are consistant with up,right == positive
     # down, left == negative. position 9 == 0.
     wi = np.array([1./9., 1./36., 1./9., 1./36., 1./9.,
@@ -690,12 +851,26 @@ if __name__ == '__main__':
 
     else:
         raise Exception('Kernal type not supported')
-    
-    macrho = py_rho(rho) / len(rho)
-    mrho = mean_rho(macrho, rhob)
+
+    mrho = mean_rho(rho, image)
 
     u = [uy[:], ux[:] * -1]
+    mean_uy, mean_ux = mean_u(u, image)
 
-    output = HDF5_write(mrho, tau, u, f, delr, rhot, lbmodel)
+    pore_diameter = get_mean_pore_size(image, nx)
+    physical_pore_diameter = pore_diameter * resolution
+    reynolds_number = get_reynolds_number(pore_diameter,
+                                          mean_uy,
+                                          porosity,
+                                          mrho,
+                                          vis)
+    #todo: add velocity factor
+    velocity_factor = get_velocity_conversion(reynolds_number, mean_uy,
+                                              physical_rho, physical_pore_diameter,
+                                              physical_viscosity)
+
+    output = HDF5_write(mrho, tau, u, f, rho, lbmodel,
+                        mean_uy, mean_ux, pore_diameter,
+                        reynolds_number, velocity_factor)
 
     print "[Done]"

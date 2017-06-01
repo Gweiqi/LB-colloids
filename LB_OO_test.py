@@ -12,7 +12,7 @@ path =  os.path.dirname(os.path.realpath(__file__))
 lbname = os.path.join(path, "LBModel.hdf5")
 
 imgname = os.path.join(path, "Synth100_2.png")
-"""
+
 
 nlayers = 5
 solidvx = 0
@@ -27,7 +27,8 @@ plt.show()
 lbmodel = LB2D.LB2DModel(binary.binarized)
 lbmodel.niters = 1000
 lbmodel.run(output=lbname, verbose=10, image_int=10, image_folder='test')
-"""
+x = lbmodel.get_velocity_conversion()
+
 # now we work with LB_colloids.py
 # need to think about namespace now.
 # now we can use this to do other analysis such as sensitivity analysis
@@ -38,22 +39,22 @@ lbmodel.run(output=lbname, verbose=10, image_int=10, image_folder='test')
 io = cIO.ColloidsConfig()
 print io.valid_model_parameters
 io['lbmodel'] = lbname
-io['ncols'] = 500
-io['iters'] = 100000
+io['ncols'] = 50
+io['iters'] = 5000
 io['lbres'] = 1e-6
 io['gridref'] = 10
 io['ac'] = 1e-6
-io['timestep'] = 1e-5
+io['timestep'] = 1e-7
 io['temperature'] = 298.
 io['multiple_config'] = False
 
 io['i'] = 0.001
 
-io['print_time'] = 100
+io['print_time'] = 10000
 io['plot'] = True
 io['endpoint'] = os.path.join(path, 'Synth100_3.endpoint')
 # io['pathline'] = os.path.join(path, 'Synth100_3.pathline')
-io['store_time'] = 50
+io['store_time'] = 1
 
 print io.model_parameters
 print io.chemical_parameters
@@ -64,6 +65,7 @@ print io.output_control_parameters
 
 config = cIO.Config(io.config)
 Colloid.run(config)
+
 
 """
 import matplotlib.pyplot as plt
@@ -129,7 +131,7 @@ plt.xlabel('X (m)', fontsize=14)
 plt.legend(loc=4, fontsize=12)
 plt.show()
 """
-d['lbres'] = 1e-8
+# d['lbres'] = 1e-8
 """
 for j in i:
     d['I'] = j

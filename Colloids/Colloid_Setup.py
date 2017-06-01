@@ -12,6 +12,7 @@ class HDF5_reader:
         self.uarray = hdf['results/uarray'][()]
         self.yu = hdf['results/uarray'][()][0]
         self.xu = hdf['results/uarray'][()][1]
+        self.velocity_factor = hdf['results/velocity_factor'][()]
 
 
 class Gridarray:

@@ -6,6 +6,7 @@ CC = g++
 # Where are include files kept
 INCLUDE = . 
 
+# make sure to install libglib2.0-dev
 # Options for development
 CFLAGS = -g -O2 -pedantic -Wall -ansi `pkg-config --cflags glib-2.0`
 #-I /usr/lib/glib/include  
