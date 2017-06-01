@@ -14,11 +14,13 @@ class Config:
                          'IMAGE_SAVE_INTERVAL', 'BOUNDARY')
         self.__listtype = ('SOLID', 'VOID')
         self.__floattype = ('LBRES', 'RHOT', 'RHOB', 'TAU', 'VMIN',
-                           'VMAX', 'GRAVITY')
+                           'VMAX', 'GRAVITY', 'PHYSICAL_VISCOSITY',
+                            'PHYSICAL_RHO')
         self.__booltype = ('PLOT_Y_VELOCITY', 'SAVE_IMAGE')
         self.__dicttype = ()
         self.__required = ('LBMODEL', 'LBRES')
-        self.validmodelparams = ('LBMODEL', 'LBRES', 'KERNAL')
+        self.validmodelparams = ('LBMODEL', 'LBRES', 'KERNAL',
+                                 'PHYSICAL_VISCOSITY', 'PHYSICAL_RHO')
         self.validimageparams = ('SOLID', 'VOID', 'IMAGE', 'BOUNDARY')
         self.validpermeabilityparmas = ('RHOT', 'RHOB', 'TAU', 'NITERS', 'GRAVITY')
         self.validoutputparams = ('SAVE_IMAGE', 'IMAGE_SAVE_FOLDER', 'IMAGE_SAVE_INTERVAL',

@@ -36,10 +36,11 @@ class Colloid:
         self.storey = [self.yposition[0]]
         self.storex = [self.xposition[0]]
         self.idx_rx = [int(self.xposition[-1]//resolution)]
-        self.idx_ry = [int(self.yposition[-1]//resolution)]
-        self.idx_ry = []
+        self.idx_ry = [-int(self.yposition[-1]//resolution)]
         self.__cell_time = [0.]
         self.time = [0]
+        self.colloid_start_time = copy(TrackTime.model_time)
+        self.colloid_end_time = "None"
         self.flag = [1]
         self.ylen = ylen
         self.xlen = xlen
@@ -86,11 +87,11 @@ class Colloid:
         flag = self.flag[-1]
         # find grid indexes and look up velocity (negative y accounts for grid indexes bc of vector direction).
 
-        if flag == 2:
+        #if flag == 2:
             # this is a NaN condition
-            self.update_special(irx, iry, 2)
+        #    self.update_special(irx, iry, 2)
 
-        elif flag == 3:
+        if flag == 3:
             # this is the breakthrough condition
             irx = float('NaN')
             iry = float('NaN')
@@ -110,9 +111,14 @@ class Colloid:
                 idxry = int(iry//-self.resolution)
            
             except ValueError:
-                self._append_xposition(self.xposition[-1])
-                self._append_yposition(self.yposition[-1])
-                self.__update_cell_time(ts, new_cell=True)
+                if not np.isnan(self.xposition[-1]) and not np.isnan(self.yposition[-1]):
+                    self._append_xposition(self.xposition[-1])
+                    self._append_yposition(self.yposition[-1])
+                    self.__update_cell_time(ts, new_cell=True)
+                else:
+                    self._append_xposition(random.uniform(0.1, 0.9) * self.xlen * self.resolution)
+                    self._append_yposition(-self.resolution)
+                    self._append_flag(2)
                 return
 
         # if colloid breaks through domain change flag to 3  
@@ -125,13 +131,17 @@ class Colloid:
             except IndexError:
                 if idxry >= self.ylen:
                     self._append_flag(3)
+                    self.colloid_end_time = copy(TrackTime.model_time)
                     self._append_xposition(float("NaN"))
                     self._append_yposition(float("NaN"))
                     return
                 else:
+                    self._append_xposition(random.uniform(0.1, 0.9) * self.xlen * self.resolution)
+                    self._append_yposition(-self.resolution)
                     self._append_flag(2)
-                    self._append_xposition(irx)
-                    self._append_yposition(iry)
+                    # self._append_flag(2)
+                    # self._append_xposition(irx)
+                    # self._append_yposition(iry)
                     return
 
             # track time each colloid spends in a cell to account for acceleration effects
@@ -185,6 +195,8 @@ class TrackTime:
     is useful to free memoryafter storing the data externally. Is necessary for
     output class functionality!
     """
+    model_time = 0
+
     def __init__(self, ts):
         self.ts = ts
         self.timer = [0]
@@ -193,6 +205,7 @@ class TrackTime:
 
     def update_time(self):
         self.time += 1
+        TrackTime.model_time += 1
         self.timer.append(self.time)
         self.totim.append(self.time*self.ts)
 
@@ -331,7 +344,8 @@ def run(config):
 
     LBy = cs.LBVArray(LB.yu, LB.imarray)
     LBx = cs.LBVArray(LB.xu, LB.imarray)
-    
+    velocity_factor = LB.velocity_factor
+
     # interpolate over grid array and interpolate veloctity profiles
     # Col_vp = interp_v(LBvp, gridsplit)
     LBy = cs.InterpV(LBy, gridsplit)
@@ -358,7 +372,7 @@ def run(config):
 
     # for calculations we need ts = 1., adjust later
    
-    velocity = cm.Velocity(LBx, LBy, gridres, **PhysicalDict)
+    velocity = cm.Velocity(LBx, LBy, velocity_factor, **PhysicalDict)
     LBx = velocity.xvelocity
     LBy = velocity.yvelocity
     

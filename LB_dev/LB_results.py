@@ -32,9 +32,9 @@ def rho_grad(urho, delr, bound, image):
 
 class HDF5_writer:
     def __init__(self, k, output):
-	with H.File(output,"r+") as self.fi:
-	    print '[Writing to: %s]' % output
-	    self.wk = self.fi.create_dataset('results/permeability', data = k)
+        with H.File(output,"r+") as self.fi:
+            print '[Writing to: %s]' % output
+            self.wk = self.fi.create_dataset('results/permeability', data = k)
 
 parser = optparse.OptionParser()
 parser.add_option('-i', '--input', dest='input', help= 'input a LB .hdf5 file',

@@ -36,7 +36,7 @@ class ForceToVelocity:
         
         
 class Velocity:
-    def __init__(self, LBx, LBy, gridres, **kwargs):
+    def __init__(self, LBx, LBy, velocity_factor, **kwargs):
         """
         Class that dimensionalizes LB velocity
 
@@ -45,22 +45,26 @@ class Velocity:
         LBx: (np.array, np.float) array of Lattice Boltzmann velocities in the x-direction
         LBy: (np.array, np.float) array of Lattice Boltzmann velocities in the y-direction
         ts: (float) time step value, setup is 1. model run should be much less!
-        gridres: (float) Grid resolution {LB_resolution/gridsplit}
+        velocity_factor: (float) LB to physical velocity conversion factor
 
         Returns:
         --------
         xVelocity: (np.array, np.float) array of dimensionalized velocities in the x-direction
         yVelocity: (np.array, np.float) array of dimensionalized velocities in the y-direction
         """
-        # add a lb time step for dimensionalization?
+        # todo: add a lb time step for dimensionalization? What is the best way to recover this?
+        # todo: Maybe look at reynolds number for dimensionalization
 
-        params = {'lb_timestep': 0.0001}
+        params = {'lb_timestep': 1e-5, 'ts': 1}
+
         for kwarg in kwargs:
             params[kwarg] = kwargs[kwarg]
 
-        ts = params['lb_timestep']
-        self.xvelocity = (LBx * gridres) * (1./ts)
-        self.yvelocity = (LBy * gridres) * (1./ts)
+        # ts = params['lb_timestep']
+        ts = params['ts']
+        # todo: use the reynolds number calculation and then divide by gridref!
+        self.xvelocity = LBx * velocity_factor
+        self.yvelocity = LBy * velocity_factor
         
 
 class Gravity:

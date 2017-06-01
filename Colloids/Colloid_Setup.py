@@ -12,6 +12,7 @@ class HDF5_reader:
         self.uarray = hdf['results/uarray'][()]
         self.yu = hdf['results/uarray'][()][0]
         self.xu = hdf['results/uarray'][()][1]
+        self.velocity_factor = hdf['results/velocity_factor'][()]
 
 
 class Gridarray:
@@ -118,23 +119,29 @@ class Gridarray:
 
                 if gap % 2 == 0:
                     gap = gap//2
-                    left = np.arange(1, gap + 1) * gridres
+
+                    if gridres > 1e-9:
+                        left = (np.arange(1, gap + 1) * gridres) - (gridres - 1e-9)
+                    else:
+                        left = np.arange(1, gap + 1) * gridres
+
                     right = left[::-1]
                     line[lbound:rbound] = np.append(left, right)
 
                     left = np.ones(gap) * -1
-                    # print left
                     right = np.ones(gap)
-                    # print right
                     vline[lbound:rbound] = np.append(left, right)
-                    # print vline
 
                 else:
                     gap = gap//2
-                    left = np.arange(1, gap + 1) * gridres
-                    right = left[::-1]
-                    adjust = (len(left) + 1) * gridres
-                    left = np.append(left, adjust)
+
+                    if gridres > 1e-9:
+                        left = (np.arange(1, gap + 2) * gridres) - (gridres - 1e-9)
+                        right = (np.arange(1, gap + 1) * gridres) - (gridres - 1e-9)
+                    else:
+                        left = np.arange(1, gap + 2) * gridres
+                        right = np.arange(1, gap + 1) * gridres
+
                     line[lbound:rbound] = np.append(left, right)
 
                     left = np.ones(gap + 1) * -1
@@ -169,7 +176,13 @@ class Gridarray:
         if len(boundary) > 0:
             rbound = boundary[0] + 1 
             lbound = 0
-            top = np.arange(rbound, lbound, -1) * gridres
+
+            if gridres > 1e-9:
+                # Use this statement to enforce nm scale DLVO @ boundary
+                top = (np.arange(rbound, lbound, -1) * gridres) - (gridres - 1e-9)
+            else:
+                top = np.arange(rbound, lbound, -1) * gridres
+
             line[lbound:rbound] = top
             vtop = np.ones(len(top)) * -1
             vline[lbound:rbound] = vtop
@@ -180,7 +193,13 @@ class Gridarray:
                 gap = rbound - lbound
                 if gap % 2 == 0:
                     gap = gap // 2
-                    left = np.arange(1, gap + 1) * gridres
+
+                    if gridres > 1e-9:
+                        # use this statement to enforce nm scale DLVO @ boundaries
+                        left = (np.arange(1, gap + 1) * gridres) - (gridres - 1e-9)
+                    else:
+                        left = np.arange(1, gap + 1) * gridres
+
                     right = left[::-1]
                     line[lbound:rbound] = np.append(left, right)
 
@@ -190,10 +209,14 @@ class Gridarray:
                     
                 else:
                     gap = gap // 2
-                    left = np.arange(1, gap + 1) * gridres
-                    right = left[::-1]
-                    adjust = (len(left) + 1) * gridres
-                    left = np.append(left, adjust)
+
+                    if gridres > 1e-9:
+                        left = (np.arange(1, gap + 2) * gridres) - (gridres - 1e-9)
+                        right = (np.arange(1, gap + 1) * gridres) - (gridres - 1e-9)
+                    else:
+                        left = np.arange(1, gap + 2) * gridres
+                        right = np.arange(1, gap + 1) * gridres
+
                     line[lbound:rbound] = np.append(left, right)
 
                     left = np.ones(gap + 1)
@@ -203,7 +226,12 @@ class Gridarray:
             rbound = ylen
             lbound = boundary[-1] + 1
             gap = rbound - lbound
-            bottom = np.arange(1, gap + 1)*gridres
+
+            if gridres > 1e-9:
+                bottom = (np.arange(1, gap + 1) * gridres) - (gridres - 1e-9)
+            else:
+                bottom = np.arange(1, gap + 1) * gridres
+
             line[lbound:rbound] = bottom
 
             bottom = np.ones(gap)
