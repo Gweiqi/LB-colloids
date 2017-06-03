@@ -241,11 +241,14 @@ def run_save_model(x, iters, vx, vy, ts, timer, print_time, store_time,
     """
     vx0 = copy(vx)
     vy0 = copy(vy)
-    # col_col
+    colloidcolloid.update(x)
+
     while timer.time <= iters:
         # update colloid position and time
-        if x:
-            x[0].reset_master_positions()
+        colloidcolloid.update(x)
+        colloidcolloid.x_array
+        colloidcolloid.y_array
+        Colloid.positions = []
         for col in x:
             col.update_position(vx, vy, ts)
 

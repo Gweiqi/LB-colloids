@@ -1,3 +1,4 @@
+from LB_Colloid import Colloid
 import numpy as np
 import sys
 import copy
@@ -611,7 +612,6 @@ class ColloidColloid(object):
         self.__colloid_potential = False
         self.__ionic_strength = False
         self.__resolution = self.__params['lbres']/self.__params['gridref']
-        self.__colloids = []
         self.__pos = []
         self.__x_distance = False
         self.__y_distance = False
@@ -625,7 +625,6 @@ class ColloidColloid(object):
         """
         self.__xarr = np.zeros(self.__arr.shape)
         self.__yarr = np.zeros(self.__arr.shape)
-        self.__colloids = []
         self.__pos = []
         self.__x = False
         self.__y = False
@@ -642,9 +641,7 @@ class ColloidColloid(object):
         --------
             pos: (list) list of colloid positions within the model space
         """
-        for colloid in self.__colloids:
-            self.__pos.append([colloid.xposition[-1]/self.__resolution,
-                        colloid.yposition[-1]/-self.__resolution])
+        self.__pos = Colloid.positions
         return self.__pos
 
     def update(self, colloids):
@@ -656,8 +653,21 @@ class ColloidColloid(object):
             colloids: (list, <class: Colloids.LB_Colloid.Colloid)
         """
         self.__reset()
-        self.__colloids = colloids
-        self.__pos = self.positions
+        self.positions
+
+    @property
+    def x_array(self):
+        """
+        Property method to generate the full x force array for colloid-colloid interaction
+        """
+        return self.__get_full_dlvo_array("x")
+
+    @property
+    def y_array(self):
+        """
+        Property method to generate the full y force array for colloid-colloid interaction
+        """
+        return self.__get_full_dlvo_array("y")
 
     @property
     def x(self):
@@ -751,12 +761,13 @@ class ColloidColloid(object):
         """
         if arr_type.lower() == "x":
             arr = self.__xarr
+            dlvo_colloid = self.x
         elif arr_type.lower() == "y":
             arr = self.__yarr
+            dlvo_colloid = self.y
         else:
             raise TypeError("arr_type {} is not valid".format(arr_type))
 
-        dlvo_colloid = self.__dlvo_interaction_energy(arr_type)
         dlvo = self.__create_colloid_colloid_array(arr, dlvo_colloid)
 
         return dlvo
@@ -891,7 +902,7 @@ class ColloidColloid(object):
             f_arr: (np.ndarray) an array of colloidal forces in a single primary
                 dimension
         """
-        center = c_arr.shape[0] - 1 // 2
+        center = (c_arr.shape[0] - 1) // 2
         colloids = self.positions
 
         for colloid in colloids:
@@ -901,58 +912,46 @@ class ColloidColloid(object):
                 pass
 
             else:
-                if x - center < 0.:
-                    adjx = center - x
-                    posx = 0
-                    xidx = x + center
+                x -= center
+                y -= center
+
+                if x < 0:
+                    c_left_x = -x
+                    c_right_x = c_arr.shape[1]
+                    f_right_x = c_arr.shape[1] + x
+                    f_left_x = 0
+
+                elif x + c_arr.shape[1] > f_arr.shape[1]:
+                    f_left_x = x
+                    f_right_x = f_arr.shape[1]
+                    c_left_x = 0
+                    c_right_x = -(x - f_arr.shape[1])
 
                 else:
-                    adjx = False
-                    posx = x - center
-                    xidx = x + center
+                    c_left_x = 0
+                    c_right_x = c_arr.shape[1]
+                    f_left_x = x
+                    f_right_x = x + c_arr.shape[1]
 
-                if x + center > c_arr.shape[1]:
-                    adjx1 = c_arr.shape - (x + center)
+                if y < 0:
+                    c_top_y = -y
+                    c_bottom_y = c_arr.shape[0]
+                    f_top_y = 0
+                    f_bottom_y = c_arr.shape[0] + y
 
-                else:
-                    adjx1 = False
-
-                if y - center < 0.:
-                    adjy = center - y
-                    posy = 0
-                    yidx = y + center
-
-                else:
-                    adjy = False
-                    posy = y - center
-                    yidx = y + center
-
-                if y + center > c_arr.shape[0]:
-                    adjy1 = c_arr.shape - (y + center)
+                elif y + c_arr.shape[0] > f_arr.shape[0]:
+                    c_top_y = 0
+                    c_bottom_y = -(y - f_arr.shape[0])
+                    f_top_y = y
+                    f_bottom_y = f_arr.shape[0]
 
                 else:
-                    adjy1 = False
+                    c_top_y = 0
+                    c_bottom_y = c_arr.shape[0]
+                    f_top_y = y
+                    f_bottom_y = y + c_arr.shape[0]
 
-                if adjx and adjy:
-                    f_arr[posy:yidx, posx:xidx] += c_arr[adjy:, adjx:]
-
-                elif adjx1 and adjy1:
-                    f_arr[posy:, posx:] += c_arr[:-adjy1, :-adjx1]
-
-                elif adjy and adjx1:
-                    f_arr[posy:yidx, posx:] += c_arr[adjy:, :-adjx1]
-
-                elif adjy1 and adjx:
-                    f_arr[posy:, posx:xidx] += c_arr[:-adjy1, adjx:]
-
-                elif adjy:
-                    f_arr[posy:yidx, :] += c_arr[adjy:, :]
-
-                elif adjx:
-                    f_arr[:, posx:xidx] += c_arr[:, adjx:]
-
-                else:
-                    f_arr[posy:yidx, posx:xidx] += c_arr[:, :]
+                f_arr[f_top_y:f_bottom_y, f_left_x:f_right_x] += c_arr[c_top_y:c_bottom_y, c_left_x:c_right_x]
 
         return f_arr
 
