@@ -18,7 +18,7 @@ nlayers = 5
 solidvx = 0
 fluidvx = 253
 
-"""
+
 img = LBimage.Images(imgname)
 binary = LBimage.BoundaryCondition(img.arr, fluidvx, solidvx, nlayers)
 plt.imshow(binary.binarized, interpolation='nearest')
@@ -35,7 +35,7 @@ x = lbmodel.get_velocity_conversion()
 # sensitivity analysis, do this soonish!
 
 # todo: add a lb_timestep parameter to calibrate the lb dimensionalization process
-"""
+
 io = cIO.ColloidsConfig()
 print io.valid_model_parameters
 io['lbmodel'] = lbname
@@ -67,8 +67,7 @@ config = cIO.Config(io.config)
 Colloid.run(config)
 
 
-"""
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 d = {}
 
 for key, value in io.chemical_parameters.items():
@@ -83,7 +82,7 @@ xarr = np.array([arr])
 varr = np.array([np.ones(100)])
 
 i = [6.0, 1.0, 0.1, 0.01, 0.001]
-"""
+
 """
 for j in i:
     d['I'] = j
@@ -132,12 +131,14 @@ plt.legend(loc=4, fontsize=12)
 plt.show()
 """
 # d['lbres'] = 1e-8
-"""
+
 for j in i:
     d['I'] = j
     dlvo = cm.ColloidColloid(arr, **d)
+    t = dlvo.x
+    u = dlvo.y
     cdlvo = -1 * (dlvo.x + dlvo.y)
-    plt.imshow(cdlvo, interpolation='None', cmap='jet', vmin=1e-7, vmax=1e-4, norm=matplotlib.colors.LogNorm())
+    plt.imshow(cdlvo, interpolation='None', cmap='jet', vmin=1e-14, vmax=1e-10, norm=matplotlib.colors.LogNorm())
     plt.plot([250], [250], 'ko')
     plt.ylim([0, 500])
     plt.xlim([0, 500])
@@ -145,4 +146,3 @@ for j in i:
     plt.xlabel('nm')
     plt.ylabel('nm')
     plt.show()
-"""

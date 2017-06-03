@@ -617,6 +617,7 @@ class ColloidColloid(object):
         self.__y_distance = False
         self.__x = False
         self.__y = False
+        self.__center = False
 
     def __reset(self):
         """
@@ -663,7 +664,7 @@ class ColloidColloid(object):
         """
         Property method to generate the x force array for colloid-colloid interaction
         """
-        if not self.__x:
+        if isinstance(self.__x, bool):
             self.__x = self.__dlvo_interaction_energy("x")
         return self.__x
 
@@ -672,7 +673,7 @@ class ColloidColloid(object):
         """
         Property method to generate or return the y force array for colloid-colloid interaction
         """
-        if not self.__y:
+        if isinstance(self.__y, bool):
             self.__y = self.__dlvo_interaction_energy("y")
         return self.__y
 
@@ -681,7 +682,7 @@ class ColloidColloid(object):
         """
         Generates an angular distance array in the x direction.
         """
-        if not self.__x_distance:
+        if isinstance(self.__x_distance, bool):
             self.__x_distance = self.__angular_array("x")
         return self.__x_distance
 
@@ -690,7 +691,7 @@ class ColloidColloid(object):
         """
         Generates an angular distance array in the y direction
         """
-        if not self.__y_distance:
+        if isinstance(self.__y_distance, bool):
             self.__y_distance = self.__angular_array("y")
         return self.__y_distance
 
@@ -722,7 +723,7 @@ class ColloidColloid(object):
         """
         Property method to calculate the inverse debye length on the fly
         """
-        if not self.__debye:
+        if isinstance(self.__debye, bool):
             na = 6.02e23
             k_inverse = np.sqrt((self.__params['epsilon_r']*self.__params['epsilon_r']
                                 *self.__params['kb']*self.__params['T'])/
@@ -732,7 +733,7 @@ class ColloidColloid(object):
 
     @property
     def colloid_potential(self):
-        if not self.__colloid_potential:
+        if isinstance(self.__colloid_potential, bool):
             self.__colloid_potential = self.__params['zeta_colloid']*(1. +
                                        (self.__params['sheer_plane']/self.__params['ac']))\
                                         *np.exp(self.debye*self.__params['zeta_colloid'])
@@ -807,6 +808,15 @@ class ColloidColloid(object):
 
         dlvo = (lewis_vdw + edl)
 
+        if arr_type.lower() == "x":
+            dlvo[:, :self.__center] *= -1
+
+        elif arr_type.lower() == "y":
+            dlvo[self.__center + 1:, :] *= -1
+
+        else:
+            raise TypeError("arr_type {} is not valid".format(arr_type))
+
         return dlvo
 
     def __angular_array(self, arr_type):
@@ -824,14 +834,17 @@ class ColloidColloid(object):
         """
 
         if 1e-6 > self.__resolution >= 1e-7:
+            self.__center = 2
             arr = np.ones((5, 5))
             center = 2
 
         elif 1e-7 > self.__resolution >= 1e-8:
+            self.__center = 25
             arr = np.ones((51, 51))
             center = 25
 
         elif 1e-8 > self.__resolution >= 1e-9:
+            self.__center = 250
             arr = np.ones((501, 501))
             center = 250
 

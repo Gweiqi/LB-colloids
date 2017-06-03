@@ -29,6 +29,8 @@ class Colloid:
     xposition: (list, float) a list of x-position values normalized to the grid resolution
     yposition: (list, float) a list of y-position values normalized to grid resolution (top left is 0,0)
     """
+    positions = []
+
     def __init__(self, xlen, ylen, resolution):
         self.xposition = [random.uniform(0.1, 0.9)*xlen*resolution]
         self.yposition = [-resolution]
@@ -44,6 +46,10 @@ class Colloid:
         self.flag = [1]
         self.ylen = ylen
         self.xlen = xlen
+        Colloid.positions.append(tuple([self.idx_rx[-1], self.idx_ry[-1]]))
+
+    def reset_master_positions(self):
+        Colloid.positions = []
 
     def _append_xposition(self, item):
         self.xposition.append(item)
@@ -68,6 +74,9 @@ class Colloid:
 
     def _append_idx_ry(self, item):
         self.idx_ry.append(item)
+
+    def _append_master_positions(self, idx_rx, idx_ry):
+        Colloid.positions.append(tuple([idx_rx, idx_ry]))
 
     def __update_cell_time(self, item, new_cell=False):
         if new_cell:
@@ -167,6 +176,7 @@ class Colloid:
                 ry = -self.resolution
                 self.__update_cell_time(ts, new_cell=True)
 
+            self._append_master_positions(idxrx, idxry)
             self._append_xposition(rx)
             self._append_yposition(ry)
             self._append_flag(1)
@@ -225,17 +235,20 @@ def fmt(x, pos):
 
 
 def run_save_model(x, iters, vx, vy, ts, timer, print_time, store_time,
-                   pathline=None, timeseries=None, endpoint=None):
+                   colloidcolloid, pathline=None, timeseries=None, endpoint=None):
     """
     definition to allow the use of multiple ionic strengths ie. attachment then flush, etc....
     """
     vx0 = copy(vx)
     vy0 = copy(vy)
-
+    # col_col
     while timer.time <= iters:
         # update colloid position and time
+        if x:
+            x[0].reset_master_positions()
         for col in x:
             col.update_position(vx, vy, ts)
+
         timer.update_time()
 
         # check for a printing prompt
@@ -269,6 +282,7 @@ def run_save_model(x, iters, vx, vy, ts, timer, print_time, store_time,
                     col.strip_positions()
                 endpoint.write_output(timer, x, pathline=False)
 
+    del colloidcolloid
 
 def run(config):
     """
@@ -393,8 +407,6 @@ def run(config):
     dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx
     dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
     colloidcolloid = cm.ColloidColloid(Col_img, **ChemicalDict)
-    x = colloidcolloid.x
-    y = colloidcolloid.y
 
     if preferential_flow is True:
         fx = dlvox
@@ -425,7 +437,8 @@ def run(config):
     timer = TrackTime(ts)
 
     run_save_model(x, iters, vx, vy, ts, timer, print_time,
-                   store_time, pathline, timeseries, endpoint)
+                   store_time, colloidcolloid,
+                   pathline, timeseries, endpoint)
 
     if ModelDict['multiple_config'] is True:
         for confignumber in range(0, ModelDict['nconfig']-1):
@@ -470,7 +483,8 @@ def run(config):
             vy = vy.velocity + LBy
 
             run_save_model(x, iters, vx, vy, ts, timer, print_time,
-                           store_time, pathline, timeseries, endpoint)
+                           store_time, colloidcolloid,
+                           pathline, timeseries, endpoint)
 
     if OutputDict['plot']:
         # set up option for vy vs. LBy plotting
