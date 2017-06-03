@@ -1,4 +1,7 @@
 import sys
+import numpy as np
+import Colloid_Math as cm
+import h5py as H
 
 
 class Config:
@@ -268,21 +271,26 @@ class Config:
 class Output:
     def __init__(self, fi, **kwargs):
 
-        defaults = {'overwrite': True}
+        defaults = {'overwrite': True,
+                    'ts': 1e-6}
 
         for key in kwargs:
             defaults[key] = kwargs[key]
 
         self.filename = fi
-        self.header = header = '{:>8}{:>9}{:>9}{:>11}{:>14}{:>14}{:>14}{:>14}{:>14}\n'.format(
-                               'colloid', 'flag', 'ts', 'totim', 'x-position', 'y-position',
-                               'resolution', 'x-model', 'y-model')
+        self.header = "LB Colloids output file\nTimestep: {}\n\n".format(defaults['ts'])
+        self.header += "#" * 136 + "\n"
+        self.header += '{:>8}\t{:>5}\t{:>5}\t{:>7}\t{:>11}\t{:>12}\t{:>11}\t' \
+                       '{:>11}\t{:>10}{:>10}{:>10}{:>10}\n'.format(
+                       'colloid', 'flag', 'ts', 'totim', 'x-position', 'y-position',
+                       'resolution', 'x-model', 'y-model', 'start ts', 'end ts',
+                       'delta ts')
 
         self.resolution = defaults['lbres']/defaults['gridref']
-        
+
         # checks if file exists, and overwrites if overwrite is True!
         if defaults['overwrite'] is True:
-            self._writer(fi, header, wtype='w')
+            self._writer(fi, self.header, wtype='w')
         
     def _writer(self, fi, data, wtype='a'):
         with open(fi, wtype) as f:
@@ -301,28 +309,35 @@ class Output:
         output = []
         
         if pathline is not True:
-            for colloid_number in range(len(colloids)):
-                output_string = '{:>8d}    {:>5d}    {:5d}    {:07.5f}    {:09.8f}    {:09.8f}    {:09.8f}    ' \
-                                '{:09.8f}    {:09.8f}\n'.format(
-                                    colloid_number, colloids[colloid_number].flag[-1], time[-1], totim[-1],
-                                    colloids[colloid_number].xposition[-1],
-                                    colloids[colloid_number].yposition[-1],
+            for number, colloid in enumerate(colloids):
+                output_string = '{:>8d}\t{:>5d}\t{:5d}\t{:07.5f}\t {:09.8f}\t ' \
+                                '{:09.8f}\t{:10.9f}\t ' \
+                                '{:09.5f}\t{:09.5f}\t{:6f}\t{:6f}\t{:6f}\n'.format(
+                                    number, colloid.flag[-1], time[-1], totim[-1],
+                                    colloid.xposition[-1],
+                                    colloid.yposition[-1],
                                     self.resolution,
-                                    colloids[colloid_number].xposition[-1]/self.resolution,
-                                    colloids[colloid_number].yposition[-1]/self.resolution)
+                                    colloid.xposition[-1]/self.resolution,
+                                    colloid.yposition[-1]/self.resolution,
+                                    colloid.colloid_start_time,
+                                    colloid.colloid_end_time,
+                                    colloid.colloid_end_time - colloid.colloid_start_time)
                 output.append(output_string)
         
         else:    
             for idx in range(len(time)-1):  # so we don't duplicate
-                for colloid_number in range(len(colloids)):
-                    output_string = '{:>8d}    {:5d}    {:07.5f}    {:09.8f}    {:09.8f}    {:09.8f}    ' \
-                                    '{:09.8f}    {:09.8f}    {:09.8f}\n'.format(
-                                        colloid_number, colloids[colloid_number].flag[-1], time[idx], totim[idx],
-                                        colloids[colloid_number].xposition[idx],
-                                        colloids[colloid_number].yposition[idx],
+                for number, colloid in enumerate(colloids):
+                    output_string = '{:>8d}\t{:>5d}\t{:5d}\t{:07.5f}\t{:09.8f}\t{:09.8f}\t{:09.8f}\t' \
+                                    '{:09.8f}\t{:09.8f}\t{:6f}\t{:6f}\t{:6f}\n'.format(
+                                        number, colloid.flag[-1], time[-1], totim[-1],
+                                        colloid.xposition[-1],
+                                        colloid.yposition[-1],
                                         self.resolution,
-                                        colloids[colloid_number].xposition[idx]/self.resolution,
-                                        colloids[colloid_number].yposition[idx]/self.resolution)
+                                        colloid.xposition[-1]/self.resolution,
+                                        colloid.yposition[-1]/self.resolution,
+                                        colloid.colloid_start_time,
+                                        colloid.colloid_end_time,
+                                        colloid.colloid_end_time - colloid.colloid_start_time)
                     output.append(output_string)
 
         self._writer(self.filename, output)
@@ -443,9 +458,6 @@ class HDF5WriteArray(object):
     model: (str) hdf5 model name for the project
     """
     def __init__(self, ux, uy, model_dict, chemical_dict, physical_dict):
-        import numpy as np
-        import Colloid_Math as cm
-        import h5py as H
 
         self.__model = model_dict['lbmodel']
         arr = np.array([np.arange(1, 101) * model_dict['lbres'] / model_dict['gridref']])

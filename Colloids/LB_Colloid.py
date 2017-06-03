@@ -40,7 +40,7 @@ class Colloid:
         self.__cell_time = [0.]
         self.time = [0]
         self.colloid_start_time = copy(TrackTime.model_time)
-        self.colloid_end_time = "None"
+        self.colloid_end_time = np.nan
         self.flag = [1]
         self.ylen = ylen
         self.xlen = xlen
@@ -195,11 +195,11 @@ class TrackTime:
     is useful to free memoryafter storing the data externally. Is necessary for
     output class functionality!
     """
-    model_time = 0
+    model_time = 1
 
     def __init__(self, ts):
         self.ts = ts
-        self.timer = [0]
+        self.timer = [1]
         self.time = self.timer[-1]
         self.totim = [self.time*self.ts]
 

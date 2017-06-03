@@ -18,7 +18,7 @@ nlayers = 5
 solidvx = 0
 fluidvx = 253
 
-
+"""
 img = LBimage.Images(imgname)
 binary = LBimage.BoundaryCondition(img.arr, fluidvx, solidvx, nlayers)
 plt.imshow(binary.binarized, interpolation='nearest')
@@ -35,12 +35,12 @@ x = lbmodel.get_velocity_conversion()
 # sensitivity analysis, do this soonish!
 
 # todo: add a lb_timestep parameter to calibrate the lb dimensionalization process
-
+"""
 io = cIO.ColloidsConfig()
 print io.valid_model_parameters
 io['lbmodel'] = lbname
 io['ncols'] = 50
-io['iters'] = 5000
+io['iters'] = 50000
 io['lbres'] = 1e-6
 io['gridref'] = 10
 io['ac'] = 1e-6
