@@ -141,7 +141,7 @@ class Colloid:
                 if idxry >= self.ylen:
                     self._append_flag(3)
                     self.colloid_end_time = copy(TrackTime.model_time)
-                    self._append_xposition(float("NaN"))
+                    self._append_xposition(irx)
                     self._append_yposition(float("NaN"))
                     return
                 else:
@@ -235,22 +235,25 @@ def fmt(x, pos):
 
 
 def run_save_model(x, iters, vx, vy, ts, timer, print_time, store_time,
-                   colloidcolloid, pathline=None, timeseries=None, endpoint=None):
+                   colloidcolloid, ModelDict, pathline=None,
+                   timeseries=None, endpoint=None):
     """
     definition to allow the use of multiple ionic strengths ie. attachment then flush, etc....
     """
-    vx0 = copy(vx)
-    vy0 = copy(vy)
     colloidcolloid.update(x)
-
+    conversion = cm.ForceToVelocity(1, **ModelDict).velocity
+    # todo: maybe force to acceleration instead of force to velocity?
     while timer.time <= iters:
         # update colloid position and time
         colloidcolloid.update(x)
-        colloidcolloid.x_array
-        colloidcolloid.y_array
+        cc_vx = colloidcolloid.x_array# * conversion
+        cc_vy = colloidcolloid.y_array# * conversion
         Colloid.positions = []
+        vx0 = vx + cc_vx
+        vy0 = vy + cc_vy
+
         for col in x:
-            col.update_position(vx, vy, ts)
+            col.update_position(vx0, vy0, ts)
 
         timer.update_time()
 
@@ -440,7 +443,7 @@ def run(config):
     timer = TrackTime(ts)
 
     run_save_model(x, iters, vx, vy, ts, timer, print_time,
-                   store_time, colloidcolloid,
+                   store_time, colloidcolloid, ModelDict,
                    pathline, timeseries, endpoint)
 
     if ModelDict['multiple_config'] is True:
@@ -486,7 +489,7 @@ def run(config):
             vy = vy.velocity + LBy
 
             run_save_model(x, iters, vx, vy, ts, timer, print_time,
-                           store_time, colloidcolloid,
+                           store_time, colloidcolloid, ModelDict,
                            pathline, timeseries, endpoint)
 
     if OutputDict['plot']:

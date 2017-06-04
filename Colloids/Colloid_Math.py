@@ -791,13 +791,14 @@ class ColloidColloid(object):
         else:
             raise TypeError("arr_type {} is not valid".format(arr_type))
 
+        # todo: check Hamaker constant calculation!
         A = 384. * np.pi * c_arr * self.debye * self.__params['T']\
             * self.ionic_strength * self.colloid_potential * self.colloid_potential\
             * np.exp(-self.debye * np.abs(c_arr))
 
         lwdv0 = -A / 6.
         lvdw1 = (2. * self.__params['ac'] ** 2.) / (self.__params['ac'] ** 2. + 4. * self.__params['ac'] * c_arr)
-        lvdw2 = (2. * self.__params['ac'] ** 2.)/ (c_arr + 2. * self.__params['ac']) ** 2.
+        lvdw2 = (2. * self.__params['ac'] ** 2.) / (c_arr + 2. * self.__params['ac']) ** 2.
         lvdw3 = np.log(1. - ((4. * self.__params['ac'] ** 2.) / (c_arr + 2. * self.__params['ac']) ** 2.))
 
         lewis_vdw = lwdv0 * (lvdw1 + lvdw2 + lvdw3)
@@ -887,7 +888,7 @@ class ColloidColloid(object):
         else:
             raise TypeError("arr_type {} is not valid".format(arr_type))
 
-        return arr * self.__resolution / 1e-6
+        return arr * self.__resolution #/ 1e-6
 
     def __create_colloid_colloid_array(self, f_arr, c_arr):
         """
@@ -951,7 +952,10 @@ class ColloidColloid(object):
                     f_top_y = y
                     f_bottom_y = y + c_arr.shape[0]
 
-                f_arr[f_top_y:f_bottom_y, f_left_x:f_right_x] += c_arr[c_top_y:c_bottom_y, c_left_x:c_right_x]
+                try:
+                    f_arr[f_top_y:f_bottom_y, f_left_x:f_right_x] += c_arr[c_top_y:c_bottom_y, c_left_x:c_right_x]
+                except ValueError:
+                    pass
 
         return f_arr
 

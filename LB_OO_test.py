@@ -40,11 +40,11 @@ io = cIO.ColloidsConfig()
 print io.valid_model_parameters
 io['lbmodel'] = lbname
 io['ncols'] = 50
-io['iters'] = 50000
+io['iters'] = 1000000
 io['lbres'] = 1e-6
 io['gridref'] = 10
 io['ac'] = 1e-6
-io['timestep'] = 1e-7
+io['timestep'] = 5e-7
 io['temperature'] = 298.
 io['multiple_config'] = False
 
@@ -54,7 +54,7 @@ io['print_time'] = 10000
 io['plot'] = True
 io['endpoint'] = os.path.join(path, 'Synth100_3.endpoint')
 # io['pathline'] = os.path.join(path, 'Synth100_3.pathline')
-io['store_time'] = 1
+io['store_time'] = 100
 
 print io.model_parameters
 print io.chemical_parameters
