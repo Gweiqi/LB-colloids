@@ -40,7 +40,7 @@ io = cIO.ColloidsConfig()
 print io.valid_model_parameters
 io['lbmodel'] = lbname
 io['ncols'] = 50
-io['iters'] = 1000000
+io['iters'] = 100000
 io['lbres'] = 1e-6
 io['gridref'] = 10
 io['ac'] = 1e-6

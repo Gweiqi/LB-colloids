@@ -246,8 +246,8 @@ def run_save_model(x, iters, vx, vy, ts, timer, print_time, store_time,
     while timer.time <= iters:
         # update colloid position and time
         colloidcolloid.update(x)
-        cc_vx = colloidcolloid.x_array# * conversion
-        cc_vy = colloidcolloid.y_array# * conversion
+        cc_vx = colloidcolloid.x_array #* conversion
+        cc_vy = colloidcolloid.y_array #* conversion
         Colloid.positions = []
         vx0 = vx + cc_vx
         vy0 = vy + cc_vy
