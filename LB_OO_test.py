@@ -53,7 +53,7 @@ io['i'] = 0.001
 io['print_time'] = 10000
 io['plot'] = True
 io['endpoint'] = os.path.join(path, 'Synth100_3.endpoint')
-# io['pathline'] = os.path.join(path, 'Synth100_3.pathline')
+io['timeseries'] = os.path.join(path, 'Synth100_3.pathline')
 io['store_time'] = 100
 
 print io.model_parameters
@@ -68,6 +68,7 @@ Colloid.run(config)
 
 
 # import matplotlib.pyplot as plt
+"""
 d = {}
 
 for key, value in io.chemical_parameters.items():
@@ -83,7 +84,7 @@ varr = np.array([np.ones(100)])
 
 i = [0.001]
 
-"""
+
 for j in i:
     d['I'] = j
     dlvo = cm.DLVO(xarr, xarr, xvArr=varr, yvArr=varr, **d)
@@ -129,7 +130,7 @@ plt.ylabel('Force (N)', fontsize=14)
 plt.xlabel('X (m)', fontsize=14)
 plt.legend(loc=4, fontsize=12)
 plt.show()
-"""
+
 d['lbres'] = 1e-8
 
 for j in i:
@@ -146,4 +147,4 @@ for j in i:
     plt.xlabel('nm')
     plt.ylabel('nm')
     plt.show()
-
+"""

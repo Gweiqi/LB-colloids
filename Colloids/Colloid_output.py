@@ -4,6 +4,7 @@ import pandas as pd
 
 # todo: return an axis object and dump the data into csv for further processing?
 
+
 class Breakthrough(object):
     """
     Class to prepare and plot breakthrough curve data from endpoint
@@ -51,14 +52,11 @@ class ASCIIReader(object):
     # todo: use a comment block to deliniate the ts value and add continuos/pulse
     # todo: to the header
 
-    # todo: update the dtypes after testing to exclude totim, resolution and change ts to nts
     dtypes = {'colloid': np.int,
               'flag': np.int,
-              'ts': np.int,
-              'totim': np.float,
+              'nts': np.int,
               'x-position': np.float,
               'y-position': np.float,
-              'resolution': np.float,
               'x-model': np.float,
               'y-model': np.float,
               'start-ts': np.int,
