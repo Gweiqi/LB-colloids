@@ -243,11 +243,12 @@ def run_save_model(x, iters, vx, vy, ts, timer, print_time, store_time,
     colloidcolloid.update(x)
     conversion = cm.ForceToVelocity(1, **ModelDict).velocity
     # todo: maybe force to acceleration instead of force to velocity?
+    # todo: check into hamaker constant (avagadro number usage?)
     while timer.time <= iters:
         # update colloid position and time
         colloidcolloid.update(x)
-        cc_vx = colloidcolloid.x_array #* conversion
-        cc_vy = colloidcolloid.y_array #* conversion
+        cc_vx = colloidcolloid.x_array * conversion#/1e-6
+        cc_vy = colloidcolloid.y_array * conversion#/1e-6
         Colloid.positions = []
         vx0 = vx + cc_vx
         vy0 = vy + cc_vy

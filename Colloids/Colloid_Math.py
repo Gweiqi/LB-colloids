@@ -653,7 +653,7 @@ class ColloidColloid(object):
             colloids: (list, <class: Colloids.LB_Colloid.Colloid)
         """
         self.__reset()
-        self.positions
+        # self.positions
 
     @property
     def x_array(self):
@@ -784,6 +784,7 @@ class ColloidColloid(object):
         Returns:
             dvlo: (np.ndarray) dlvo interaction force from colloids
         """
+        Na = 6.022e23
         if arr_type.lower() == "x":
             c_arr = self.x_distance_array
         elif arr_type.lower() == "y":
@@ -791,10 +792,12 @@ class ColloidColloid(object):
         else:
             raise TypeError("arr_type {} is not valid".format(arr_type))
 
-        # todo: check Hamaker constant calculation!
+        # todo: check Hamaker constant calculation! Should be approx 1e-20
         A = 384. * np.pi * c_arr * self.debye * self.__params['T']\
             * self.ionic_strength * self.colloid_potential * self.colloid_potential\
             * np.exp(-self.debye * np.abs(c_arr))
+
+        A = np.ones(c_arr.shape) * 1e-20
 
         lwdv0 = -A / 6.
         lvdw1 = (2. * self.__params['ac'] ** 2.) / (self.__params['ac'] ** 2. + 4. * self.__params['ac'] * c_arr)
@@ -863,7 +866,6 @@ class ColloidColloid(object):
         else:
             raise AssertionError("model resolution is out of bounds")
 
-
         for i, n in enumerate(arr):
             for j, m in enumerate(n):
                 y = float(i - center)
@@ -888,7 +890,7 @@ class ColloidColloid(object):
         else:
             raise TypeError("arr_type {} is not valid".format(arr_type))
 
-        return arr * self.__resolution #/ 1e-6
+        return arr * self.__resolution/1e-6
 
     def __create_colloid_colloid_array(self, f_arr, c_arr):
         """

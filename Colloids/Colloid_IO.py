@@ -278,15 +278,15 @@ class Output:
             defaults[key] = kwargs[key]
 
         self.filename = fi
-        self.header = "LB Colloids output file\nTimestep: {}\n\n".format(defaults['ts'])
+        self.resolution = defaults['lbres'] / defaults['gridref']
+        self.header = "LB Colloids output file\nTimestep: {}\n".format(defaults['ts'])
+        self.header += "Resolution: {}\n\n".format(self.resolution)
         self.header += "#" * 136 + "\n"
-        self.header += '{:>8}\t{:>5}\t{:>5}\t{:>7}\t{:>11}\t{:>12}\t{:>11}\t' \
-                       '{:>11}\t{:>10}{:>10}{:>10}{:>10}\n'.format(
-                       'colloid', 'flag', 'ts', 'totim', 'x-position', 'y-position',
-                       'resolution', 'x-model', 'y-model', 'start ts', 'end ts',
-                       'delta ts')
-
-        self.resolution = defaults['lbres']/defaults['gridref']
+        self.header += '{:>8}\t{:>5}\t{:>5}\t{:>11}\t{:>12}\t' \
+                       '{:>11}\t{:>10}\t{:>10}\t{:>10}\t{:>10}\n'.format(
+                       'colloid', 'flag', 'nts', 'x-position', 'y-position',
+                        'x-model', 'y-model', 'start-ts', 'end-ts',
+                       'delta-ts')
 
         # checks if file exists, and overwrites if overwrite is True!
         if defaults['overwrite'] is True:
@@ -305,18 +305,17 @@ class Output:
         """
         # todo: add support for grid location, model flag.
         time = timer.timer
-        totim = timer.totim
+        # totim = timer.totim
         output = []
         
         if pathline is not True:
             for number, colloid in enumerate(colloids):
-                output_string = '{:>8d}\t{:>5d}\t{:5d}\t{:07.5f}\t {:09.8f}\t ' \
-                                '{:09.8f}\t{:10.9f}\t ' \
+                output_string = '{:>8d}\t{:>5d}\t{:5d}\t{:09.8f}\t' \
+                                '{:10.9f}\t ' \
                                 '{:09.5f}\t{:09.5f}\t{:6f}\t{:6f}\t{:6f}\n'.format(
-                                    number, colloid.flag[-1], time[-1], totim[-1],
+                                    number, colloid.flag[-1], time[-1],
                                     colloid.xposition[-1],
                                     colloid.yposition[-1],
-                                    self.resolution,
                                     colloid.xposition[-1]/self.resolution,
                                     colloid.yposition[-1]/self.resolution,
                                     colloid.colloid_start_time,
@@ -327,12 +326,11 @@ class Output:
         else:    
             for idx in range(len(time)-1):  # so we don't duplicate
                 for number, colloid in enumerate(colloids):
-                    output_string = '{:>8d}\t{:>5d}\t{:5d}\t{:07.5f}\t{:09.8f}\t{:09.8f}\t{:09.8f}\t' \
-                                    '{:09.8f}\t{:09.8f}\t{:6f}\t{:6f}\t{:6f}\n'.format(
-                                        number, colloid.flag[-1], time[-1], totim[-1],
+                    output_string = '{:>8d}\t{:>5d}\t{:5d}\t{:09.8f}\t{:09.8f}\t' \
+                                    '{:09.8f}\t{:09.8f}\t{:7f}\t{:7f}\t{:7f}\n'.format(
+                                        number, colloid.flag[-1], time[-1],
                                         colloid.xposition[-1],
                                         colloid.yposition[-1],
-                                        self.resolution,
                                         colloid.xposition[-1]/self.resolution,
                                         colloid.yposition[-1]/self.resolution,
                                         colloid.colloid_start_time,

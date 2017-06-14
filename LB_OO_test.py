@@ -81,7 +81,7 @@ arr = np.linspace(1e-9, 1e-8, 100)
 xarr = np.array([arr])
 varr = np.array([np.ones(100)])
 
-i = [6.0, 1.0, 0.1, 0.01, 0.001]
+i = [0.001]
 
 """
 for j in i:
@@ -130,15 +130,15 @@ plt.xlabel('X (m)', fontsize=14)
 plt.legend(loc=4, fontsize=12)
 plt.show()
 """
-# d['lbres'] = 1e-8
-"""
+d['lbres'] = 1e-8
+
 for j in i:
     d['I'] = j
     dlvo = cm.ColloidColloid(arr, **d)
     t = dlvo.x
     u = dlvo.y
     cdlvo = -1 * (dlvo.x + dlvo.y)
-    plt.imshow(cdlvo, interpolation='None', cmap='jet', vmin=1e-14, vmax=1e-10, norm=matplotlib.colors.LogNorm())
+    plt.imshow(cdlvo, interpolation='None', cmap='jet', vmin=1e-6, vmax=1e-10, norm=matplotlib.colors.LogNorm())
     plt.plot([250], [250], 'ko')
     plt.ylim([0, 500])
     plt.xlim([0, 500])
@@ -146,4 +146,4 @@ for j in i:
     plt.xlabel('nm')
     plt.ylabel('nm')
     plt.show()
-"""
+
