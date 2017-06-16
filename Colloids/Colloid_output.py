@@ -8,11 +8,74 @@ import pandas as pd
 class Breakthrough(object):
     """
     Class to prepare and plot breakthrough curve data from endpoint
-    and possibly timeseries files
+    files.
+    Parameters:
+        filename (str) <>.endpoint file
 
+    Attributes:
+        df: (pandas DataFrame) dataframe of endpoint data
+        resolution: (float) model resolution
+        timestep: (float) model timestep
+        ncol: (float) number of colloids in simulation
+        breakthrough_curve: (pandas DataFrame) data frame of
+            raw breakthrough data.
     """
     def __init__(self, filename):
-        pass
+        if not filename.endswith('.endpoint'):
+            raise AssertionError('.endpoint file must be supplied')
+        reader = ASCIIReader(filename)
+        self.df = reader.df
+        self.resolution = reader.resolution
+        self.timestep = reader.timestep
+        # todo: replace this call with something from the header later!
+        self.ncol = float(self.df.shape[0])
+        self.__breakthrough_curve = None
+
+    @property
+    def breakthrough_curve(self):
+        """
+        Dynamic calculation of breakthrough curve data
+
+        Returns
+            self.__breakthrough_curve
+        """
+        if self.__breakthrough_curve is None:
+            bt_colloids = self.df.loc[self.df['flag'] == 3]
+            bt_colloids = bt_colloids.sort_values('end-ts')
+
+            ncols = []
+            nts = []
+            ncol = 0
+            for index, row in bt_colloids.iterrows():
+                ncol += 1
+                ncols.append(ncol)
+                nts.append(row['end-ts'])
+
+            df = pd.DataFrame({'ts': nts, 'ncol': ncols}).set_index('ncol')
+
+            self.__breakthrough_curve = df
+
+        return self.__breakthrough_curve
+
+    def plot(self, time=True, **kwargs):
+        """
+        Convience method to plot data into a matplotlib
+        chart.
+
+        Parameters:
+            time: (bool) if true x-axis is time, false is nts
+            kwargs: matplotlib keyword arguments for 1d charts
+        """
+        if time:
+            plt.plot(self.breakthrough_curve['ts'] * self.timestep,
+                     self.breakthrough_curve.index.values / self.ncol,
+                     **kwargs)
+
+        else:
+            plt.plot(self.breakthrough_curve['ts'],
+                     self.breakthrough_curve.index.values / self.ncol,
+                     **kwargs)
+
 
 
 class ADE(object):
