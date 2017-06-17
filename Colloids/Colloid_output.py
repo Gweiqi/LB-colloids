@@ -39,6 +39,7 @@ class Breakthrough(object):
         Returns
             self.__breakthrough_curve
         """
+        max_ts = self.df['nts'].max()
         if self.__breakthrough_curve is None:
             bt_colloids = self.df.loc[self.df['flag'] == 3]
             bt_colloids = bt_colloids.sort_values('end-ts')
@@ -51,38 +52,130 @@ class Breakthrough(object):
                 ncols.append(ncol)
                 nts.append(row['end-ts'])
 
+            ncols.append(ncol)
+            nts.append(max_ts)
+
             df = pd.DataFrame({'ts': nts, 'ncol': ncols}).set_index('ncol')
 
             self.__breakthrough_curve = df
 
         return self.__breakthrough_curve
 
-    def plot(self, time=True, **kwargs):
+    def plot(self, time=True, *args, **kwargs):
         """
         Convience method to plot data into a matplotlib
         chart.
 
         Parameters:
             time: (bool) if true x-axis is time, false is nts
+            args: matplotlib args for 1d charts
             kwargs: matplotlib keyword arguments for 1d charts
         """
         if time:
             plt.plot(self.breakthrough_curve['ts'] * self.timestep,
                      self.breakthrough_curve.index.values / self.ncol,
-                     **kwargs)
+                     *args, **kwargs)
 
         else:
             plt.plot(self.breakthrough_curve['ts'],
                      self.breakthrough_curve.index.values / self.ncol,
-                     **kwargs)
-
-
-
-class ADE(object):
-    pass
+                     *args, **kwargs)
+        plt.ylim([0, 1])
 
 
 class DistributionFunction(object):
+    """
+    Class to plot a pdf function of colloid breakthrough
+    from endpoint files.
+
+    Parameters:
+        filename: (str)
+
+    Attributes:
+        df: (pandas DataFrame) dataframe of endpoint data
+        resolution: (float) model resolution
+        timestep: (float) model timestep
+        ncol: (float) number of colloids in simulation
+        pdf: (np.recarray) colloid pdf
+
+    Methods:
+        reset_pdf: Allows user to adjust the bin size and
+            recalculate the pdf
+    """
+    def __init__(self, filename, bin=1000):
+        if not filename.endswith('.endpoint'):
+            raise AssertionError('.endpoint file must be supplied')
+        reader = ASCIIReader(filename)
+        self.df = reader.df
+        self.resolution = reader.resolution
+        self.timestep = reader.timestep
+        # todo: replace this call with something from the header later!
+        self.ncol = float(self.df.shape[0])
+        self.bin = bin
+        self.pdf = None
+        self.reset_pdf(bin)
+
+    def reset_pdf(self, bin):
+        """
+        Method to generate a probability distribution function
+        based upon user supplied bin size.
+
+        Parameters:
+            bin: (int) number of time steps to base bin on
+
+        Returns:
+            () probability distribution function of colloid
+            breakthrough.
+        """
+        self.bin = bin
+        ts = []
+        ncols = []
+        lower_nts = 0
+        max_ts = self.df['nts'].max()
+        pdf_colloids = self.df.loc[self.df['flag'] == 3]
+        pdf_colloids = pdf_colloids.sort_values('delta-ts')
+
+        for upper_nts in range(0, int(max_ts) + 1, bin):
+            ncol = 0
+            for index, row in pdf_colloids.iterrows():
+                x = row['delta-ts']
+                if lower_nts < row['delta-ts'] <= upper_nts:
+                    ncol += 1
+
+            ts.append(upper_nts)
+            ncols.append(ncol)
+            lower_nts = upper_nts
+
+        arr = np.recarray((len(ts),), dtype=[('nts', np.float),
+                                             ('ncol', np.float)])
+        for idx, value in enumerate(ts):
+            arr[idx] = tuple([value, ncols[idx]])
+
+        self.pdf = arr
+
+    def plot(self, time=True, *args, **kwargs):
+        """
+        Convience method to plot data into a matplotlib
+        chart.
+
+        Parameters:
+            time: (bool) if true x-axis is time, false is nts
+            args: matplotlib args for 1d charts
+            kwargs: matplotlib keyword arguments for 1d charts
+        """
+
+        if time:
+            plt.plot(self.pdf['nts'] * self.timestep,
+                     self.pdf['ncol'] / self.ncol,
+                     *args, **kwargs)
+
+        else:
+            plt.plot(self.pdf['nts'],
+                     self.pdf['ncol'] / self.ncol,
+                     *args, **kwargs)
+        plt.ylim([0, 1])
+
+class ADE(object):
     pass
 
 
@@ -112,7 +205,7 @@ class ASCIIReader(object):
 
     """
 
-    # todo: use a comment block to deliniate the ts value and add continuos/pulse
+    # todo: use a comment block to and add continuos/pulse and possibly ncol
     # todo: to the header
 
     dtypes = {'colloid': np.int,
