@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# todo: return an axis object and dump the data into csv for further processing?
 
+# todo: return an axis object and dump the data into csv for further processing?
 
 class Breakthrough(object):
     """
@@ -175,6 +175,7 @@ class DistributionFunction(object):
                      *args, **kwargs)
         plt.ylim([0, 1])
 
+
 class ADE(object):
     pass
 
@@ -192,7 +193,125 @@ class CCDLVOMesh(object):
 
 
 class ColloidVelocity(object):
-    pass
+    """
+    Method to return colloid velocity and stats.
+    relating to colloid velocity for a simulation.
+
+    Parameters:
+        filename: (str) endpoint file name
+
+    """
+    def __init__(self, filename):
+
+        if not filename.endswith(".endpoint"):
+            raise AssertionError('.endpoint file must be supplied')
+
+        reader = ASCIIReader(filename)
+        self.timestep = reader.timestep
+        self.resolution = reader.resolution
+        self.xlen = reader.xlen
+        self.ylen = reader.ylen
+        self.df = reader.df
+        self.ncol = reader.df.shape[0]
+        self.max_time = max(reader.df['nts']) * self.timestep
+        self.velocity = None
+        self.__get_velocity_array()
+
+    def __get_velocity_array(self):
+        """
+        Built in method to calculate the mean velocity of
+        each colloid in the simulation
+        """
+        colloid = []
+        velocity = []
+
+        for index, row in self.df.iterrows():
+            if np.isnan(row['y-position']):
+                velocity.append((self.ylen * self.resolution)/
+                                (row['delta-ts'] * self.timestep))
+            else:
+                velocity.append((row['y-position'] * self.resolution)/
+                                (row['nts'] * self.timestep))
+
+            colloid.append(index)
+
+        arr = np.recarray(len(colloid,), dtype=[('colloid', np.int),
+                                                ('velocity', np.float)])
+
+        for idx, value in enumerate(colloid):
+            arr[idx] = tuple([value, velocity[idx]])
+
+        self.velocity = arr
+
+    @property
+    def max(self):
+        return self.velocity['velocity'].max()
+
+    @property
+    def min(self):
+        return self.velocity['velocity'].min()
+
+    @property
+    def mean(self):
+        return self.velocity['velocity'].mean()
+
+    @property
+    def var(self):
+        return np.var(self.velocity['velocity'])
+
+    @property
+    def stdev(self):
+        return np.std(self.velocity['velocity'])
+
+    @property
+    def cv(self):
+        return (self.stdev / self.mean) * 100
+
+    def plot(self, *args, **kwargs):
+        """
+        Method to plot distribution of velocities by
+        colloid for array of velocity.
+
+        Parameters
+        ----------
+            args: matplotlib plotting args
+            kwargs: matplotlib plotting kwargs
+        """
+        plt.plot(self.velocity['colloid'],
+                 self.velocity['velocity'],
+                 *args, **kwargs)
+
+    def plot_histogram(self, nbin=10, width=0.01,
+                       *args, **kwargs):
+        """
+        User method to plot a histogram of velocities
+
+        Parameters:
+            nbin: (int) number of specific bins for plotting
+            width: (float) matplotlib bar width.
+        """
+
+        adjuster = 0.00001
+        bar_width = 0.01
+        bins = np.linspace(self.min - adjuster, self.max, nbin)
+        ncols = []
+        velocity = []
+        lower_v= self.min - adjuster
+
+        for upper_v in bins:
+            ncol = 0
+            for v in self.velocity['velocity']:
+                if lower_v < v <= upper_v:
+                    ncol += 1
+
+            velocity.append((lower_v + upper_v)/2.)
+            ncols.append(ncol)
+            lower_v = upper_v - adjuster
+
+        velocity.append(upper_v + adjuster)
+        ncols.append(0)
+
+        plt.bar(velocity, ncols, width, *args, **kwargs)
 
 
 class ASCIIReader(object):
@@ -222,6 +341,8 @@ class ASCIIReader(object):
     def __init__(self, filename):
         self.timestep = 0
         self.resolution = 0
+        self.xlen = 0
+        self.ylen = 0
         self.__data_startline = 0
         self.__header = []
 
@@ -248,6 +369,14 @@ class ASCIIReader(object):
                 elif line.startswith('Resolution'):
                     t = line.split()
                     self.resolution = float(t[-1].rstrip())
+
+                elif line.startswith('xlen'):
+                    t = line.split()
+                    self.xlen = float(t[-1].rstrip())
+
+                elif line.startswith('ylen'):
+                    t = line.split()
+                    self.ylen = float(t[-1].rstrip())
 
                 elif line.startswith("#"*10):
                     self.__data_startline = idx + 1
@@ -276,7 +405,6 @@ class ASCIIReader(object):
                     t.append([self.__try_float(i.rstrip()) for i
                               in line.split() if i not in ('\t', '', ' ', '\n')])
 
-        # todo: convert this to a structured array or pandas dataframe
         temp = np.array(t).T
 
         temp = {self.__header[idx]: data for idx, data in enumerate(temp)}

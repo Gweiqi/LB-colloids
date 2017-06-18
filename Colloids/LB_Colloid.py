@@ -102,7 +102,7 @@ class Colloid:
 
         if flag == 3:
             # this is the breakthrough condition
-            irx = float('NaN')
+            # irx = float('NaN')
             iry = float('NaN')
             self.update_special(irx, iry, 3)
 
@@ -320,6 +320,11 @@ def run(config):
     iters = ModelDict['iters']
     ncols = ModelDict['ncols']
     preferential_flow = False
+    # call the HDF5 array early to get domian size for output
+    LB = cs.HDF5_reader(modelname)
+
+    OutputDict['xlen'] = LB.imarray.shape[1] * gridsplit
+    OutputDict['ylen'] = LB.imarray.shape[0] * gridsplit
 
     if 'multiple_config' in ModelDict:
         if ModelDict['multiple_config']:
@@ -361,8 +366,6 @@ def run(config):
 
     print(ncols)
     # get data from LB Model
-    LB = cs.HDF5_reader(modelname)
-
     LBy = cs.LBVArray(LB.yu, LB.imarray)
     LBx = cs.LBVArray(LB.xu, LB.imarray)
     velocity_factor = LB.velocity_factor

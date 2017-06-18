@@ -280,7 +280,8 @@ class Output:
         self.filename = fi
         self.resolution = defaults['lbres'] / defaults['gridref']
         self.header = "LB Colloids output file\nTimestep: {}\n".format(defaults['ts'])
-        self.header += "Resolution: {}\n\n".format(self.resolution)
+        self.header += "Resolution: {}\nxlen: {}\n".format(self.resolution, defaults['xlen'])
+        self.header += "ylen: {}\n\n".format(defaults['ylen'])
         self.header += "#" * 136 + "\n"
         self.header += '{:>8}\t{:>5}\t{:>5}\t{:>11}\t{:>12}\t' \
                        '{:>11}\t{:>10}\t{:>10}\t{:>10}\t{:>10}\n'.format(
