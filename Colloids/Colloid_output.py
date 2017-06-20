@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import h5py as H
 
 
 # todo: return an axis object and dump the data into csv for further processing?
@@ -22,7 +23,7 @@ class Breakthrough(object):
     """
     def __init__(self, filename):
         if not filename.endswith('.endpoint'):
-            raise AssertionError('.endpoint file must be supplied')
+            raise FileTypeError('.endpoint file must be supplied')
         reader = ASCIIReader(filename)
         self.df = reader.df
         self.resolution = reader.resolution
@@ -104,7 +105,7 @@ class DistributionFunction(object):
     """
     def __init__(self, filename, bin=1000):
         if not filename.endswith('.endpoint'):
-            raise AssertionError('.endpoint file must be supplied')
+            raise FileTypeError('.endpoint file must be supplied')
         reader = ASCIIReader(filename)
         self.df = reader.df
         self.resolution = reader.resolution
@@ -204,7 +205,7 @@ class ColloidVelocity(object):
     def __init__(self, filename):
 
         if not filename.endswith(".endpoint"):
-            raise AssertionError('.endpoint file must be supplied')
+            raise FileTypeError('.endpoint file must be supplied')
 
         reader = ASCIIReader(filename)
         self.timestep = reader.timestep
@@ -297,6 +298,7 @@ class ColloidVelocity(object):
         ncols = []
         velocity = []
         lower_v= self.min - adjuster
+        upper_v = 0
 
         for upper_v in bins:
             ncol = 0
@@ -418,6 +420,81 @@ class ASCIIReader(object):
             return float(val)
         except ValueError:
             return float('nan')
+
+
+class Hdf5Reader(object):
+    """
+    Reader object to read in HDF5 stored outputs
+    from colloid models.
+
+    Parameters:
+        hdf5 (str) LB-Colloid hdf5 file name
+    """
+    data_paths = {'image': 'Binary_image',
+                  'lb_velocity_x': 'results/uarray',
+                  'lb_velcoity_y': 'results/uarray',
+                  'conversion_factor': 'results/velocity_factor',
+                  'brownian_x': 'colloids/brownian/x',
+                  'brownian_y': 'colloids/brownian/y',
+                  'lvdw_x': 'colloids/lvdw/x',
+                  'lvdw_y': 'colloids/lvdw/y',
+                  'edl_x': 'colloids/edl/x',
+                  'edl_y': 'colloids/edl/y',
+                  'lewis_x': 'colloids/lewis_acid_base/x',
+                  'lewis_y': 'colloids/lewis_acid_base/y',
+                  'velocity_x': 'colloids/ux',
+                  'velocity_y': 'colloids/uy',
+                  'gravity': 'colloids/gravity',
+                  'bouyancy': 'colloids/bounancy'}
+
+    def __init__(self, hdf5):
+        if not hdf5.endswith('hdf') and\
+                not hdf5.endswith('hdf5'):
+            raise FileTypeError('hdf or hdf5 file must be supplied')
+
+        self.file_name = hdf5
+
+    @property
+    def keys(self):
+        return [i for i in Hdf5Reader.data_paths]
+
+    def get_data(self, key):
+        """
+        Method to retrieve hdf5 data by dict. key
+
+        Parameters:
+            key: (str) valid dictionary key from self.keys
+
+        Returns:
+            data <varies>
+        """
+        if key not in Hdf5Reader.data_paths:
+            raise KeyError('Dictionary key not in valid keys. Use get_data_by_path')
+
+        hdf = H.File(self.file_name, 'r')
+        if key == 'lb_velocity_x':
+            data = hdf[Hdf5Reader.data_paths[key]][()][1]
+        elif key == 'lb_velocity_y':
+            data = hdf[Hdf5Reader.data_paths[key]][()][0]
+        else:
+            data = hdf[Hdf5Reader.data_paths[key]][()]
+        hdf.close()
+        return data
+
+    def get_data_by_path(self, path):
+        """
+        Method to retrieve hdf5 data by specific path
+
+        Parameters
+            path: (str) hdf5 directory path to data
+
+        Return
+            data <varies>
+        """
+        hdf = H.File(self.file_name, 'r')
+        data = hdf[path][()]
+        hdf.close()
+        return data
 
 
 class FileTypeError(Exception):
