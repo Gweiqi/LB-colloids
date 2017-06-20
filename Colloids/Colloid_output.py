@@ -181,8 +181,84 @@ class ADE(object):
     pass
 
 
-class DLVOPlot(object):
-    pass
+class ModelPlot(object):
+    """
+    Class to retrieve Colloid force arrays
+    and plot for data analysis.
+
+    Parameters:
+        hdf5: (str) hdf5 file name
+
+    Attributes:
+        keys: method to retrieve valid data keys for hdf5 file
+
+    Methods:
+        get_data: key method to retrieve data from hdf5 file
+        get_data_by_path: method to retrieve data by hdf5 file path
+        plot: method to plot data by key name
+    """
+    def __init__(self, hdf5):
+        if not hdf5.endswith('hdf') and\
+                not hdf5.endswith('hdf5'):
+            raise FileTypeError('hdf or hdf5 file must be supplied')
+
+        self.__hdf = Hdf5Reader(hdf5)
+
+    @property
+    def keys(self):
+        return self.__hdf.keys
+
+    def get_data(self, key):
+        """
+        Get data method to view and analyze colloid
+        force arrays
+
+        Parameters:
+            key: (str) valid dictionary key from self.keys
+
+        Returns:
+            data <varies>
+        """
+        return self.__hdf.get_data
+
+    def get_data_by_path(self, path):
+        """
+        Method to retrieve hdf5 data by specific path
+
+        Parameters
+            path: (str) hdf5 directory path to data
+
+        Return
+            data <varies>
+        """
+        return self.__hdf.get_data_by_path(path)
+
+    def plot(self, key, *args, **kwargs):
+        """
+        Hdf array plotting using Hdf5Reader keys
+
+            key: (str) valid dictionary key from self.keys
+            *args: matplotlib plotting args
+            **kwargs: matplotlib plotting kwargs
+        """
+        # todo: create a function_fmt for axis options
+        
+        if key in ('lvdw_x', 'lvdw_y',
+                   'lewis_x', 'lewis_y',
+                   'edl_x', 'edl_y',
+                   'dlvo_x', 'dlvo_y'):
+
+            x_axis = self.__hdf.get_data('distance_array')
+            arr = self.__hdf.get_data(key)
+            plt.plot(x_axis, arr, *args, **kwargs)
+
+        elif key in ('conversion_factor',
+                     'gravity',
+                     'bouyancy'):
+            raise KeyError('{}: key not valid for plotting'.format(key))
+
+        else:
+            plt.imshow(self.__hdf.get_data(key), *args, **kwargs)
 
 
 class CCDLVOPlot(object):
@@ -429,6 +505,11 @@ class Hdf5Reader(object):
 
     Parameters:
         hdf5 (str) LB-Colloid hdf5 file name
+
+    Methods:
+        keys: method to retrieve valid data keys for hdf5 file
+        get_data: key method to retrieve data from hdf5 file
+        get_data_by_path: method to retrieve data by hdf5 file path
     """
     data_paths = {'image': 'Binary_image',
                   'lb_velocity_x': 'results/uarray',
@@ -445,7 +526,10 @@ class Hdf5Reader(object):
                   'velocity_x': 'colloids/ux',
                   'velocity_y': 'colloids/uy',
                   'gravity': 'colloids/gravity',
-                  'bouyancy': 'colloids/bounancy'}
+                  'bouyancy': 'colloids/bouyancy',
+                  'distance_array': 'colloids/distance_arr',
+                  'dlvo_x': None,
+                  'dlvo_y': None  }
 
     def __init__(self, hdf5):
         if not hdf5.endswith('hdf') and\
@@ -472,12 +556,36 @@ class Hdf5Reader(object):
             raise KeyError('Dictionary key not in valid keys. Use get_data_by_path')
 
         hdf = H.File(self.file_name, 'r')
+
         if key == 'lb_velocity_x':
             data = hdf[Hdf5Reader.data_paths[key]][()][1]
+
         elif key == 'lb_velocity_y':
             data = hdf[Hdf5Reader.data_paths[key]][()][0]
+
+        elif key == 'dlvo_x':
+            data = hdf[Hdf5Reader.data_paths['edl_x']][()] +\
+                hdf[Hdf5Reader.data_paths['lewis_x']][()] +\
+                hdf[Hdf5Reader.data_paths['lvdw_x']][()]
+            data = data[0]
+
+        elif key == 'dlvo_y':
+            data = hdf[Hdf5Reader.data_paths['edl_y']][()] +\
+                hdf[Hdf5Reader.data_paths['lewis_y']][()] +\
+                hdf[Hdf5Reader.data_paths['lvdw_y']][()]
+            data = data[0]
+
+        elif key in ('lvdw_x', 'lvdw_y',
+                     'lewis_x', 'lewis_y',
+                     'edl_x', 'edl_y',
+                     'dlvo_x', 'dlvo_y',
+                     'distance_array'):
+
+            data = hdf[Hdf5Reader.data_paths[key]][()][0]
+
         else:
             data = hdf[Hdf5Reader.data_paths[key]][()]
+
         hdf.close()
         return data
 

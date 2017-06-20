@@ -501,7 +501,8 @@ class HDF5WriteArray(object):
                              'lewis_acid_base/x': dlvo.LewisABx,
                              'lewis_acid_base/y': dlvo.LewisABy,
                              'lvdw/x': dlvo.LVDWx,
-                             'lvdw/y': dlvo.LVDWy}
+                             'lvdw/y': dlvo.LVDWy,
+                             'distance_arr': arr}
             for key, value in dlvo_profiles.items():
                 h.create_dataset('colloids/{}'.format(key), data=value)
 
