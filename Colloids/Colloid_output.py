@@ -18,6 +18,8 @@ class Breakthrough(object):
         resolution: (float) model resolution
         timestep: (float) model timestep
         ncol: (float) number of colloids in simulation
+
+    Properties:
         breakthrough_curve: (pandas DataFrame) data frame of
             raw breakthrough data.
     """
@@ -91,6 +93,7 @@ class DistributionFunction(object):
 
     Parameters:
         filename: (str)
+        nbin: number of bins for pdf calculation
 
     Attributes:
         df: (pandas DataFrame) dataframe of endpoint data
@@ -103,7 +106,7 @@ class DistributionFunction(object):
         reset_pdf: Allows user to adjust the bin size and
             recalculate the pdf
     """
-    def __init__(self, filename, bin=1000):
+    def __init__(self, filename, nbin=1000):
         if not filename.endswith('.endpoint'):
             raise FileTypeError('.endpoint file must be supplied')
         reader = ASCIIReader(filename)
@@ -112,23 +115,23 @@ class DistributionFunction(object):
         self.timestep = reader.timestep
         # todo: replace this call with something from the header later!
         self.ncol = float(self.df.shape[0])
-        self.bin = bin
+        self.bin = nbin
         self.pdf = None
-        self.reset_pdf(bin)
+        self.reset_pdf(nbin)
 
-    def reset_pdf(self, bin):
+    def reset_pdf(self, nbin):
         """
         Method to generate a probability distribution function
         based upon user supplied bin size.
 
         Parameters:
-            bin: (int) number of time steps to base bin on
+            nbin: (int) number of time steps to base bin on
 
         Returns:
             () probability distribution function of colloid
             breakthrough.
         """
-        self.bin = bin
+        self.bin = nbin
         ts = []
         ncols = []
         lower_nts = 0
@@ -136,10 +139,9 @@ class DistributionFunction(object):
         pdf_colloids = self.df.loc[self.df['flag'] == 3]
         pdf_colloids = pdf_colloids.sort_values('delta-ts')
 
-        for upper_nts in range(0, int(max_ts) + 1, bin):
+        for upper_nts in range(0, int(max_ts) + 1, nbin):
             ncol = 0
             for index, row in pdf_colloids.iterrows():
-                x = row['delta-ts']
                 if lower_nts < row['delta-ts'] <= upper_nts:
                     ncol += 1
 
@@ -189,7 +191,7 @@ class ModelPlot(object):
     Parameters:
         hdf5: (str) hdf5 file name
 
-    Attributes:
+    Properties:
         keys: method to retrieve valid data keys for hdf5 file
 
     Methods:
@@ -219,7 +221,7 @@ class ModelPlot(object):
         Returns:
             data <varies>
         """
-        return self.__hdf.get_data
+        return self.__hdf.get_data(key)
 
     def get_data_by_path(self, path):
         """
@@ -242,7 +244,7 @@ class ModelPlot(object):
             **kwargs: matplotlib plotting kwargs
         """
         # todo: create a function_fmt for axis options
-        
+
         if key in ('lvdw_x', 'lvdw_y',
                    'lewis_x', 'lewis_y',
                    'edl_x', 'edl_y',
@@ -260,13 +262,108 @@ class ModelPlot(object):
         else:
             plt.imshow(self.__hdf.get_data(key), *args, **kwargs)
 
+    def plot_velocity_magnitude(self, nbin=10, *args, **kwargs):
+        """
+        Method to create a quiver plot to display the
+        magnitude and direction of velocity vectors within
+        the system.
 
-class CCDLVOPlot(object):
-    pass
+        Parameters:
+            nbin: refinement for quiver plotting
+            args: matplotlib plotting args
+            kwargs: matplotlib plotting kwargs
+        """
+        x = self.__hdf.get_data('velocity_x')
+        y = self.__hdf.get_data('velocity_y')
+
+        xx = np.arange(0, x.shape[1])
+        yy = np.arange(0, x.shape[0])
+
+        xx, yy = np.meshgrid(xx, yy)
+
+        Q = plt.quiver(xx[::nbin, ::nbin], yy[::nbin, ::nbin],
+                       x[::nbin, ::nbin], y[::nbin, ::nbin],
+                       units='width', *args, **kwargs)
+        qk = plt.quiverkey(Q, 0.9, 0.9, 0.01, r'$1 \frac{cm}{s}$',
+                           coordinates='figure')
+        plt.xlim(0, x.shape[1])
+        plt.ylim(0, x.shape[0])
 
 
-class CCDLVOMesh(object):
-    pass
+class CCModelPlot(object):
+    """
+    Class to query colloid-colloid interactions
+    and plot data as 1d or as a meshgrid object
+    More sophisticated than standard ModelPlot
+
+    Parameters:
+        hdf5: (str) hdf5 file name
+
+    Properties:
+        keys: returns valid dictionary keys for
+            colloid plotting
+
+    Methods:
+        get_data: retrieves data by keyword
+        get_data_by_path: retrieves data by hdf5 data path
+        plot: plot 1d profile of dlvo curves
+        plot_mesh: plot 2d dlvo profile.
+
+    """
+    data_paths = {'col_col_x': 'colloidcolloid/x',
+                  'col_col_y': 'colloidcolloid/y',
+                  'col_col': None,
+                  'distance_x': 'colloidcolloid/distance/x',
+                  'distance_y': 'colloidcolloid/distance/y'}
+
+    def __init__(self, hdf5):
+        if not hdf5.endswith('hdf') and\
+                not hdf5.endswith('hdf5'):
+            raise FileTypeError('hdf or hdf5 file must be supplied')
+
+        self.__hdf5 = Hdf5Reader(hdf5)
+
+    @property
+    def keys(self):
+        """
+        Method to return valid keys to obtain data
+        """
+        return CCModelPlot.keys
+
+    def get_data(self, key):
+        """
+        Method to return data by key
+        """
+        return self.__hdf5.get_data(key)
+
+    def get_data_by_path(self, path):
+        """
+        Method to return data by hdf5 path
+        """
+        return self.__hdf5.get_data_by_path(path)
+
+    def plot(self, key, *args, **kwargs):
+        """
+        Plotting method for 1d colloid-colloid dlvo profiles
+
+        Parameters:
+            key: (str) valid data key
+            args: matplotlib plotting args
+            kwargs: matplotlib plotting kwargs
+        """
+        pass
+
+    def plot_mesh(self, key, *args, **kwargs):
+        """
+        Plotting method for 2d representation of colloid-colloid
+        dlvo profiles.
+
+        Parameters:
+            key: (str) valid data key
+            args: matplotlib plotting args
+            kwargs:  matplotlib plotting kwargs
+        """
+        pass
 
 
 class ColloidVelocity(object):
@@ -304,10 +401,10 @@ class ColloidVelocity(object):
 
         for index, row in self.df.iterrows():
             if np.isnan(row['y-position']):
-                velocity.append((self.ylen * self.resolution)/
+                velocity.append((self.ylen * self.resolution) /
                                 (row['delta-ts'] * self.timestep))
             else:
-                velocity.append((row['y-position'] * self.resolution)/
+                velocity.append((row['y-position'] * self.resolution) /
                                 (row['nts'] * self.timestep))
 
             colloid.append(index)
@@ -369,11 +466,10 @@ class ColloidVelocity(object):
         """
 
         adjuster = 0.00001
-        bar_width = 0.01
         bins = np.linspace(self.min - adjuster, self.max, nbin)
         ncols = []
         velocity = []
-        lower_v= self.min - adjuster
+        lower_v = self.min - adjuster
         upper_v = 0
 
         for upper_v in bins:
@@ -478,7 +574,7 @@ class ASCIIReader(object):
                     pass
                 elif idx == self.__data_startline:
                     self.__header = [i.rstrip() for i in line.split()
-                                   if i not in ('\t', '', ' ', '\n')]
+                                     if i not in ('\t', '', ' ', '\n')]
                 else:
                     t.append([self.__try_float(i.rstrip()) for i
                               in line.split() if i not in ('\t', '', ' ', '\n')])
@@ -491,7 +587,8 @@ class ASCIIReader(object):
         df = df.set_index('colloid')
         return df
 
-    def __try_float(self, val):
+    @staticmethod
+    def __try_float(val):
         try:
             return float(val)
         except ValueError:
@@ -529,7 +626,12 @@ class Hdf5Reader(object):
                   'bouyancy': 'colloids/bouyancy',
                   'distance_array': 'colloids/distance_arr',
                   'dlvo_x': None,
-                  'dlvo_y': None  }
+                  'dlvo_y': None,
+                  'col_col_x': 'colloidcolloid/x',
+                  'col_col_y': 'colloidcolloid/y',
+                  'col_col': None,
+                  'distance_x': 'colloidcolloid/distance/x',
+                  'distance_y': 'colloidcolloid/distance/y'}
 
     def __init__(self, hdf5):
         if not hdf5.endswith('hdf') and\

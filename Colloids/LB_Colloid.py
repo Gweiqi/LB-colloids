@@ -502,6 +502,8 @@ def run(config):
         Col_img = cs.InterpV(LB.imarray, gridsplit, img=True)
         LBy[Col_img == 1] = np.nan
         LBy = np.ma.masked_invalid(LBy)
+        LBx[Col_img == 1] = np.nan
+        LBx = np.ma.masked_invalid(LBx)
 
         # setup meshgrid for precise plotting
         xx = np.arange(xlen + 1)
@@ -523,8 +525,16 @@ def run(config):
     
         plt.show()
 
+    else:
+        # mask the velocity objects for later output plotting
+        LBy[Col_img == 1] = np.nan
+        LBy = np.ma.masked_invalid(LBy)
+        LBx[Col_img == 1] = np.nan
+        LBx = np.ma.masked_invalid(LBx)
+
     IO.HDF5WriteArray(velocity.xvelocity,
                       velocity.yvelocity,
+                      colloidcolloid,
                       ModelDict,
                       dlvo.all_chemical_params,
                       drag_forces.all_physical_params)

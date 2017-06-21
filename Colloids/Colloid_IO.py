@@ -456,7 +456,8 @@ class HDF5WriteArray(object):
 
     model: (str) hdf5 model name for the project
     """
-    def __init__(self, ux, uy, model_dict, chemical_dict, physical_dict):
+    def __init__(self, ux, uy, colloidcolloid,
+                 model_dict, chemical_dict, physical_dict):
 
         self.__model = model_dict['lbmodel']
         arr = np.array([np.arange(1, 101) * model_dict['lbres'] / model_dict['gridref']])
@@ -508,6 +509,12 @@ class HDF5WriteArray(object):
 
             h.create_dataset('colloids/ux', data=ux)
             h.create_dataset('colloids/uy', data=uy)
+            h.create_dataset('colloid_colloid/x', data=colloidcolloid.x)
+            h.create_dataset('colloid_colloid/y', data=colloidcolloid.y)
+            h.create_dataset('colloid_colloid/distance/x',
+                             data=colloidcolloid.x_distance_array)
+            h.create_dataset('colloid_colloid/distance/y',
+                             data=colloidcolloid.y_distance_array)
 
             # todo: add the drag force arrays to the dataset.
             # todo: add method to convert dlvo forces to kT (first to J then 4.11*10^-21)
