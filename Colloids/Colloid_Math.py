@@ -611,7 +611,7 @@ class ColloidColloid(object):
         self.__debye = False
         self.__colloid_potential = False
         self.__ionic_strength = False
-        self.__resolution = self.__params['lbres']/self.__params['gridref']
+        self.__resolution = copy.copy(self.__params['lbres'])/self.__params['gridref']
         self.__pos = []
         self.__x_distance = False
         self.__y_distance = False

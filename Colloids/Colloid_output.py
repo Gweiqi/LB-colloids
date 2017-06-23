@@ -313,8 +313,13 @@ class CCModelPlot(object):
     data_paths = {'col_col_x': 'colloidcolloid/x',
                   'col_col_y': 'colloidcolloid/y',
                   'col_col': None,
-                  'distance_x': 'colloidcolloid/distance/x',
-                  'distance_y': 'colloidcolloid/distance/y'}
+                  'distance_x': 'colloid_colloid/distance/x',
+                  'distance_y': 'colloid_colloid/distance/y',
+                  'distance_fine_x': 'colloid_colloid/fine/distance/x',
+                  'distance_fine_y': 'colloid_colloid/fine/distance/y',
+                  'col_col_fine_x': 'colloid_colloid/fine/x',
+                  'col_col_fine_y': 'colloid_colloid/fine/y',
+                  'col_col_fine': None}
 
     def __init__(self, hdf5):
         if not hdf5.endswith('hdf') and\
@@ -351,7 +356,35 @@ class CCModelPlot(object):
             args: matplotlib plotting args
             kwargs: matplotlib plotting kwargs
         """
-        pass
+        # todo: store at fine discretization also for nicer plotting!!!!
+
+        if key not in ('col_col_x', 'col_col_y',
+                       'col_col_fine_x', 'col_col_fine_y'):
+            raise KeyError("{} is not a valid key".format(key))
+
+        colcol = self.__hdf5.get_data(key)
+        shape = colcol.shape
+        center = shape[0] // 2
+        if key == "col_col_x":
+            x = self.__hdf5.get_data('distance_x')
+            x = x[center, center:]
+            y = colcol[center, center:]
+        elif key == "col_col_y":
+            x = self.__hdf5.get_data('distance_y')
+            x = x.T[center, center:]
+            y = colcol.T[center, center:]
+
+        elif key == "col_col_fine_x":
+            x = self.__hdf5.get_data('distance_fine_x')
+            x = x[center, center:] * 1e-6
+            y = colcol[center, center:]
+
+        else:
+            x = self.__hdf5.get_data('distance_fine_y')
+            x = x[center, center:] * 1e-6
+            y = colcol[center, center:]
+
+        plt.plot(x, y, *args, **kwargs)
 
     def plot_mesh(self, key, *args, **kwargs):
         """
@@ -363,8 +396,37 @@ class CCModelPlot(object):
             args: matplotlib plotting args
             kwargs:  matplotlib plotting kwargs
         """
-        pass
+        from matplotlib.colors import LogNorm
+        if key not in ('col_col', 'col_col_fine',
+                       'col_col_x', 'col_col_y',
+                       'col_col_fine_x', 'col_col_fine_y'):
+            raise KeyError("{} is not a valid key".format(key))
 
+        if key == 'col_col':
+            ccx = np.abs(self.__hdf5.get_data('col_col_x'))
+            ccy = np.abs(self.__hdf5.get_data('col_col_y'))
+            mesh = ccx + ccy
+
+        elif key == 'col_col_fine':
+            ccx = np.abs(self.__hdf5.get_data('col_col_fine_x'))
+            ccy = np.abs(self.__hdf5.get_data('col_col_fine_y'))
+            mesh = ccx + ccy
+
+        else:
+            mesh = np.abs(self.__hdf5.get_data(key))
+
+        xx, yy = np.meshgrid(np.arange(0, mesh.shape[0]+1),
+                             np.arange(0, mesh.shape[1] + 1))
+
+        center = mesh.shape[0] / 2.
+        plt.pcolormesh(xx, yy, mesh,
+                       norm=LogNorm(vmin=mesh.min(),
+                                    vmax=mesh.max()),
+                       *args, **kwargs)
+
+        plt.ylim([0, mesh.shape[0]])
+        plt.xlim([0, mesh.shape[1]])
+        plt.plot([center], [center], 'ko')
 
 class ColloidVelocity(object):
     """
@@ -627,11 +689,16 @@ class Hdf5Reader(object):
                   'distance_array': 'colloids/distance_arr',
                   'dlvo_x': None,
                   'dlvo_y': None,
-                  'col_col_x': 'colloidcolloid/x',
-                  'col_col_y': 'colloidcolloid/y',
+                  'col_col_x': 'colloid_colloid/x',
+                  'col_col_y': 'colloid_colloid/y',
                   'col_col': None,
-                  'distance_x': 'colloidcolloid/distance/x',
-                  'distance_y': 'colloidcolloid/distance/y'}
+                  'distance_x': 'colloid_colloid/distance/x',
+                  'distance_y': 'colloid_colloid/distance/y',
+                  'distance_fine_x': 'colloid_colloid/fine/distance/x',
+                  'distance_fine_y': 'colloid_colloid/fine/distance/y',
+                  'col_col_fine_x': 'colloid_colloid/fine/x',
+                  'col_col_fine_y': 'colloid_colloid/fine/y',
+                  'col_col_fine': None}
 
     def __init__(self, hdf5):
         if not hdf5.endswith('hdf') and\

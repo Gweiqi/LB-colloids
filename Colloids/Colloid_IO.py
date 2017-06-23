@@ -474,6 +474,14 @@ class HDF5WriteArray(object):
         dlvo = cm.DLVO(arr, arr, xvArr=varr, yvArr=varr, **chemical_dict)
         chemical_dict['xvArr'] = xvArr
         chemical_dict['yvArr'] = yvArr
+        res = chemical_dict['lbres']
+
+        # set up fine grained output for col-col
+        fine_res = 1e-9 * chemical_dict['gridref']
+        chemical_dict['lbres'] = fine_res
+        cc_fine = cm.ColloidColloid(np.ones((1,1)), **chemical_dict)
+
+        chemical_dict['lbres'] = res
 
         with H.File(self.__model, 'r+') as h:
             for key, value in model_dict.items():
@@ -511,10 +519,16 @@ class HDF5WriteArray(object):
             h.create_dataset('colloids/uy', data=uy)
             h.create_dataset('colloid_colloid/x', data=colloidcolloid.x)
             h.create_dataset('colloid_colloid/y', data=colloidcolloid.y)
+            h.create_dataset('colloid_colloid/fine/x', data=cc_fine.x)
+            h.create_dataset('colloid_colloid/fine/y', data=cc_fine.y)
             h.create_dataset('colloid_colloid/distance/x',
                              data=colloidcolloid.x_distance_array)
             h.create_dataset('colloid_colloid/distance/y',
                              data=colloidcolloid.y_distance_array)
+            h.create_dataset('colloid_colloid/fine/distance/x',
+                             data=cc_fine.x_distance_array)
+            h.create_dataset('colloid_colloid/fine/distance/y',
+                             data=cc_fine.y_distance_array)
 
             # todo: add the drag force arrays to the dataset.
             # todo: add method to convert dlvo forces to kT (first to J then 4.11*10^-21)

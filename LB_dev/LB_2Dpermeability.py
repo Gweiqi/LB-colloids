@@ -666,7 +666,7 @@ class LB2DModel(object):
         # macrho = py_rho(rho) / len(rho)
         self.mean_rho = mean_rho(rho, self.__img)
 
-        u = [uy[:], ux[:] * -1]
+        u = [uy[:], ux[:]* -1]
 
         self.mean_uy, self.mean_ux = mean_u(u, self.__img)
         pore_diameter = self.get_mean_pore_size()
@@ -855,6 +855,7 @@ if __name__ == '__main__':
     mrho = mean_rho(rho, image)
 
     u = [uy[:], ux[:] * -1]
+
     mean_uy, mean_ux = mean_u(u, image)
 
     pore_diameter = get_mean_pore_size(image, nx)
