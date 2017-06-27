@@ -326,6 +326,9 @@ def run(config):
     OutputDict['xlen'] = LB.imarray.shape[1] * gridsplit
     OutputDict['ylen'] = LB.imarray.shape[0] * gridsplit
 
+    OutputDict['mean_ux'] = LB.mean_xu
+    OutputDict['mean_uy'] = LB.mean_yu
+
     if 'multiple_config' in ModelDict:
         if ModelDict['multiple_config']:
             assert 'nconfig' in ModelDict

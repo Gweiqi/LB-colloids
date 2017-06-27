@@ -27,12 +27,14 @@ class Breakthrough(object):
         if not filename.endswith('.endpoint'):
             raise FileTypeError('.endpoint file must be supplied')
         reader = ASCIIReader(filename)
+
         self.df = reader.df
         self.resolution = reader.resolution
         self.timestep = reader.timestep
         # todo: replace this call with something from the header later!
         self.ncol = float(self.df.shape[0])
         self.__breakthrough_curve = None
+        self.__reader = reader
 
     @property
     def breakthrough_curve(self):
@@ -64,6 +66,17 @@ class Breakthrough(object):
 
         return self.__breakthrough_curve
 
+    def pore_volume_conversion(self):
+        """
+        Method to retrieve the pore volume calculation
+        conversion for plotting colloids.
+
+        Returns:
+            pv_factor (float)
+        """
+        pv_factor = abs(self.__reader.uy)/(self.__reader.ylen * self.resolution)
+        return pv_factor
+
     def plot(self, time=True, *args, **kwargs):
         """
         Convience method to plot data into a matplotlib
@@ -83,6 +96,21 @@ class Breakthrough(object):
             plt.plot(self.breakthrough_curve['ts'],
                      self.breakthrough_curve.index.values / self.ncol,
                      *args, **kwargs)
+        plt.ylim([0, 1])
+
+    def plot_pv(self, *args, **kwargs):
+        """
+        Method to plot pdf data with pore volumes (non-dimensional time)
+
+        Parameters:
+            args: matplotlib args for 1d plotting
+            kwargs: matplotlib kwargs for 1d plotting
+        """
+        pv_factor = self.pore_volume_conversion()
+        plt.plot(self.breakthrough_curve['ts'] * pv_factor * self.timestep,
+                 self.breakthrough_curve.index.values / self.ncol,
+                 *args, **kwargs)
+
         plt.ylim([0, 1])
 
 
@@ -118,6 +146,7 @@ class DistributionFunction(object):
         self.bin = nbin
         self.pdf = None
         self.reset_pdf(nbin)
+        self.__reader = reader
 
     def reset_pdf(self, nbin):
         """
@@ -156,6 +185,17 @@ class DistributionFunction(object):
 
         self.pdf = arr
 
+    def pore_volume_conversion(self):
+        """
+        Method to retrieve the pore volume calculation
+        conversion for plotting colloids.
+
+        Returns:
+            pv_factor (float)
+        """
+        pv_factor = abs(self.__reader.uy)/(self.__reader.ylen * self.resolution)
+        return pv_factor
+
     def plot(self, time=True, *args, **kwargs):
         """
         Convience method to plot data into a matplotlib
@@ -178,9 +218,34 @@ class DistributionFunction(object):
                      *args, **kwargs)
         plt.ylim([0, 1])
 
+    def plot_pv(self, *args, **kwargs):
+        """
+        Method to plot pdf data with pore volumes (non-dimensional time)
+
+        Parameters:
+            args: matplotlib args for 1d plotting
+            kwargs: matplotlib kwargs for 1d plotting
+        """
+        pv_factor = self.pore_volume_conversion()
+        plt.plot(self.pdf['nts'] * pv_factor * self.timestep,
+                 self.pdf['ncol'] / self.ncol,
+                 *args, **kwargs)
+
 
 class ADE(object):
-    pass
+    """
+    Class to calculate macroscopic advection dispersion
+    equation parameters for field scale model parameterization
+
+    Parameters:
+        filename: (str) ascii output file name from colloid model
+        hdf5: (str) hdf5 file name from colloid model
+
+
+    """
+    def __init__(self, filename, hdf5):
+        pass
+
 
 
 class ModelPlot(object):
@@ -369,6 +434,7 @@ class CCModelPlot(object):
             x = self.__hdf5.get_data('distance_x')
             x = x[center, center:]
             y = colcol[center, center:]
+
         elif key == "col_col_y":
             x = self.__hdf5.get_data('distance_y')
             x = x.T[center, center:]
@@ -376,15 +442,15 @@ class CCModelPlot(object):
 
         elif key == "col_col_fine_x":
             x = self.__hdf5.get_data('distance_fine_x')
-            x = x[center, center:] * 1e-6
+            x = x[center, center:]  # * 1e-6
             y = colcol[center, center:]
 
         else:
             x = self.__hdf5.get_data('distance_fine_y')
-            x = x[center, center:] * 1e-6
+            x = x[center, center:]  # * 1e-6
             y = colcol[center, center:]
 
-        plt.plot(x, y, *args, **kwargs)
+        plt.plot(x, y * -1, *args, **kwargs)
 
     def plot_mesh(self, key, *args, **kwargs):
         """
@@ -427,6 +493,7 @@ class CCModelPlot(object):
         plt.ylim([0, mesh.shape[0]])
         plt.xlim([0, mesh.shape[1]])
         plt.plot([center], [center], 'ko')
+
 
 class ColloidVelocity(object):
     """
@@ -550,9 +617,41 @@ class ColloidVelocity(object):
         plt.bar(velocity, ncols, width, *args, **kwargs)
 
 
+# todo: think about this one. Does it belong here?
+class LBOutput(object):
+    """
+    Class to anaylze LB fluid/solid properties
+
+    Parameters:
+        hdf: (str) hdf5 output filename
+
+    Attributes:
+
+    Parameters:
+
+
+    """
+    data_paths = {'velocity_x': None,
+                  'velocity_y': None,
+                  'resolution': None,
+                  }
+
+    def __init__(self, hdf5):
+        if not hdf5.endswith('.hdf') and not\
+                hdf5.endswith('.hdf5'):
+            raise FileTypeError('hdf or hdf5 file must be supplied')
+
+        self.__hdf5 = Hdf5Reader(hdf5)
+
+    @property
+    def keys(self):
+        return LBOutput.data_paths.keys()
+
+
+
 class ASCIIReader(object):
     """
-    Convience method to read in text based output files to a
+    Class to read in text based output files to a
     pandas dataframe
 
     Parameters:
@@ -579,6 +678,8 @@ class ASCIIReader(object):
         self.resolution = 0
         self.xlen = 0
         self.ylen = 0
+        self.ux = 0
+        self.uy = 0
         self.__data_startline = 0
         self.__header = []
 
@@ -613,6 +714,14 @@ class ASCIIReader(object):
                 elif line.startswith('ylen'):
                     t = line.split()
                     self.ylen = float(t[-1].rstrip())
+
+                elif line.startswith('ux'):
+                    t = line.split()
+                    self.ux = float(t[-1].rstrip())
+
+                elif line.startswith('uy'):
+                    t = line.split()
+                    self.uy = float(t[-1].rstrip())
 
                 elif line.startswith("#"*10):
                     self.__data_startline = idx + 1

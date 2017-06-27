@@ -281,12 +281,14 @@ class Output:
         self.resolution = defaults['lbres'] / defaults['gridref']
         self.header = "LB Colloids output file\nTimestep: {}\n".format(defaults['ts'])
         self.header += "Resolution: {}\nxlen: {}\n".format(self.resolution, defaults['xlen'])
-        self.header += "ylen: {}\n\n".format(defaults['ylen'])
+        self.header += "ylen: {}\nux: {}\nuy: {}\n\n".format(defaults['ylen'],
+                                                             defaults['mean_ux'],
+                                                             defaults['mean_uy'])
         self.header += "#" * 136 + "\n"
         self.header += '{:>8}\t{:>5}\t{:>5}\t{:>11}\t{:>12}\t' \
                        '{:>11}\t{:>10}\t{:>10}\t{:>10}\t{:>10}\n'.format(
                        'colloid', 'flag', 'nts', 'x-position', 'y-position',
-                        'x-model', 'y-model', 'start-ts', 'end-ts',
+                       'x-model', 'y-model', 'start-ts', 'end-ts',
                        'delta-ts')
 
         # checks if file exists, and overwrites if overwrite is True!
@@ -306,7 +308,6 @@ class Output:
         """
         # todo: add support for grid location, model flag.
         time = timer.timer
-        # totim = timer.totim
         output = []
         
         if pathline is not True:

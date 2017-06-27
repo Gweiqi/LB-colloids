@@ -890,7 +890,7 @@ class ColloidColloid(object):
         else:
             raise TypeError("arr_type {} is not valid".format(arr_type))
 
-        return arr * self.__resolution/1e-6
+        return arr * self.__resolution  # /1e-6
 
     def __create_colloid_colloid_array(self, f_arr, c_arr):
         """
