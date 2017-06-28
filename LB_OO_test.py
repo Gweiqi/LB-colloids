@@ -33,8 +33,6 @@ x = lbmodel.get_velocity_conversion()
 # now we can use this to do other analysis such as sensitivity analysis
 # sensitivity analysis, do this soonish!
 
-# todo: add a lb_timestep parameter to calibrate the lb dimensionalization process
-
 io = cIO.ColloidsConfig()
 print io.valid_model_parameters
 io['lbmodel'] = lbname

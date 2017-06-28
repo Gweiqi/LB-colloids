@@ -60,7 +60,7 @@ class Breakthrough(object):
             ncols.append(ncol)
             nts.append(max_ts)
 
-            df = pd.DataFrame({'ts': nts, 'ncol': ncols}).set_index('ncol')
+            df = pd.DataFrame({'nts': nts, 'ncol': ncols}).set_index('ncol')
 
             self.__breakthrough_curve = df
 
@@ -88,12 +88,12 @@ class Breakthrough(object):
             kwargs: matplotlib keyword arguments for 1d charts
         """
         if time:
-            plt.plot(self.breakthrough_curve['ts'] * self.timestep,
+            plt.plot(self.breakthrough_curve['nts'] * self.timestep,
                      self.breakthrough_curve.index.values / self.ncol,
                      *args, **kwargs)
 
         else:
-            plt.plot(self.breakthrough_curve['ts'],
+            plt.plot(self.breakthrough_curve['nts'],
                      self.breakthrough_curve.index.values / self.ncol,
                      *args, **kwargs)
         plt.ylim([0, 1])
@@ -107,7 +107,7 @@ class Breakthrough(object):
             kwargs: matplotlib kwargs for 1d plotting
         """
         pv_factor = self.pore_volume_conversion()
-        plt.plot(self.breakthrough_curve['ts'] * pv_factor * self.timestep,
+        plt.plot(self.breakthrough_curve['nts'] * pv_factor * self.timestep,
                  self.breakthrough_curve.index.values / self.ncol,
                  *args, **kwargs)
 
@@ -239,12 +239,94 @@ class ADE(object):
 
     Parameters:
         filename: (str) ascii output file name from colloid model
-        hdf5: (str) hdf5 file name from colloid model
+        nbin: (int) number of timesteps to bin a pdf for calculation
 
 
     """
-    def __init__(self, filename, hdf5):
-        pass
+    def __init__(self, filename, nbin=1000):
+
+        if not filename.endswith('.endpoint'):
+            raise FileTypeError('<>.endpoint file must be supplied')
+
+        reader = ASCIIReader(filename)
+
+        self.timestep = reader.timestep
+        self.resolution = reader.resolution
+        self.ylen = reader.ylen
+        self.ncol = float(reader.df.shape[0])
+        self.uy = reader.uy
+        self.pdf = None
+        self.__dist_func = DistributionFunction(filename, nbin)
+
+        self.reset_pdf(nbin)
+
+    def __reset(self):
+        self.pdf = self.__dist_func.pdf
+
+    def reset_pdf(self, nbin):
+        """
+        User method to reset values based on changing
+        the timestep to bin pdf values
+
+        Parameter:
+            nbin: (int) umber of timesteps to bin a pdf for calculation
+        """
+        self.__dist_func.reset_pdf(nbin)
+        self.pdf = self.__dist_func.pdf
+
+    def solve_jury_1991(self):
+        """
+        Scipy optimize method to solve least sqares
+        for jury 1991. Pulse flux.
+        """
+        # todo: test this method! look up references for clearer examples!
+        from scipy.optimize import leastsq
+        a = self.ncol
+        l = self.ylen * self.resolution
+        t = self.pdf['nts'].as_matrix
+        v = self.uy
+        pdf = self.pdf['ncol'].as_matrix / self.ncol
+        x0 = np.array([0., 0.])
+
+        return leastsq(self.__jury_residuals, x0, args=(a, l, t, v, pdf))
+
+    def __jury_residuals(self, vars, A, L, t, v, pdf):
+        """
+        Method to estimate residuals from jury 1991 equation
+        using data
+
+        Parameters
+            vars: (np.array) [dispersivity, retardation]
+            A: ncol
+            l: (float) ylen
+            v: (float) mean fluid_velocity
+            t: (float) time
+            pdf: pd.dataframe c/co of colloid pdf
+        """
+        return pdf - self.__jury_1991(vars, A, L, t, v)
+
+    def __jury_1991(self, vars, A, L, t, v):
+        """
+        Equation for Jury 1991 calculation of Dispersivity
+        and Retardation
+
+        Parameters
+            vars: (np.array) [dispersivity, retardation]
+            A: ncol
+            l: (float) ylen
+            v: (float) mean fluid_velocity
+            t: (float) time
+        """
+        D = vars[0]
+        R = vars[1]
+
+        eq0 = (A * L * np.sqrt(R))
+        eq1 = 2 * np.sqrt(np.pi * D * t ** 3)
+        eq2 = -(R * L - v * t) ** 2
+        eq3 = 4 * R * D * t
+
+        return (eq0 / eq1) * np.exp(eq2 / eq3)
+
 
 
 
