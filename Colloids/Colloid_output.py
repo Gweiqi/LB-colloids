@@ -274,7 +274,8 @@ class ADE(object):
         self.__dist_func.reset_pdf(nbin)
         self.pdf = self.__dist_func.pdf
 
-    def solve_jury_1991(self, D=0.01, R=0.01, **kwargs):
+    def solve_jury_1991(self, D=0.01, R=0.01, ftol=1e-10,
+                        max_nfev=1000, **kwargs):
         """
         Scipy optimize method to solve least sqares
         for jury 1991. Pulse flux.
@@ -282,8 +283,11 @@ class ADE(object):
         Parameters
             D: (float) Diffusivity initial guess
             R: (float) Retardation initial guess
-            Note: These cannot be 0!
-            Kwargs: scipy least squares kwargs
+            Note: D and R cannot be 0!
+
+            ftol: (float) scipy function tolerance for solution
+            max_nfev: (int) maximum number of function iterations
+            **kwargs: scipy least squares kwargs
 
         Returns:
             scipy least squares dictionary.
@@ -299,7 +303,9 @@ class ADE(object):
         x0 = np.array([0.01, 0.01])
 
         return least_squares(self.__jury_residuals, x0,
-                             args=(a, l, t, v, pdf), **kwargs)
+                             args=(a, l, t, v, pdf),
+                             ftol=ftol, max_nfev=max_nfev,
+                             **kwargs)
 
     def __jury_residuals(self, vars, A, L, t, v, pdf):
         """
