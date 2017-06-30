@@ -274,21 +274,32 @@ class ADE(object):
         self.__dist_func.reset_pdf(nbin)
         self.pdf = self.__dist_func.pdf
 
-    def solve_jury_1991(self):
+    def solve_jury_1991(self, D=0.01, R=0.01, **kwargs):
         """
         Scipy optimize method to solve least sqares
         for jury 1991. Pulse flux.
+
+        Parameters
+            D: (float) Diffusivity initial guess
+            R: (float) Retardation initial guess
+            Note: These cannot be 0!
+            Kwargs: scipy least squares kwargs
+
+        Returns:
+            scipy least squares dictionary.
+            Answer in dict['x']
         """
         # todo: test this method! look up references for clearer examples!
-        from scipy.optimize import leastsq
+        from scipy.optimize import leastsq, minimize, least_squares
         a = self.ncol
         l = self.ylen * self.resolution
-        t = self.pdf['nts'].as_matrix
+        t = self.pdf['nts']
         v = self.uy
-        pdf = self.pdf['ncol'].as_matrix / self.ncol
-        x0 = np.array([0., 0.])
+        pdf = self.pdf['ncol'] / self.ncol
+        x0 = np.array([0.01, 0.01])
 
-        return leastsq(self.__jury_residuals, x0, args=(a, l, t, v, pdf))
+        return least_squares(self.__jury_residuals, x0,
+                             args=(a, l, t, v, pdf), **kwargs)
 
     def __jury_residuals(self, vars, A, L, t, v, pdf):
         """
@@ -320,12 +331,14 @@ class ADE(object):
         D = vars[0]
         R = vars[1]
 
+
         eq0 = (A * L * np.sqrt(R))
         eq1 = 2 * np.sqrt(np.pi * D * t ** 3)
         eq2 = -(R * L - v * t) ** 2
         eq3 = 4 * R * D * t
-
-        return (eq0 / eq1) * np.exp(eq2 / eq3)
+        x = (eq0 / eq1) * np.exp(eq2 / eq3)
+        x[0] = 0
+        return x #(eq0 / eq1) * np.exp(eq2 / eq3)
 
 
 
