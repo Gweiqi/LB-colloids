@@ -784,7 +784,8 @@ class ColloidColloid(object):
         Returns:
             dvlo: (np.ndarray) dlvo interaction force from colloids
         """
-        Na = 6.022e23
+        kb = 1.31e-23
+
         if arr_type.lower() == "x":
             c_arr = self.x_distance_array
         elif arr_type.lower() == "y":
@@ -792,12 +793,11 @@ class ColloidColloid(object):
         else:
             raise TypeError("arr_type {} is not valid".format(arr_type))
 
-        # todo: check Hamaker constant calculation! Should be approx 1e-20
-        A = 384. * np.pi * c_arr * self.debye * self.__params['T']\
-            * self.ionic_strength * self.colloid_potential * self.colloid_potential\
-            * np.exp(-self.debye * np.abs(c_arr))
 
-        A = np.ones(c_arr.shape) * 1e-20
+        A = 384. * np.pi * c_arr * kb * self.__params['T']\
+            * self.ionic_strength * self.colloid_potential * self.colloid_potential \
+            * np.exp(-self.debye * np.abs(c_arr))/ (self.debye * self.debye)
+
 
         lwdv0 = -A / 6.
         lvdw1 = (2. * self.__params['ac'] ** 2.) / (self.__params['ac'] ** 2. + 4. * self.__params['ac'] * c_arr)

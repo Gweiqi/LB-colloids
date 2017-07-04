@@ -297,9 +297,8 @@ class ADE(object):
         from scipy.optimize import leastsq, minimize, least_squares
         a = self.ncol
         l = self.ylen * self.resolution
-        t = self.pdf['nts']
         v = self.uy
-        pdf = self.pdf['ncol'] / self.ncol
+        pdf, t = self.__prep_data()
         x0 = np.array([0.01, 0.01])
 
         return least_squares(self.__jury_residuals, x0,
@@ -346,7 +345,44 @@ class ADE(object):
         x[0] = 0
         return x #(eq0 / eq1) * np.exp(eq2 / eq3)
 
+    def __prep_data(self):
+        """
+        Prepares breakthrough data by stripping off trailing
+        zeros.
 
+        Returns:
+            pdf = (np.array) stripped pdf
+            t = (np.array) times
+        """
+        strip_idx = None
+        seq = False
+        bt = False
+        for idx, rec in enumerate(self.pdf):
+            if not bt:
+                if rec['ncol'] != 0:
+                    bt = True
+                else:
+                    pass
+            else:
+                if rec['ncol'] == 0:
+                    if not seq:
+                        strip_idx = idx
+                        seq = True
+                    else:
+                        pass
+                else:
+                    seq = False
+                    strip_idx = None
+
+        if strip_idx is not None:
+            pdf = self.pdf['ncol'][:strip_idx + 1] / self.ncol
+            time = self.pdf['nts'][:strip_idx + 1]
+
+        else:
+            pdf = self.pdf['ncol'] / self.ncol
+            time = self.pdf['nts']
+
+        return pdf, time
 
 
 class ModelPlot(object):
