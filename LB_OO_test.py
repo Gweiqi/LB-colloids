@@ -44,6 +44,7 @@ io['ac'] = 1e-6
 io['timestep'] = 5e-7
 io['temperature'] = 298.
 io['multiple_config'] = False
+io['continuous'] = 10000
 
 io['i'] = 0.001
 

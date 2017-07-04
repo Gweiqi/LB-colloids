@@ -793,11 +793,9 @@ class ColloidColloid(object):
         else:
             raise TypeError("arr_type {} is not valid".format(arr_type))
 
-
         A = 384. * np.pi * c_arr * kb * self.__params['T']\
             * self.ionic_strength * self.colloid_potential * self.colloid_potential \
             * np.exp(-self.debye * np.abs(c_arr))/ (self.debye * self.debye)
-
 
         lwdv0 = -A / 6.
         lvdw1 = (2. * self.__params['ac'] ** 2.) / (self.__params['ac'] ** 2. + 4. * self.__params['ac'] * c_arr)

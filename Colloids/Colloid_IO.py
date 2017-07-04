@@ -33,7 +33,8 @@ class Config:
             raise TypeError('input data not a list or file name')
 
         self._strtype = ('LBMODEL', 'ENDPOINT', 'PATHLINE', 'TIMESERIES')
-        self._inttype = ('NCOLS', 'ITERS', 'STORE_TIME', 'PRINT_TIME', 'NCONFIG')
+        self._inttype = ('NCOLS', 'ITERS', 'STORE_TIME', 'PRINT_TIME', 'NCONFIG',
+                         'CONTINUOUS')
         self._floattype = ('LBRES', 'GRIDREF', 'AC', 'TIMESTEP', 'TEMPERATURE',
                            'RHO_WATER', 'RHO_COLLOID', 'VISCOSITY', 'I_INITIAL',
                            'I', 'EPSILON_R', 'SHEER_PLANE', 'LVDWST_WATER',
@@ -46,7 +47,8 @@ class Config:
                           'TS')
         self.validmodelparams = ('LBMODEL', 'NCOLS', 'ITERS', 'LBRES',
                                  'GRIDREF', 'AC', 'TIMESTEP', 'TEMPERATURE',
-                                 'MULTIPLE_CONFIG', 'NCONFIG', 'RHO_COLLOID')
+                                 'MULTIPLE_CONFIG', 'NCONFIG', 'RHO_COLLOID',
+                                 'CONTINUOUS')
         self.validphysicalparams = ('RHO_WATER', 'RHO_COLLOID', 'VISCOSITY')
         self.validchemicalparams = ('CONCENTRATION', 'ADJUST_ZETA', 'I_INITIAL',
                                     'I', 'EPSILON_R', 'VALENCE', 'SHEER_PLANE',

@@ -234,18 +234,27 @@ def fmt(x, pos):
     return r'${} \times 10^{{{}}}$'.format(a, b)
 
 
-def run_save_model(x, iters, vx, vy, ts, timer, print_time, store_time,
+def run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
+                   ncols, timer, print_time, store_time,
                    colloidcolloid, ModelDict, pathline=None,
                    timeseries=None, endpoint=None):
     """
     definition to allow the use of multiple ionic strengths ie. attachment then flush, etc....
     """
+    continuous = 0
+    if 'continuous' in ModelDict:
+        continuous = ModelDict['continuous']
+
     colloidcolloid.update(x)
     conversion = cm.ForceToVelocity(1, **ModelDict).velocity
     # todo: maybe force to acceleration instead of force to velocity?
     # todo: check into hamaker constant (avagadro number usage?)
     while timer.time <= iters:
         # update colloid position and time
+        if continuous:
+            if timer.time % continuous == 0 and timer.time != 0:
+                x += [Colloid(xlen, ylen, gridres) for i in range(ncols)]
+
         colloidcolloid.update(x)
         cc_vx = colloidcolloid.x_array * conversion#/1e-6
         cc_vy = colloidcolloid.y_array * conversion#/1e-6
@@ -449,7 +458,8 @@ def run(config):
     # start model timer
     timer = TrackTime(ts)
 
-    run_save_model(x, iters, vx, vy, ts, timer, print_time,
+    run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
+                   ncols, timer, print_time,
                    store_time, colloidcolloid, ModelDict,
                    pathline, timeseries, endpoint)
 
