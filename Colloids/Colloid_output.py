@@ -322,25 +322,27 @@ class ADE(object):
         self.timestep = reader.timestep
         self.resolution = reader.resolution
         self.ylen = reader.ylen
-        self.ncol = float(reader.df.shape[0])
+        self.ncol = reader.ncol
+        self.total_ncol = float(reader.df.shape[0])
         self.uy = reader.uy
         self.pdf = None
         self.__dist_func = DistributionFunction(filename, nbin)
+        self.bt = Breakthrough(filename).breakthrough_curve
 
         self.reset_pdf(nbin)
 
     def __reset(self):
         self.pdf = self.__dist_func.pdf
 
-    def reset_pdf(self, nbin):
+    def reset_pdf(self, nbin, normalize=False):
         """
         User method to reset values based on changing
         the timestep to bin pdf values
 
         Parameter:
-            nbin: (int) umber of timesteps to bin a pdf for calculation
+            nbin: (int) number of timesteps to bin a pdf for calculation
         """
-        self.__dist_func.reset_pdf(nbin)
+        self.__dist_func.reset_pdf(nbin, normalize)
         self.pdf = self.__dist_func.pdf
 
     def solve_jury_1991(self, D=0.01, R=0.01, ftol=1e-10,
@@ -368,7 +370,7 @@ class ADE(object):
         l = self.ylen * self.resolution
         v = self.uy
         pdf, t = self.__prep_data()
-        x0 = np.array([0.01, 0.01])
+        x0 = np.array([D, R])
 
         return least_squares(self.__jury_residuals, x0,
                              args=(a, l, t, v, pdf),
@@ -413,6 +415,76 @@ class ADE(object):
         x = (eq0 / eq1) * np.exp(eq2 / eq3)
         x[0] = 0
         return x
+
+    def solve_van_genuchten_1986(self, D=0.01, R=0.01, ftol=1e-10,
+                        max_nfev=1000, **kwargs):
+        """
+        Scipy optimize method to solve least squares
+        for van genuchten 1986
+
+         Parameters
+            D: (float) Diffusivity initial guess
+            R: (float) Retardation initial guess
+            Note: D and R cannot be 0!
+
+            ftol: (float) scipy function tolerance for solution
+            max_nfev: (int) maximum number of function iterations
+            **kwargs: scipy least squares kwargs
+
+        Returns:
+            scipy least squares dictionary.
+            Answer in dict['x']
+        """
+        from scipy.optimize import least_squares
+        l = self.ylen * self.resolution
+        v = self.uy
+        t = self.bt['nts'].as_matrix() * self.timestep
+        bt = self.bt['ncpr'].as_matrix() / self.ncol
+        x0 = np.array([D, R])
+
+        return least_squares(self.__van_genuchten_residuals, x0,
+                             args=(l, v, t, bt),
+                             ftol=ftol, max_nfev=max_nfev,
+                             **kwargs)
+
+    def __van_genuchten_residuals(self, vars, l, v, t, bt):
+        """
+        Method to estimate residuals from vanGenuchten and Winerega
+        1986
+
+        Parameters:
+            vars: (np.array) [dispersivity, retardation]
+            x: (float) column length
+            v: (float) mean fluid velocity
+            t: (float) time
+            bt: (np.array) breakthrough curve
+        """
+        return bt - self.__van_genuchten_1986(vars, l, v, t)
+
+    def __van_genuchten_1986(self, vars, l, v, t):
+        """
+        Equation for Van Genuchten and Winerega 1986 to calculate
+        Dispersivity and Retardation from breakthrough data.
+
+        Parameters:
+            vars: (np.array) [dispersivity, retardation]
+            x: (float) column length
+            v: (float) mean fluid velocity
+            t: (float) time
+        """
+        from scipy import special
+
+        D = vars[0]
+        R = vars[1]
+
+        eq0 = R * l - v * t
+        eq1 = np.sqrt(4 * D * R * t)
+
+        x = 0.5 * special.erfc(eq0/eq1)
+        if np.isnan(x[0]):
+            x[0] = 0
+        return x
+
 
     def __prep_data(self):
         """

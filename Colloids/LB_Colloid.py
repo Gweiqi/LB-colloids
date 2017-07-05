@@ -541,7 +541,7 @@ def run(config):
         cbar = plt.colorbar(format=ticker.FuncFormatter(fmt))
         cbar.set_label('m/s', rotation=270)
     
-        plt.show()
+        # plt.show()
 
     else:
         # mask the velocity objects for later output plotting
