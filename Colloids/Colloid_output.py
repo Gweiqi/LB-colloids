@@ -17,7 +17,9 @@ class Breakthrough(object):
         df: (pandas DataFrame) dataframe of endpoint data
         resolution: (float) model resolution
         timestep: (float) model timestep
-        ncol: (float) number of colloids in simulation
+        continuous: (int) interval of continuous release, 0 means pulse
+        ncol: (float) number of colloids per release in simulation
+        total_ncol: (int) total number of colloids in simulation
 
     Properties:
         breakthrough_curve: (pandas DataFrame) data frame of
@@ -31,8 +33,10 @@ class Breakthrough(object):
         self.df = reader.df
         self.resolution = reader.resolution
         self.timestep = reader.timestep
+        self.continuous = reader.continuous
         # todo: replace this call with something from the header later!
-        self.ncol = float(self.df.shape[0])
+        self.ncol = reader.ncol
+        self.total_ncol = float(self.df.shape[0])
         self.__breakthrough_curve = None
         self.__reader = reader
 
@@ -46,23 +50,49 @@ class Breakthrough(object):
         """
         max_ts = self.df['nts'].max()
         if self.__breakthrough_curve is None:
-            bt_colloids = self.df.loc[self.df['flag'] == 3]
-            bt_colloids = bt_colloids.sort_values('end-ts')
+            if not self.continuous:
+                bt_colloids = self.df.loc[self.df['flag'] == 3]
+                bt_colloids = bt_colloids.sort_values('end-ts')
 
-            ncols = []
-            nts = []
-            ncol = 0
-            for index, row in bt_colloids.iterrows():
-                ncol += 1
+                ncols = []
+                nts = []
+                ncol = 0
+                for index, row in bt_colloids.iterrows():
+                    ncol += 1
+                    ncols.append(ncol)
+                    nts.append(row['end-ts'])
+
                 ncols.append(ncol)
-                nts.append(row['end-ts'])
+                nts.append(max_ts)
 
-            ncols.append(ncol)
-            nts.append(max_ts)
+                df = pd.DataFrame({'nts': nts, 'ncol': ncols}).set_index('ncol')
 
-            df = pd.DataFrame({'nts': nts, 'ncol': ncols}).set_index('ncol')
+                self.__breakthrough_curve = df
+            else:
+                bt_colloids = self.df.loc[self.df['flag'] == 3]
+                bt_colloids = bt_colloids.sort_values('end-ts')
 
-            self.__breakthrough_curve = df
+                ncols = []
+                nts = []
+                ncol = 0
+                ncol_per_release = []
+
+                for index, row in bt_colloids.iterrows():
+                    lower_ts = row['end-ts'] - self.continuous
+                    upper_ts = row['end-ts']
+                    t = bt_colloids.loc[(bt_colloids['end-ts'] >= lower_ts) & (bt_colloids['end-ts'] <= upper_ts)]
+                    ncol += 1
+                    ncols.append(ncol)
+                    ncol_per_release.append(len(t))
+                    nts.append(row['end-ts'])
+
+                ncols.append(ncol)
+                nts.append(max_ts)
+                ncol_per_release.append(len(bt_colloids.loc[(bt_colloids['end-ts'] >= max_ts - self.continuous)
+                                                            & (bt_colloids['end-ts'] <= max_ts)]))
+
+                df = pd.DataFrame({'nts': nts, 'ncol': ncols, 'ncpr': ncol_per_release}).set_index('ncol')
+                self.__breakthrough_curve = df
 
         return self.__breakthrough_curve
 
@@ -88,14 +118,24 @@ class Breakthrough(object):
             kwargs: matplotlib keyword arguments for 1d charts
         """
         if time:
-            plt.plot(self.breakthrough_curve['nts'] * self.timestep,
-                     self.breakthrough_curve.index.values / self.ncol,
-                     *args, **kwargs)
+            if self.continuous:
+                plt.plot(self.breakthrough_curve['nts'] * self.timestep,
+                         self.breakthrough_curve['ncpr'] / self.ncol,
+                         *args, **kwargs)
+            else:
+                plt.plot(self.breakthrough_curve['nts'] * self.timestep,
+                         self.breakthrough_curve.index.values / self.ncol,
+                         *args, **kwargs)
 
         else:
-            plt.plot(self.breakthrough_curve['nts'],
-                     self.breakthrough_curve.index.values / self.ncol,
-                     *args, **kwargs)
+            if self.continuous:
+                plt.plot(self.breakthrough_curve['nts'] * self.timestep,
+                         self.breakthrough_curve['ncpr'] / self.ncol,
+                         *args, **kwargs)
+            else:
+                plt.plot(self.breakthrough_curve['nts'],
+                         self.breakthrough_curve.index.values / self.ncol,
+                         *args, **kwargs)
         plt.ylim([0, 1])
 
     def plot_pv(self, *args, **kwargs):
@@ -107,11 +147,17 @@ class Breakthrough(object):
             kwargs: matplotlib kwargs for 1d plotting
         """
         pv_factor = self.pore_volume_conversion()
-        plt.plot(self.breakthrough_curve['nts'] * pv_factor * self.timestep,
-                 self.breakthrough_curve.index.values / self.ncol,
-                 *args, **kwargs)
+        if self.continuous:
+            plt.plot(self.breakthrough_curve['nts'] * pv_factor * self.timestep,
+                     self.breakthrough_curve['ncpr'] / self.ncol,
+                     *args, **kwargs)
+        else:
+            plt.plot(self.breakthrough_curve['nts'] * pv_factor * self.timestep,
+                     self.breakthrough_curve.index.values / self.ncol,
+                     *args, **kwargs)
 
         plt.ylim([0, 1])
+        plt.xlim([0, max(self.breakthrough_curve['nts'] * pv_factor * self.timestep)])
 
 
 class DistributionFunction(object):
@@ -127,7 +173,9 @@ class DistributionFunction(object):
         df: (pandas DataFrame) dataframe of endpoint data
         resolution: (float) model resolution
         timestep: (float) model timestep
-        ncol: (float) number of colloids in simulation
+        continuous: (int) interval of continuous release, 0 means pulse
+        ncol: (float) number of colloids per release in simulation
+        total_ncol: (int) total number of colloids in simulation
         pdf: (np.recarray) colloid pdf
 
     Methods:
@@ -141,26 +189,31 @@ class DistributionFunction(object):
         self.df = reader.df
         self.resolution = reader.resolution
         self.timestep = reader.timestep
+        self.continuous = reader.continuous
         # todo: replace this call with something from the header later!
-        self.ncol = float(self.df.shape[0])
+        self.ncol = reader.ncol
+        self.total_ncol = float(self.df.shape[0])
         self.bin = nbin
         self.pdf = None
         self.reset_pdf(nbin)
+        self.__normalize = False
         self.__reader = reader
 
-    def reset_pdf(self, nbin):
+    def reset_pdf(self, nbin, normalize=False):
         """
         Method to generate a probability distribution function
         based upon user supplied bin size.
 
         Parameters:
             nbin: (int) number of time steps to base bin on
+            normalize: (bool) method to calculate pdf by residence time or end time
 
         Returns:
             () probability distribution function of colloid
             breakthrough.
         """
         self.bin = nbin
+        self.__normalize = normalize
         ts = []
         ncols = []
         lower_nts = 0
@@ -171,8 +224,12 @@ class DistributionFunction(object):
         for upper_nts in range(0, int(max_ts) + 1, nbin):
             ncol = 0
             for index, row in pdf_colloids.iterrows():
-                if lower_nts < row['delta-ts'] <= upper_nts:
-                    ncol += 1
+                if normalize:
+                    if lower_nts < row['delta-ts'] <= upper_nts:
+                        ncol += 1
+                else:
+                    if lower_nts < row['end-ts'] <= upper_nts:
+                        ncol += 1
 
             ts.append(upper_nts)
             ncols.append(ncol)
@@ -208,14 +265,26 @@ class DistributionFunction(object):
         """
 
         if time:
-            plt.plot(self.pdf['nts'] * self.timestep,
-                     self.pdf['ncol'] / self.ncol,
-                     *args, **kwargs)
+            if self.__normalize:
+                plt.plot(self.pdf['nts'] * self.timestep,
+                         self.pdf['ncol'] / self.total_ncol,
+                         *args, **kwargs)
+
+            else:
+                plt.plot(self.pdf['nts'] * self.timestep,
+                         self.pdf['ncol'] / self.ncol,
+                         *args, **kwargs)
 
         else:
-            plt.plot(self.pdf['nts'],
-                     self.pdf['ncol'] / self.ncol,
-                     *args, **kwargs)
+            if self.__normalize:
+                plt.plot(self.pdf['nts'],
+                         self.pdf['ncol'] / self.total_ncol,
+                         *args, **kwargs)
+            else:
+                plt.plot(self.pdf['nts'],
+                         self.pdf['ncol'] / self.ncol,
+                         *args, **kwargs)
+
         plt.ylim([0, 1])
 
     def plot_pv(self, *args, **kwargs):
@@ -343,7 +412,7 @@ class ADE(object):
         eq3 = 4 * R * D * t
         x = (eq0 / eq1) * np.exp(eq2 / eq3)
         x[0] = 0
-        return x #(eq0 / eq1) * np.exp(eq2 / eq3)
+        return x
 
     def __prep_data(self):
         """
@@ -375,11 +444,11 @@ class ADE(object):
                     strip_idx = None
 
         if strip_idx is not None:
-            pdf = self.pdf['ncol'][:strip_idx + 1] / self.ncol
+            pdf = self.pdf['ncol'][:strip_idx + 1]
             time = self.pdf['nts'][:strip_idx + 1]
 
         else:
-            pdf = self.pdf['ncol'] / self.ncol
+            pdf = self.pdf['ncol']
             time = self.pdf['nts']
 
         return pdf, time
@@ -621,14 +690,19 @@ class CCModelPlot(object):
         xx, yy = np.meshgrid(np.arange(0, mesh.shape[0]+1),
                              np.arange(0, mesh.shape[1] + 1))
 
-        center = mesh.shape[0] / 2.
-        plt.pcolormesh(xx, yy, mesh,
-                       norm=LogNorm(vmin=mesh.min(),
-                                    vmax=mesh.max()),
-                       *args, **kwargs)
+        if mesh.max()/mesh.min() > 10:
+            plt.pcolormesh(xx, yy, mesh,
+                           norm=LogNorm(vmin=mesh.min(),
+                                        vmax=mesh.max()),
+                           *args, **kwargs)
+
+        else:
+            plt.pcolormesh(xx, yy, mesh,
+                           *args, **kwargs)
 
         plt.ylim([0, mesh.shape[0]])
         plt.xlim([0, mesh.shape[1]])
+        center = mesh.shape[0] / 2.
         plt.plot([center], [center], 'ko')
 
 
@@ -808,15 +882,18 @@ class ASCIIReader(object):
               'y-model': np.float,
               'start-ts': np.int,
               'end-ts': np.int,
-              'delta-ts': np.int}
+              'delta-ts': np.int,
+              'continuous': np.int}
 
     def __init__(self, filename):
         self.timestep = 0
+        self.ncol = 0
         self.resolution = 0
         self.xlen = 0
         self.ylen = 0
         self.ux = 0
         self.uy = 0
+        self.continuous = 0
         self.__data_startline = 0
         self.__header = []
 
@@ -840,6 +917,10 @@ class ASCIIReader(object):
                     t = line.split()
                     self.timestep = float(t[-1].rstrip())
 
+                elif line.startswith("Ncols"):
+                    t = line.split()
+                    self.ncol = int(t[-1].rstrip())
+
                 elif line.startswith('Resolution'):
                     t = line.split()
                     self.resolution = float(t[-1].rstrip())
@@ -859,6 +940,10 @@ class ASCIIReader(object):
                 elif line.startswith('uy'):
                     t = line.split()
                     self.uy = float(t[-1].rstrip())
+
+                elif line.startswith('Continuous'):
+                    t = line.split()
+                    self.continuous = int(t[-1].rstrip())
 
                 elif line.startswith("#"*10):
                     self.__data_startline = idx + 1

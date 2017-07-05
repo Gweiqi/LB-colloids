@@ -249,7 +249,7 @@ class Config:
         """
         modelparams = self.model_parameters()
         for key in modelparams:
-            if key in ('ac', 'T', 'visocity', 'ts', 'lbres', 'gridref'):
+            if key in ('ac', 'T', 'visocity', 'ts', 'lbres', 'gridref', 'ncols'):
                 Dict[key] = modelparams[key]
         return Dict
 
@@ -282,10 +282,12 @@ class Output:
         self.filename = fi
         self.resolution = defaults['lbres'] / defaults['gridref']
         self.header = "LB Colloids output file\nTimestep: {}\n".format(defaults['ts'])
+        self.header += "Ncols: {}\n".format(defaults['ncols'])
         self.header += "Resolution: {}\nxlen: {}\n".format(self.resolution, defaults['xlen'])
-        self.header += "ylen: {}\nux: {}\nuy: {}\n\n".format(defaults['ylen'],
+        self.header += "ylen: {}\nux: {}\nuy: {}\n".format(defaults['ylen'],
                                                              defaults['mean_ux'],
                                                              defaults['mean_uy'])
+        self.header += "Continuous: {}\n\n".format(defaults['continuous'])
         self.header += "#" * 136 + "\n"
         self.header += '{:>8}\t{:>5}\t{:>5}\t{:>11}\t{:>12}\t' \
                        '{:>11}\t{:>10}\t{:>10}\t{:>10}\t{:>10}\n'.format(

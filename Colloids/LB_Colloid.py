@@ -338,6 +338,11 @@ def run(config):
     OutputDict['mean_ux'] = LB.mean_xu
     OutputDict['mean_uy'] = LB.mean_yu
 
+    if 'continuous' in ModelDict:
+        OutputDict['continuous'] = ModelDict['continuous']
+    else:
+        OutputDict['continuous'] = 0
+
     if 'multiple_config' in ModelDict:
         if ModelDict['multiple_config']:
             assert 'nconfig' in ModelDict
