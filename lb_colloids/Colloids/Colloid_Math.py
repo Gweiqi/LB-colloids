@@ -1,4 +1,4 @@
-from LB_Colloid import Colloid
+from .LB_Colloid import Colloid
 import numpy as np
 import sys
 import copy
