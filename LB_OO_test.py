@@ -1,14 +1,15 @@
-import LB_dev.LB_2Dimage as LBimage
-import LB_dev.LB_2Dpermeability as LB2D
+from lb_colloids import LBImage
+from lb_colloids import LB2DModel
 import matplotlib.pyplot as plt
-import Colloids.Colloid_IO as cIO
-import Colloids.LB_Colloid as Colloid
+from lb_colloids import cIO
+from lb_colloids import ColloidModel
 import os
-import Colloids.Colloid_Math as cm
+
+from lb_colloids import ColloidMath as cm
 import numpy as np
 import matplotlib
 
-path =  os.path.dirname(os.path.realpath(__file__))
+path = os.path.dirname(os.path.realpath(__file__))
 lbname = os.path.join(path, "LBModel.hdf5")
 
 imgname = os.path.join(path, "Synth100_2.png")
@@ -18,12 +19,12 @@ nlayers = 5
 solidvx = 0
 fluidvx = 253
 
-img = LBimage.Images(imgname)
-binary = LBimage.BoundaryCondition(img.arr, fluidvx, solidvx, nlayers)
+img = LBImage.Images(imgname)
+binary = LBImage.BoundaryCondition(img.arr, fluidvx, solidvx, nlayers)
 plt.imshow(binary.binarized, interpolation='nearest')
 plt.show()
 
-lbmodel = LB2D.LB2DModel(binary.binarized)
+lbmodel = LB2DModel(binary.binarized)
 lbmodel.niters = 1000
 lbmodel.run(output=lbname, verbose=10, image_int=10, image_folder='test')
 x = lbmodel.get_velocity_conversion()
@@ -62,7 +63,7 @@ print io.output_control_parameters
 # config = os.path.join(path, 'Synth100_3.config')
 
 config = cIO.Config(io.config)
-Colloid.run(config)
+ColloidModel.run(config)
 
 
 # import matplotlib.pyplot as plt
