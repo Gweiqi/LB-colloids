@@ -459,10 +459,12 @@ def run(config):
     
     ylen = len(Col_img)
     xlen = len(Col_img[0])
-    x = [Colloid(xlen, ylen, gridres) for i in range(ncols)]
 
     # start model timer
     timer = TrackTime(ts)
+
+    # generate initial pulse of colloids.
+    x = [Colloid(xlen, ylen, gridres) for i in range(ncols)]
 
     run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
                    ncols, timer, print_time,
