@@ -208,6 +208,7 @@ class TrackTime:
     model_time = 1
 
     def __init__(self, ts):
+        TrackTime.model_time = 1
         self.ts = ts
         self.timer = [1]
         self.time = self.timer[-1]
@@ -540,8 +541,12 @@ def run(config):
     
         cbar = plt.colorbar(format=ticker.FuncFormatter(fmt))
         cbar.set_label('m/s', rotation=270)
-    
-        # plt.show()
+
+        try:
+            plt.savefig(OutputDict['endpoint'].strip('endpoint') + "png")
+            plt.close()
+        except:
+            plt.show()
 
     else:
         # mask the velocity objects for later output plotting
