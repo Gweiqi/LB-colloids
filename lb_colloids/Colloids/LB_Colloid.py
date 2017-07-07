@@ -478,8 +478,8 @@ def run(config):
                    pathline, timeseries, endpoint)
 
     if ModelDict['multiple_config'] and multiple_config:
-        for confignumber in range(0, len(multiple_config)):
-            config = IO.Config(multiple_config[confignumber])
+        for confignumber in range(len(multiple_config)):
+            config = multiple_config[confignumber]
             ModelDict = config.model_parameters()
             PhysicalDict = config.physical_parameters()
             ChemicalDict = config.chemical_parameters()
