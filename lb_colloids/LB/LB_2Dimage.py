@@ -175,55 +175,6 @@ def prep_conponents(components):
     fluid = [int(i[1:]) for i in components if 'f' in i]
     return solid, fluid
 
-# Begin program with parse options
-parser = optparse.OptionParser()
-parser.add_option('-i','--input', dest='input', help='Input an image file')
-parser.add_option('-v', '--voxels', dest='components', help='set voxel component vales ex. f0,s255 (white=0)')
-parser.add_option('-o', '--output', dest='output', help='Please provide an output.hdf5 file name')
-parser.add_option('-b', '--boundary', dest='boundary', help='Specify the number of top and bottom boundary layers', default='4')
-parser.add_option('-c', '--config', dest='config', help='supply a lb config file')
-(opts, args) = parser.parse_args()
-
-# create an input determiner class
-
 if __name__ == '__main__':
-    if opts.input is not None:
-        img = Images('Synth100_1.png')
-        
-        if opts.components is None:
-            raise AssertionError('-v, --voxels must be supplied')
-        if opts.boundary is None:
-            raise AssertionError('-b, --boundary must be supplied')
+    pass
 
-        components = opts.components.split(',')
-        boundary = int(opts.boundary)
-        # todo: fix this issue with soil, fluid, boundary
-        bc = BoundaryCondition(img.arr, solid, fluid, boundary)
-        plt.imshow(bc.binarized, interpolation = 'nearest')
-        plt.show()
-    
-    else:
-        config = LBIO.Config(opts.config)
-
-        ImageDict = {'BOUNDARY': 10}
-        ModelDict = {}
-
-        ImageDict = addIO(ImageDict, config.image_parameters())
-        ModelDict = addIO(ModelDict, config.model_parameters())
-
-        infile = ImageDict['IMAGE']
-
-        # components = opts.components.split(',')
-        fluid = ImageDict['VOID']
-        solid = ImageDict['SOLID']
-
-        nlayers = ImageDict['BOUNDARY']
-        img = Images(infile)
-        print '[Reading image]'
-        bc = BoundaryCondition(img.arr, fluid, solid, nlayers)
-        print '[Setting boundary condition]'
-        print '[Porosity: %.4f]' % bc.porosity
-        plt.imshow(bc.binarized, interpolation = 'nearest')
-        plt.show()
-        out = HDF5_write(bc.binarized, bc.porosity, nlayers, ModelDict['LBMODEL'])
-        print '[Done]'

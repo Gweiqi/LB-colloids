@@ -573,10 +573,5 @@ def run(config):
 
 
 if __name__ == '__main__':
-    # todo: Need to fix this issue to check for multiple config
-    # todo: and then send it through as a list of dictionaries
-    config_file = IO.Config('Synthetic.config')
-    run(config_file)
-
-else:
     pass
+
