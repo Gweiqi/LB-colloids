@@ -1,5 +1,6 @@
 import sys
 
+
 class Config:
     def __init__(self, fname):
         """
@@ -98,7 +99,6 @@ class Config:
             OutputDict[pname] = param
         
         return OutputDict
-
 
     def get_block(self, blockname):
         '''

@@ -301,6 +301,7 @@ def run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
 
     del colloidcolloid
 
+
 def run(config):
     """
     Model definition to setup and run the LB_Colloids from config file
@@ -311,8 +312,12 @@ def run(config):
     """
 
     if isinstance(config, list):
-        multiple_config = config[1:]
-        config = config
+        if len(config) > 1:
+            multiple_config = config[1:]
+            config = config[0]
+        else:
+            multiple_config = []
+            config = config[0]
     else:
         multiple_config = []
 
@@ -346,7 +351,8 @@ def run(config):
 
     if 'multiple_config' in ModelDict:
         if ModelDict['multiple_config']:
-            assert 'nconfig' in ModelDict
+            pass
+            # assert 'nconfig' in ModelDict
         else:
             ModelDict['multiple_config'] = False
     else:
@@ -471,8 +477,8 @@ def run(config):
                    store_time, colloidcolloid, ModelDict,
                    pathline, timeseries, endpoint)
 
-    if ModelDict['multiple_config'] is True:
-        for confignumber in range(0, ModelDict['nconfig']-1):
+    if ModelDict['multiple_config'] and multiple_config:
+        for confignumber in range(0, len(multiple_config)):
             config = IO.Config(multiple_config[confignumber])
             ModelDict = config.model_parameters()
             PhysicalDict = config.physical_parameters()
@@ -513,7 +519,8 @@ def run(config):
             vx = vx.velocity + LBx
             vy = vy.velocity + LBy
 
-            run_save_model(x, iters, vx, vy, ts, timer, print_time,
+            run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
+                           ncols, timer, print_time,
                            store_time, colloidcolloid, ModelDict,
                            pathline, timeseries, endpoint)
 
@@ -563,6 +570,7 @@ def run(config):
                       ModelDict,
                       dlvo.all_chemical_params,
                       drag_forces.all_physical_params)
+
 
 if __name__ == '__main__':
     # todo: Need to fix this issue to check for multiple config

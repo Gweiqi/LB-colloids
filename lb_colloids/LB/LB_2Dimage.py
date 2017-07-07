@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import sys
 import LBIO
 
+
 class Images:
     """
     Convience class to open and adjust RGB images to BW if
@@ -33,6 +34,7 @@ class Images:
             pass
         
         self.arr = np.array(self.image)
+
 
 class BoundaryCondition:
     """
@@ -130,6 +132,7 @@ class HDF5_write:
             fi.create_dataset('results/porosity', data=porosity)
             fi.create_dataset('results/boundary', data=boundary)
 
+
 def run(image, solid, fluid, output, boundary=5):
     """
     Object oriented approach to run the LB-Colloids script
@@ -151,7 +154,7 @@ def run(image, solid, fluid, output, boundary=5):
     plt.show()
 
     
-####Test definition for later use####
+# Test definition for later use
 def HDF5_readarray(filename, data):
     f = H.File(filename, "r+")
     dset = f[data][()]
@@ -172,7 +175,7 @@ def prep_conponents(components):
     fluid = [int(i[1:]) for i in components if 'f' in i]
     return solid, fluid
 
-######Begin program with parse options######
+# Begin program with parse options
 parser = optparse.OptionParser()
 parser.add_option('-i','--input', dest='input', help='Input an image file')
 parser.add_option('-v', '--voxels', dest='components', help='set voxel component vales ex. f0,s255 (white=0)')
