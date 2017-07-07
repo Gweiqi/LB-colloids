@@ -1,5 +1,3 @@
-from lb_colloids import lbIO
-from lb_colloids import cIO
 
 
 class NamFile(object):
@@ -16,6 +14,7 @@ class NamFile(object):
 
         self.lb_config = None
         self.colloid_config = []
+        self.__read_nam_file(nam_file)
 
     def __read_nam_file(self, nam_file):
         """

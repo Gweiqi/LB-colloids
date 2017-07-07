@@ -434,7 +434,7 @@ class LB2DModel(object):
             super(LB2DModel, self).__setattr__('_LB2DModel__gravity', float(value))
 
         elif obj == 'tau':
-            if 0.5 > tau < 2.0:
+            if 0.5 > obj < 2.0:
                 raise AssertionError('Tau is out of stable bounds')
             super(LB2DModel, self).__setattr__('_LB2DModel__tau', float(value))
 
@@ -651,7 +651,7 @@ class LB2DModel(object):
             fcol = LB.f_bounceback(f, fcol, self.__img, self.__ny, self.__nx)
             f = LB.f_streaming(fcol, self.__ny, self.__nx)
 
-            if verbose is not None:
+            if verbose is not None and verbose:
                 if i > 0:
                     if i % verbose == 0:
                         print("Iter: {:05d}".format(i))
@@ -714,7 +714,7 @@ class LB2DModel(object):
             fcol = py_bounceback(f, fcol, self.__img, self.__ny, self.__nx)
             f = py_streaming(fcol, self.__ny, self.__nx)
 
-            if verbose is not None:
+            if verbose is not None and verbose:
                 if i > 0:
                     if i % verbose == 0:
                         print("Iter: {:05d}".format(i))

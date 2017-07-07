@@ -10,22 +10,22 @@ class Config:
         """
         self.config = self._reader(fname)
         self.__strtype = ('LBMODEL', 'KERNAL', 'IMAGE_SAVE_FOLDER',
-                         'IMAGE')
+                         'IMAGE', 'IMAGE_SAVE_NAME')
         self.__inttype = ('SOLID', 'VOID', 'NITERS', 'VERBOSE',
                          'IMAGE_SAVE_INTERVAL', 'BOUNDARY')
         self.__listtype = ('SOLID', 'VOID')
-        self.__floattype = ('LBRES', 'RHOT', 'RHOB', 'TAU', 'VMIN',
+        self.__floattype = ('LBRES', 'RHO', 'TAU', 'VMIN',
                            'VMAX', 'GRAVITY', 'PHYSICAL_VISCOSITY',
                             'PHYSICAL_RHO')
-        self.__booltype = ('PLOT_Y_VELOCITY', 'SAVE_IMAGE')
+        self.__booltype = ('PLOT',)
         self.__dicttype = ()
         self.__required = ('LBMODEL', 'LBRES')
         self.validmodelparams = ('LBMODEL', 'LBRES', 'KERNAL',
                                  'PHYSICAL_VISCOSITY', 'PHYSICAL_RHO')
-        self.validimageparams = ('SOLID', 'VOID', 'IMAGE', 'BOUNDARY')
-        self.validpermeabilityparmas = ('RHOT', 'RHOB', 'TAU', 'NITERS', 'GRAVITY')
-        self.validoutputparams = ('SAVE_IMAGE', 'IMAGE_SAVE_FOLDER', 'IMAGE_SAVE_INTERVAL',
-                                  'VMIN', 'VMAX', 'VERBOSE', 'PLOT_Y_VELOCITY')
+        self.validimageparams = ('SOLID', 'VOID', 'IMAGE', 'BOUNDARY', 'PLOT')
+        self.validpermeabilityparmas = ('RHO', 'TAU', 'NITERS', 'GRAVITY')
+        self.validoutputparams = ('IMAGE_SAVE_NAME', 'IMAGE_SAVE_FOLDER', 'IMAGE_SAVE_INTERVAL',
+                                  'VMIN', 'VMAX', 'VERBOSE')
 
     def _reader(self, fname):
         with open(fname, 'r') as f:

@@ -349,20 +349,16 @@ def run(config):
     else:
         OutputDict['continuous'] = 0
 
-    if 'multiple_config' in ModelDict:
-        if ModelDict['multiple_config']:
-            pass
-            # assert 'nconfig' in ModelDict
-        else:
-            ModelDict['multiple_config'] = False
-    else:
-        ModelDict['multiple_config'] = False
-
     # setup output and boolean flags.    
     if 'print_time' in OutputDict:
         print_time = OutputDict['print_time']
     else:
         print_time = iters
+
+    if 'showfig' in OutputDict:
+        pass
+    else:
+        OutputDict['showfig'] = False
 
     pathline = None
     timeseries = None
@@ -477,7 +473,7 @@ def run(config):
                    store_time, colloidcolloid, ModelDict,
                    pathline, timeseries, endpoint)
 
-    if ModelDict['multiple_config'] and multiple_config:
+    if multiple_config:
         for confignumber in range(len(multiple_config)):
             config = multiple_config[confignumber]
             ModelDict = config.model_parameters()
@@ -551,11 +547,15 @@ def run(config):
         cbar = plt.colorbar(format=ticker.FuncFormatter(fmt))
         cbar.set_label('m/s', rotation=270)
 
-        try:
-            plt.savefig(OutputDict['endpoint'].strip('endpoint') + "png")
-            plt.close()
-        except:
+        if OutputDict['showfig']:
             plt.show()
+
+        else:
+            try:
+                plt.savefig(OutputDict['endpoint'].strip('endpoint') + "png")
+                plt.close()
+            except:
+                plt.show()
 
     else:
         # mask the velocity objects for later output plotting
