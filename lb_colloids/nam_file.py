@@ -30,7 +30,7 @@ class NamFile(object):
         col = False
         with open(nam_file) as nam:
 
-            for line in nam_file:
+            for line in nam:
                 if line.startswith("#"):
                     pass
 
