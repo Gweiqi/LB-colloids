@@ -1,5 +1,6 @@
 import Colloids
 import LB
+from .nam_file import NamFile
 from .Colloids import LB_Colloid as ColloidModel
 from .Colloids import Colloid_IO as cIO
 from .Colloids import Colloid_Math as ColloidMath
