@@ -161,10 +161,10 @@ class Colloid:
 
             xv = xvelocity[idxry][idxrx]
             yv = yvelocity[idxry][idxrx]
-        
-            # velocity is L/T, but since we are dealing with acceleration fields 0.5*(a)t^2 is used
-            deltarx = xv * ts  # self.__cell_time[-1]
-            deltary = yv * ts  # self.__cell_time[-1]
+
+            # more appropriate use 0.5 * 'velocity' * ts, but separate terms?
+            deltarx = xv * ts
+            deltary = yv * ts
 
             rx = irx + deltarx
             ry = iry + deltary
@@ -248,8 +248,7 @@ def run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
 
     colloidcolloid.update(x)
     conversion = cm.ForceToVelocity(1, **ModelDict).velocity
-    # todo: maybe force to acceleration instead of force to velocity?
-    # todo: check into hamaker constant (avagadro number usage?)
+
     while timer.time <= iters:
         # update colloid position and time
         if continuous:
@@ -264,7 +263,7 @@ def run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
         vy0 = vy + cc_vy
 
         for col in x:
-            col.update_position(vx0, vy0, ts)
+            col.update_position(vx, vy, ts)
 
         timer.update_time()
 
@@ -391,7 +390,6 @@ def run(config):
     velocity_factor = LB.velocity_factor
 
     # interpolate over grid array and interpolate veloctity profiles
-    # Col_vp = interp_v(LBvp, gridsplit)
     LBy = cs.InterpV(LBy, gridsplit)
     LBx = cs.InterpV(LBx, gridsplit)
     Col_img = cs.InterpV(LB.imarray, gridsplit, img=True)

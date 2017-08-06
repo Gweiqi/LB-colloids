@@ -7,7 +7,7 @@ import copy
 class ForceToVelocity:
     def __init__(self, forces, **kwargs):
         """
-        Class that calculates velocity from force
+        Class that calculates acceleration from force
 
         Inputs:
         -------
@@ -33,7 +33,7 @@ class ForceToVelocity:
         ac = params['ac']
         ts = params['ts']
         self.mass_colloid = (4. / 3.) * np.pi * (ac * ac * ac) * rho_colloid
-        self.velocity = (forces * ts) / self.mass_colloid
+        self.velocity = 0.5 * (forces * ts) / self.mass_colloid  # todo: test this assumption!
         
         
 class Velocity:
@@ -135,7 +135,8 @@ class Bouyancy:
         ac = params['ac']
         
         self.water_mass = (4./3.)*np.pi*(ac*ac*ac)*rho_water
-        self.bouyancy = (self.water_mass*rho_water*9.81)/(rho_colloid)
+        self.bouyancy = self.water_mass * 9.81  # not sure, I think this was a combined calculation
+                                                # (self.water_mass*rho_water*9.81)/(rho_colloid)
 
 
 class Brownian:
@@ -145,8 +146,10 @@ class Brownian:
 
         Inputs:
         -------
-        f1: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
-        f4: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
+        f1: (np.array, np.float) Drag force correction term
+            {Gao et. al. 2010. Computers and Math with App}
+        f4: (np.array, np.float) Drag force correction term
+            {Gao et. al. 2010. Computers and Math with App}
         ac: (float) Colloid radius
         viscosity: (float) dynamic viscosity of water
         T = (float) Absolute Temperature in K
@@ -160,15 +163,18 @@ class Brownian:
 
         Returns:
         --------
-        brownian_x: (np.array, np.float) array of browian (random) forces in the x direction {Qiu et. al 2011. VZJ}
-        brownian_y: (np.array, np.float) array of browian (random) forces in the x direction {Qiu et. al 2011. VZJ}
+        brownian_x: (np.array, np.float) array of browian (random)
+            forces in the x direction {Qiu et. al 2011. VZJ}
+        brownian_y: (np.array, np.float) array of browian (random)
+            forces in the y direction {Qiu et. al 2011. VZJ}
         """
-
+        # todo: update brownian motion to include the timestep!!!!
         params = {'viscosity': 1.002e-3, 'ac': 1e-6, 'T': 298.17}
         for kwarg in kwargs:
             params[kwarg] = kwargs[kwarg]
                 
         self.ac = params['ac']
+        self.ts = params['ts']
         self.viscosity = params['viscosity']
         self.boltzmann = 1.38e-23
         self.epsilon = 6. * np.pi * self.viscosity * self.ac
@@ -179,12 +185,12 @@ class Brownian:
 
     def Brown_xforce(self, epsilon, diffusivity, f4):
         mu, sigma = 0, 1.
-        Fbt = epsilon * np.sqrt(((2 * diffusivity)/(f4 * 1.))) * np.random.normal(mu, sigma, (len(f4), len(f4[0])))
+        Fbt = epsilon * np.sqrt(((2 * diffusivity)/(f4 * self.ts))) * np.random.normal(mu, sigma, (len(f4), len(f4[0])))
         return Fbt
 
     def Brown_yforce(self, epsilon, diffusivity, f1):
         mu, sigma = 0, 1.
-        Fbn = epsilon * np.sqrt(((2 * diffusivity)/(f1 * 1.))) * np.random.normal(mu, sigma, (len(f1), len(f1[0])))
+        Fbn = epsilon * np.sqrt(((2 * diffusivity)/(f1 * self.ts))) * np.random.normal(mu, sigma, (len(f1), len(f1[0])))
         return Fbn
 
 
