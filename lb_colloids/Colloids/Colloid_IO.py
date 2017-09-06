@@ -40,7 +40,7 @@ class Config:
                            'I', 'EPSILON_R', 'SHEER_PLANE', 'LVDWST_WATER',
                            'LVDWST_COLLOID', 'LVDWST_SOLID', 'ZETA_COLLOID',
                            'ZETA_SOLID', 'PSI+_COLLOID', 'PSI+_WATER', 'PSI+_SOLID',
-                           'PSI-_COLLOID', 'PSI-_WATER', 'PSI-_SOLID')
+                           'PSI-_COLLOID', 'PSI-_WATER', 'PSI-_SOLID', 'SCALE_LB')
         self._booltype = ('PLOT', 'ADJUST_ZETA', 'OVERWRITE', 'SHOWFIG')
         self._dicttype = ('CONCENTRATION', 'VALENCE')
         self._required = ('LBMODEL', 'NCOLS', 'ITERS', 'LBRES', 'GRIDREF',
@@ -48,7 +48,7 @@ class Config:
         self.validmodelparams = ('LBMODEL', 'NCOLS', 'ITERS', 'LBRES',
                                  'GRIDREF', 'AC', 'TIMESTEP', 'TEMPERATURE',
                                  'RHO_COLLOID', 'CONTINUOUS')
-        self.validphysicalparams = ('RHO_WATER', 'RHO_COLLOID', 'VISCOSITY')
+        self.validphysicalparams = ('RHO_WATER', 'RHO_COLLOID', 'VISCOSITY', "SCALE_LB")
         self.validchemicalparams = ('CONCENTRATION', 'ADJUST_ZETA', 'I_INITIAL',
                                     'I', 'EPSILON_R', 'VALENCE', 'SHEER_PLANE',
                                     'LVDWST_WATER', 'LVDWST_COLLOID', 'LVDWST_SOLID',

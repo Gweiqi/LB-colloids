@@ -56,7 +56,7 @@ class Velocity:
         # todo: add a lb time step for dimensionalization? What is the best way to recover this?
         # todo: Maybe look at reynolds number for dimensionalization
 
-        params = {'lb_timestep': 1e-5, 'ts': 1}
+        params = {'lb_timestep': 1e-5, 'ts': 1, 'scale_lb': 1.}
 
         for kwarg in kwargs:
             params[kwarg] = kwargs[kwarg]
@@ -64,8 +64,8 @@ class Velocity:
         # ts = params['lb_timestep']
         ts = params['ts']
         # todo: use the reynolds number calculation and then divide by gridref!
-        self.xvelocity = LBx * velocity_factor
-        self.yvelocity = LBy * velocity_factor
+        self.xvelocity = LBx * velocity_factor * params['scale_lb']
+        self.yvelocity = LBy * velocity_factor * params['scale_lb']
         
 
 class Gravity:
@@ -810,22 +810,37 @@ class ColloidColloid(object):
 
         lewis_vdw = lwdv0 * (lvdw1 + lvdw2 + lvdw3)
 
+
         edl0 = 128. * np.pi * self.__params['ac'] * self.__params['ac'] *\
-               self.ionic_strength * 1.38e-23 * self.__params['T']
+               0.5 * self.ionic_strength * 1.38e-23 * self.__params['T']
         edl1 = (2. * self.__params['ac']) * self.debye ** 2.
 
         z = 0.
+        nz = 0.
         for key, value in self.__params['valence'].items():
             z += float(value)
+            nz += 1
 
-        z = z / 58.44
+        z /= nz # todo: this term may be more correct!
+
+        # z /= 58.44  # todo: look up this term (might be stern length insted!)
 
         edl2 = np.tanh((z * 1.6e-19 * self.colloid_potential)/(4. * 1.38e-23 * self.__params['T']))
         edl3 = np.exp(-self.debye * c_arr)
 
         edl = (edl0 / edl1) * (edl2 ** 2.) * edl3
 
-        dlvo = (lewis_vdw + edl)
+        """
+        # original formulation 1939, may work due to changing potential with ionic strength
+        edl0 = (78.45 * self.__params['ac']**2. * self.colloid_potential * self.colloid_potential) / 2.
+        edl1 = np.log(1. + np.exp(-self.debye*c_arr))
+
+        edl = edl0 * edl1
+        """
+
+        # todo: look more into the dlvo col-col interactions
+        # dlvo = (lewis_vdw + edl)/c_arr
+        dlvo = (edl - lewis_vdw)/c_arr # lewis_vdw + edl)/c_arr
 
         if arr_type.lower() == "x":
             dlvo[:, :self.__center] *= -1
@@ -835,6 +850,8 @@ class ColloidColloid(object):
 
         else:
             raise TypeError("arr_type {} is not valid".format(arr_type))
+
+        dlvo[self.__center, self.__center] = 0.
 
         return dlvo
 

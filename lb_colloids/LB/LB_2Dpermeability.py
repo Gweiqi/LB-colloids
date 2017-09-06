@@ -34,12 +34,12 @@ def initiate_model(fd, rho, vis):
     return fd
 
 
-def set_solids(fs, img):
+# def set_solids(fs, img):
     # sets/reinforces solid boundaries from image data, not used
-    solids = np.zeros((q, ny, nx))
-    for i in range(q):
-        fs[i, img] = solids[i, img]
-    return fs
+#    solids = np.zeros((q, ny, nx))
+#    for i in range(q):
+#        fs[i, img] = solids[i, img]
+#    return fs
 
 
 def py_rho(f):

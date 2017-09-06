@@ -59,10 +59,10 @@ class Breakthrough(object):
                 ncol = 0
                 for index, row in bt_colloids.iterrows():
                     ncol += 1
-                    ncols.append(ncol)
+                    ncols.append(float(ncol))
                     nts.append(row['end-ts'])
 
-                ncols.append(ncol)
+                ncols.append(float(ncol))
                 nts.append(max_ts)
 
                 df = pd.DataFrame({'nts': nts, 'ncol': ncols}).set_index('ncol')
@@ -82,11 +82,11 @@ class Breakthrough(object):
                     upper_ts = row['end-ts']
                     t = bt_colloids.loc[(bt_colloids['end-ts'] >= lower_ts) & (bt_colloids['end-ts'] <= upper_ts)]
                     ncol += 1
-                    ncols.append(ncol)
+                    ncols.append(float(ncol))
                     ncol_per_release.append(len(t))
                     nts.append(row['end-ts'])
 
-                ncols.append(ncol)
+                ncols.append(float(ncol))
                 nts.append(max_ts)
                 ncol_per_release.append(len(bt_colloids.loc[(bt_colloids['end-ts'] >= max_ts - self.continuous)
                                                             & (bt_colloids['end-ts'] <= max_ts)]))
@@ -120,21 +120,21 @@ class Breakthrough(object):
         if time:
             if self.continuous:
                 plt.plot(self.breakthrough_curve['nts'] * self.timestep,
-                         self.breakthrough_curve['ncpr'] / self.ncol,
+                         self.breakthrough_curve['ncpr'] / float(self.ncol),
                          *args, **kwargs)
             else:
                 plt.plot(self.breakthrough_curve['nts'] * self.timestep,
-                         self.breakthrough_curve.index.values / self.ncol,
+                         self.breakthrough_curve.index.values / float(self.ncol),
                          *args, **kwargs)
 
         else:
             if self.continuous:
                 plt.plot(self.breakthrough_curve['nts'] * self.timestep,
-                         self.breakthrough_curve['ncpr'] / self.ncol,
+                         self.breakthrough_curve['ncpr'] / float(self.ncol),
                          *args, **kwargs)
             else:
                 plt.plot(self.breakthrough_curve['nts'],
-                         self.breakthrough_curve.index.values / self.ncol,
+                         self.breakthrough_curve.index.values / float(self.ncol),
                          *args, **kwargs)
         plt.ylim([0, 1])
 
@@ -149,11 +149,11 @@ class Breakthrough(object):
         pv_factor = self.pore_volume_conversion()
         if self.continuous:
             plt.plot(self.breakthrough_curve['nts'] * pv_factor * self.timestep,
-                     self.breakthrough_curve['ncpr'] / self.ncol,
+                     self.breakthrough_curve['ncpr'] / float(self.ncol),
                      *args, **kwargs)
         else:
             plt.plot(self.breakthrough_curve['nts'] * pv_factor * self.timestep,
-                     self.breakthrough_curve.index.values / self.ncol,
+                     self.breakthrough_curve.index.values / float(self.ncol),
                      *args, **kwargs)
 
         plt.ylim([0, 1])
@@ -190,8 +190,7 @@ class DistributionFunction(object):
         self.resolution = reader.resolution
         self.timestep = reader.timestep
         self.continuous = reader.continuous
-        # todo: replace this call with something from the header later!
-        self.ncol = reader.ncol
+        self.ncol = float(reader.ncol)
         self.total_ncol = float(self.df.shape[0])
         self.bin = nbin
         self.pdf = None
@@ -630,7 +629,7 @@ class ModelPlot(object):
         qk = plt.quiverkey(Q, 0.9, 0.9, 0.01, r'$1 \frac{cm}{s}$',
                            coordinates='figure')
         plt.xlim(0, x.shape[1])
-        plt.ylim(0, x.shape[0])
+        plt.ylim(x.shape[0], 0)
 
 
 class CCModelPlot(object):
@@ -1077,6 +1076,8 @@ class Hdf5Reader(object):
                   'lb_velocity_x': 'results/uarray',
                   'lb_velcoity_y': 'results/uarray',
                   'conversion_factor': 'results/velocity_factor',
+                  'pore_diameter': 'results/pore_diameter',
+                  'reynolds_number': 'results/reynolds_number',
                   'brownian_x': 'colloids/brownian/x',
                   'brownian_y': 'colloids/brownian/y',
                   'lvdw_x': 'colloids/lvdw/x',

@@ -256,14 +256,14 @@ def run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
                 x += [Colloid(xlen, ylen, gridres) for i in range(ncols)]
 
         colloidcolloid.update(x)
-        cc_vx = colloidcolloid.x_array * conversion#/1e-6
-        cc_vy = colloidcolloid.y_array * conversion#/1e-6
+        cc_vx = colloidcolloid.x_array * conversion  # /1e-6
+        cc_vy = colloidcolloid.y_array * conversion  # /1e-6
         Colloid.positions = []
         vx0 = vx + cc_vx
         vy0 = vy + cc_vy
 
         for col in x:
-            col.update_position(vx, vy, ts)
+            col.update_position(vx0, vy0, ts)
 
         timer.update_time()
 
@@ -287,8 +287,9 @@ def run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
                 timeseries.write_output(timer, x, pathline=False)
 
             else:
-                col.store_position(timer)
-                col.strip_positions()
+                for col in x:
+                    col.store_position(timer)
+                    col.strip_positions()
                 
         # check if user wants an endpoint file
         if timer.time == iters:
