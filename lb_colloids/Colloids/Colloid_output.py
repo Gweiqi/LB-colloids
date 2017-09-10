@@ -758,6 +758,11 @@ class CCModelPlot(object):
         else:
             mesh = np.abs(self.__hdf5.get_data(key))
 
+        # find center and set to nearby value to prevent log scale crashing
+        shape = mesh.shape
+        center = shape[0] // 2
+        mesh[center, center] = mesh[center, center + 1]
+
         xx, yy = np.meshgrid(np.arange(0, mesh.shape[0]+1),
                              np.arange(0, mesh.shape[1] + 1))
 
