@@ -378,7 +378,7 @@ class LB2DModel(object):
     """
     object oriented method to instantiate and run a Two-Dimensional
     lattice boltzmann model. Calls upon either fortran or python
-    kernals to run a model.
+    kernels to run a model.
 
     Use protective programming to ensure data fits within normal model
     parameters. 
@@ -386,7 +386,7 @@ class LB2DModel(object):
     Parameters:
     -----------
     img: (ndarray) binarized image array
-    kernal: (str) the simulation kernal. Default is fortran
+    kernel: (str) the simulation kernel. Default is fortran
     
     Attributes:
     -----------
@@ -398,16 +398,16 @@ class LB2DModel(object):
     run:  method to run the lb model and return a distribution function
     
     """
-    def __init__(self, img, kernal='fortran'):
+    def __init__(self, img, kernel='fortran'):
         self.__img = img
         self.__nlayers = None
         self.__porosity = None
-        self.__kernal = kernal
+        self.__kernel = kernel
         self.__gravity = 0.001
         self.__tau = 1.0
         self.__rho = 1.0
         self.__resolution = 1e-6
-        self.__physical_rho = 1000.
+        self.__physical_rho = 997.
         self.__physical_viscosity = 8.9e-4
         self.__niters = None
         self.__cs = 0.577350269
@@ -425,10 +425,10 @@ class LB2DModel(object):
         if obj == 'img':
             raise NotImplementedError('Please re-instantiate LB2D to change images')
 
-        if obj == 'kernal':
+        if obj == 'kernel':
             if value.lower() not in ('python', 'fortran'):
-                raise AssertionError('kernal type not recognized')
-            super(LB2DModel, self).__setattr__('_LB2DModel__kernal', value.lower())
+                raise AssertionError('kernel type not recognized')
+            super(LB2DModel, self).__setattr__('_LB2DModel__kernel', value.lower())
 
         elif obj == 'gravity':
             super(LB2DModel, self).__setattr__('_LB2DModel__gravity', float(value))
@@ -473,8 +473,8 @@ class LB2DModel(object):
         return self.__img
 
     @property
-    def kernal(self):
-        return self.__kernal
+    def kernel(self):
+        return self.__kernel
 
     @property
     def gravity(self):
@@ -605,7 +605,7 @@ class LB2DModel(object):
             vmin (float) matplotlib vmin
             verbose (int) print interval for iterations
         """
-        if self.__kernal == 'fortran':
+        if self.__kernel == 'fortran':
             f = self.__run_fortran(output=output, image_int=image_int, image_folder=image_folder,
                                    image_name=image_name, vmax=vmax, vmin=vmin, verbose=verbose)
         else:
@@ -617,7 +617,7 @@ class LB2DModel(object):
     def __run_fortran(self, output='LBModel.hdf5', image_int=None, image_folder=None,
                       image_name="LB_", vmax=0, vmin=-0.010, verbose=None):
         """
-        Object oriented fortran based D2Q9 LB method, uses the fortran kernal
+        Object oriented fortran based D2Q9 LB method, uses the fortran kernel
 
         Parameters:
         -----------
@@ -682,7 +682,7 @@ class LB2DModel(object):
     def __run_python(self, output='LBModel.hdf5', image_int=None, image_folder=None,
                      image_name="LB_", vmax=0, vmin=-0.010, verbose=None):
         """
-        Object oriented python based D2Q9 LB method, uses the python kernal
+        Object oriented python based D2Q9 LB method, uses the python kernel
         
         Parameters:
         -----------

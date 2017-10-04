@@ -126,7 +126,7 @@ class Bouyancy:
         acceleration due to gravity is kept positive to maintain the proper vector direction
         """
 
-        params = {'rho_water': 1000., 'rho_colloid': 2650., 'ac': 1e-6}
+        params = {'rho_water': 997., 'rho_colloid': 2650., 'ac': 1e-6}
         for kwarg in kwargs:
             params[kwarg] = kwargs[kwarg]
         
@@ -169,7 +169,7 @@ class Brownian:
             forces in the y direction {Qiu et. al 2011. VZJ}
         """
         # todo: update brownian motion to include the timestep!!!!
-        params = {'viscosity': 1.002e-3, 'ac': 1e-6, 'T': 298.17}
+        params = {'viscosity': 8.9e-4, 'ac': 1e-6, 'T': 298.15}
         for kwarg in kwargs:
             params[kwarg] = kwargs[kwarg]
                 
@@ -229,8 +229,8 @@ class Drag:
         drag_x: (np.array, np.float) vectorized drag forces in the x-direction non-vectorized
         drag_y: (np.array, np.float) vectorized drag forces in the y-direction non-vectorized
         """
-        params = {'ac': 1e-6, 'viscosity': 1.002e-3, 'rho_colloid': 2650., 'rho_water': 1000.,
-                  'T': 298.17, 'ts': 1.}
+        params = {'ac': 1e-6, 'viscosity': 8.9e-4, 'rho_colloid': 2650., 'rho_water': 997.,
+                  'T': 298.15, 'ts': 1.}
         for kwarg in kwargs:
             params[kwarg] = kwargs[kwarg]        
         
@@ -240,6 +240,7 @@ class Drag:
         self.rho_colloid = params['rho_colloid']
         self.epsilon = 6. * np.pi * self.viscosity * self.ac
         self.Vcol = -((self.rho_colloid - self.rho_water)*((2*self.ac)**2)*9.81)/(18*self.viscosity)
+        # todo: update this all to a fortran routine that is called each iteration. Replace VCol with stored value!
         self.drag_x = self.drag_xforce(ux, self.Vcol, self.epsilon, f3, f4)  # *xvArr
         self.drag_y = self.drag_yforce(uy, self.Vcol, self.epsilon, f1, f2)  # *yvArr
 
@@ -379,7 +380,7 @@ class DLVO:
         """
 
         params = {'concentration': {'Na': 10e-4}, 'adjust_zeta': False, 'I_initial': False, 'I': 10e-4, 'ac': 1e-6,
-                  'epsilon_r': 78.304, 'valence': {'Na': 1.}, 'sheer_plane': 3e-10, 'T': 298.17,
+                  'epsilon_r': 78.304, 'valence': {'Na': 1.}, 'sheer_plane': 3e-10, 'T': 298.15,
                   'lvdwst_water': 21.8e-3, 'lvdwst_colloid': 39.9e-3, 'lvdwst_solid': 33.7e-3, 'zeta_colloid': -40.5e-3,
                   'zeta_solid': -60.9e-3, 'psi+_colloid': 0.4e-3, 'psi-_colloid': 34.3e-3, 'psi+_water': 25.5e-3,
                   'psi-_water': 25.5e-3, 'psi+_solid': 1.3e-3, 'psi-_solid': 62.2e-3, 'rho_colloid': 2650.}
@@ -507,6 +508,7 @@ class DLVO:
         zeta = potential/(np.exp(kd*z))
         return zeta
 
+    # todo: remove attractive force calculations and replace with Hamaker & Liang calcs.
     def _Lifshitz_van_der_Walls(self, arr, ac, vdw_st_water, vdw_st_colloid, vdw_st_solid):
         """
         Inputs:
@@ -602,7 +604,7 @@ class ColloidColloid(object):
 
         self.__params = {'concentration': False, 'adjust_zeta': False, 'I_initial': False,
                          'I': 10e-4, 'ac': 1e-6, 'epsilon_0': 8.85e-12 , 'epsilon_r': 78.304, 'valence': {'Na': 1.},
-                         'sheer_plane': 3e-10, 'T': 298.17, 'lvdwst_water': 21.8e-3, 'lvdwst_colloid': 39.9e-3,
+                         'sheer_plane': 3e-10, 'T': 298.15, 'lvdwst_water': 21.8e-3, 'lvdwst_colloid': 39.9e-3,
                          'lvdwst_solid': 33.7e-3, 'zeta_colloid': -40.5e-3, 'zeta_solid': -60.9e-3,
                          'psi+_colloid': 0.4e-3, 'psi-_colloid': 34.3e-3, 'psi+_water': 25.5e-3,
                          'psi-_water': 25.5e-3, 'psi+_solid': 1.3e-3, 'psi-_solid': 62.2e-3, 'kb': 1.38e-23,
@@ -824,7 +826,7 @@ class ColloidColloid(object):
         z /= nz # todo: this term may be more correct!
 
         # z /= 58.44  # todo: look up this term (might be stern length insted!)
-
+        # todo: look into Liang for attractive energy of col-col interaction. Replace for simplification.
         edl2 = np.tanh((z * 1.6e-19 * self.colloid_potential)/(4. * 1.38e-23 * self.__params['T']))
         edl3 = np.exp(-self.debye * c_arr)
 

@@ -1079,9 +1079,10 @@ class Hdf5Reader(object):
     """
     data_paths = {'image': 'Binary_image',
                   'lb_velocity_x': 'results/uarray',
-                  'lb_velcoity_y': 'results/uarray',
+                  'lb_velocity_y': 'results/uarray',
                   'conversion_factor': 'results/velocity_factor',
                   'pore_diameter': 'results/pore_diameter',
+                  'porosity': 'results/porosity',
                   'reynolds_number': 'results/reynolds_number',
                   'brownian_x': 'colloids/brownian/x',
                   'brownian_y': 'colloids/brownian/y',

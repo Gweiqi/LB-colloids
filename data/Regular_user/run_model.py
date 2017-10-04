@@ -8,6 +8,7 @@ from lb_colloids import ColloidModel
 import matplotlib.pyplot as plt
 import os
 
+
 def addIO(defaults, config):
     """
     Simple method to update defaults from IO
@@ -40,7 +41,7 @@ if configs.lb_config is not None:
     ImageDict = {'BOUNDARY': 10}
     ModelDict = {'KERNAL': 'fortan'}
     PermeabilityDict = {'RHO': 1.0, 'TAU': 1.0, 'GRAVITY': 0.001, 'NITERS': 1,
-                        'PHYSICAL_VISCOSITY': 8.9e-4, 'PHYSICAL_RHO': 1000.}
+                        'PHYSICAL_VISCOSITY': 8.9e-4, 'PHYSICAL_RHO': 997.}
     OutputDict = {'VERBOSE': 100,
                   'IMAGE_SAVE_INTERVAL': None,
                   'IMAGE_SAVE_FOLDER': os.path.expanduser('~/Desktop/LBimages'),
@@ -77,7 +78,7 @@ if configs.lb_config is not None:
 
     # run LB_2Dpermeability for computational fluid dynamics
     print('[Building LB Model]')
-    lbmodel = LB2DModel(binary.binarized, kernal=ModelDict['KERNAL'])
+    lbmodel = LB2DModel(binary.binarized, kernel=ModelDict['KERNEL'])
 
     lbmodel.niters = PermeabilityDict['NITERS']
     lbmodel.tau = PermeabilityDict['TAU']

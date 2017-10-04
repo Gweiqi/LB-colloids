@@ -9,7 +9,7 @@ class Config:
         types and required values are present for LBModel to run.
         """
         self.config = self._reader(fname)
-        self.__strtype = ('LBMODEL', 'KERNAL', 'IMAGE_SAVE_FOLDER',
+        self.__strtype = ('LBMODEL', 'KERNEL', 'IMAGE_SAVE_FOLDER',
                          'IMAGE', 'IMAGE_SAVE_NAME')
         self.__inttype = ('SOLID', 'VOID', 'NITERS', 'VERBOSE',
                          'IMAGE_SAVE_INTERVAL', 'BOUNDARY')
@@ -20,7 +20,7 @@ class Config:
         self.__booltype = ('PLOT',)
         self.__dicttype = ()
         self.__required = ('LBMODEL', 'LBRES')
-        self.validmodelparams = ('LBMODEL', 'LBRES', 'KERNAL',
+        self.validmodelparams = ('LBMODEL', 'LBRES', 'KERNEL',
                                  'PHYSICAL_VISCOSITY', 'PHYSICAL_RHO')
         self.validimageparams = ('SOLID', 'VOID', 'IMAGE', 'BOUNDARY', 'PLOT')
         self.validpermeabilityparmas = ('RHO', 'TAU', 'NITERS', 'GRAVITY')
