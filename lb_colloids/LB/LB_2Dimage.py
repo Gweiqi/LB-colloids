@@ -1,3 +1,18 @@
+"""
+Lattice boltzmann image preparation and domain setup module
+
+This module contains an image reading utility and a binarization
+utility. The LB_2Dimage module is aliased in LB-Colloids as LBImage.
+
+Example usage of how to create a binary image with boundary conditions applied
+and save the base model for usage in with LB_permeability
+
+>>> from lb_colloids import LBImage
+>>> image = LBImage.Images("my_thin_section.png")
+>>> binary = LBImage.BoundaryCondition(image, fluidvx=[0], solidvx=[233, 255], nlayers=3)
+>>> binary.binarized
+>>> HDF5_write(binary.binarized, binary.porosity, binary.boundary, 'LBModel.hdf5')
+"""
 import Image
 from scipy.ndimage import imread
 import numpy as np
@@ -14,8 +29,9 @@ class Images:
     necessary.
 
     Parameters:
-    -----------
-    infile: (str) binary input file name (image file domain)
+    ----------
+    :param string infile:
+        binary input file name (image file domain)
     """
     
     def __init__(self, infile):
@@ -41,12 +57,18 @@ class BoundaryCondition:
     Class to instatiate open boundary layers at the top and bottom of the
     lattice boltzmann image, closed boundary layers at either side of the
     image, and binarize the array into a boolen type.
-    
-    data: (ndarray) NxN array of image data relating to the input file
-    fluidvx: (list) list of fluid voxel grey values
-    solidvx: (list) list of solid voxel grey values
-    nlayers: (int) number of open boundary layers to add to the top and
-                   bottom of the image array. 
+
+    Parameters:
+    ----------
+    :param np.ndarray data:
+        NxN array of image data relating to the input file
+    :param list fluidvx:
+        list of fluid voxel grey values
+    :param list solidvx:
+        list of solid voxel grey values
+    :param int nlayers:
+        number of open boundary layers to add to the top and
+        bottom of the image array.
     """
     def __init__(self, data, fluidvx, solidvx, nlayers):
 
@@ -62,7 +84,7 @@ class BoundaryCondition:
         self.__dimx = data.shape[1] + 2
         self.__dimy = data.shape[0] + (nlayers * 2)
         self.image = data
-        self.binarized = None
+        self.__binarized = None
         self.__set_boundary_conditions()
         print("Porosity: ", self.__porosity())
         
@@ -85,7 +107,7 @@ class BoundaryCondition:
                             print 'Fluid Values: ', self.fluid_voxels
                             raise ValueError('Grey Value not in solid or fluid voxel values')
 
-        self.binarized = setup_bc.astype(bool)
+        self.__binarized = setup_bc.astype(bool)
 
     def __porosity(self):
         img = self.binarized[self.__nlayers:-self.__nlayers, 1:-1]
@@ -93,37 +115,64 @@ class BoundaryCondition:
         return (img.size - nsolid)/float(img.size)
 
     @property
+    def binarized(self):
+        """
+        :return: Binary image with boundary conditions applied
+        """
+        return self.__binarized
+
+    @property
     def grey_values(self):
+        """
+        :return: unique image grayscale values
+        """
         return np.unique(self.data)
 
     @property
     def solid_voxels(self):
+        """
+        :return: user defined solid voxels
+        """
         return self.__solidvx
 
     @property
     def fluid_voxels(self):
+        """
+        :return: user defined fluid volxels
+        """
         return self.__fluidvx
 
     @property
     def porosity(self):
+        """
+        :return: image porosity
+        """
         return self.__porosity()
 
     @property
     def nlayers(self):
+        """
+        :return: Number of boundary condition layers
+        """
         return self.__nlayers
     
 
 class HDF5_write:
     def __init__(self, arr, porosity, boundary, output):
         """
-        Write class for LB2d_image.
+        Write class for LB2d_image. Writes a HDF5 file that includes
+        the binary image, porosit &, number of boundary layers,
 
         Parameters:
         ----------
-        arr (np.ndarray) binarized image data
-        porosity (float) porosity of the image
-        boundary (int) number of boundary layers
-        output (str) output hdf5 file name
+        :param np.ndarray arr:
+            binarized image data
+        :param float porosity:
+            porosity of the image
+        :param int boundary:
+            number of boundary layers
+        :param str output:
+            output hdf5 file name
         """
         self.__x = None
         with H.File(output, "w") as fi:
@@ -135,17 +184,26 @@ class HDF5_write:
 
 def run(image, solid, fluid, output, boundary=5):
     """
-    Object oriented approach to run the LB-Colloids script
+    Funcitonal approach to run the LB-Colloids script
 
     Parameters:
-    -----------
-        image: (str) image file name
-        solid: (list, int) list of interger grey scale values corresponding
-            to the solid phase
-        fluid: (list, int) list of interger grey scale values corresponding
-            to the fluid phase
-        output: (str) output hdf5 file name
-        boundary: (int) number of boundary layers for the model
+    ----------
+    :param str image:
+        image file name
+    :param list solid:
+        list of interger grey scale values corresponding
+        to the solid phase
+    :param list fluid:
+        list of interger grey scale values corresponding
+        to the fluid phase
+    :param str output:
+        output hdf5 file name
+    :param int boundary:
+        number of boundary layers for the model
+
+    >>> LBImage.run('my_thin_section.png', fluid=[0], solid=[233, 255],
+    >>>             output="LBModel.hdf5", nlayers=3)
+    >>>
     """
     img = Images(image)
     bc = BoundaryCondition(img, fluid, solid, boundary)

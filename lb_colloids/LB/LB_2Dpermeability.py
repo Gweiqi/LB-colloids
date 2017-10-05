@@ -1,3 +1,28 @@
+"""
+D2Q9 lattice Boltzmann simulations are performed using classes and methods
+contained in this module. The LB2DModel class is the main class the user
+will interact with as it will call other functions to run and save the lattice
+Boltzmann simulation
+
+Although lattice Boltzmann mathematics are included within the python
+methods contained within this module, it is highly reccomended that the user
+use the default Fortran Kernal option to run LB models. The python kernal is approximately
+100x slower than Fortran.
+
+Example showing the build and run of a D2Q9 LB2DModel
+
+>>> from lb_colloids import LB2DModel
+>>> from lb_colloids import LBImage
+>>>
+>>> image = LBImage.Images("my_thin_section.png")
+>>> binary = LBImage.BoundaryCondition(image, fluidvx=[0], solidvx=[233, 255], nlayers=3)
+>>> model = LB2DModel(img=binary.binarized)
+>>> model.niters = 2000
+>>> model.rho = 1.0
+>>> model.tau = 0.8
+>>> result = model.run(output="LBModel.hdf5")
+"""
+
 import numpy as np
 import h5py as H
 import LB_pretty as pretty
@@ -155,9 +180,7 @@ def py_zhohe(f, rho, ny, nx):
 def py_bounceback(f, fcol, image, ny, nx):
     # apply bounceback conditions to LB-model collision function
     fbounce = np.zeros((9, ny, nx))
-    # set bounceback indicies as local variable
-    # bounce = [4, 5, 6, 7, 0, 1, 2, 3, 8]
-    
+
     for j in range(ny):
         for k in range(nx):
             
@@ -238,8 +261,15 @@ def get_mean_pore_size(img, nx):
     Finds the mean pore diameter of the domain
 
     Parameters:
-        img: (np.ndarray) binary image array of domain
-        nx: (int) number of pixels in x direction of fluid domain
+    ----------
+    :param np.ndarray img:
+        binary image array of domain
+    :param int nx:
+        number of pixels in x direction of fluid domain
+
+    Returns
+    -------
+    :return: Model domain mean pore size
     """
     pores = []
     for line in img:
@@ -273,11 +303,21 @@ def get_reynolds_number(pore_diameter, uy, porosity, rho, viscosity):
     based off of mean velocity and mean fluid density
 
     Parameters:
-        pore_diameter: (float) calculated lb pore diameter
-        uy: (float) lb mean fluid velocity in y direction
-        porosity: (float) porosity of the medium
-        rho: (float) lb mean fluid density
-        viscosity: (float) lb fluid viscosity
+    ----------
+    :param float pore_diameter:
+        calculated lb pore diameter
+    :param float uy:
+        lb mean fluid velocity in y direction
+    :param float porosity:
+        porosity of the medium
+    :param float rho:
+        lb mean fluid density
+    :param float viscosity:
+        lb fluid viscosity
+
+    Returns:
+    -------
+    :returns: Simulation Reynolds number
     """
     reynolds = (pore_diameter * abs(uy) * porosity * rho) / viscosity
     return reynolds
@@ -290,11 +330,21 @@ def get_velocity_conversion(reynolds_number, uy, rho,
     LB reynolds number and user supplied physical parameters.
 
     Parameters:
-        reynolds_number: (float) Model reynolds number
-        uy: (float) mean y velocity from LB model
-        rho: (float) physical density of the fluid
-        pore_diameter: (float) physical pore diameter
-        viscosity: (float) physical fluid viscosity
+    ----------
+    :param float reynolds_number:
+        Fluid simulations reynolds number
+    :param float uy:
+        mean y velocity from LB model
+    :param float rho:
+        physical density of the fluid
+    :param float pore_diameter:
+        physical pore diameter
+    :param float viscosity:
+        physical fluid viscosity
+
+    Returns:
+    -------
+    :return: Non-dimensional fluid velocity to physical fluid velocity conversion factor
     """
     phys_u = (reynolds_number * viscosity)/(rho * pore_diameter)
     factor = phys_u / abs(uy)
@@ -312,32 +362,45 @@ def addIO(defaults, config):
     return defaults
 
 
-class HDF5_write:
+class HDF5_write(object):
+    """
+    Hdf5 model write class to save simulation results from a LB Permeability model run
+
+    Parameters:
+    ----------
+    :param float mrho:
+        mean fluid density
+    :param float tau:
+        lb relaxation time
+    :param np.ndarray u:
+        fluid velocity array
+    :param np.ndarray f:
+        distribution function
+    :param np.ndarray rho:
+        density array
+    :param str output:
+        hdf file name
+    :param float mean_uy:
+        mean fluid velocity y direction
+    :param float mean_ux:
+        mean fluid velocity x direction
+    :param float pore_diameter:
+        mean pore diameter
+    :param float reynolds_number:
+        calculated reynolds number
+    :param float velocity_factor:
+        non-dimensional to dimensional velocity conversion factor
+    :param float img:
+        binary image array
+    :param float porosity:
+        porosity
+    :param float boundary:
+        nlayers boundaty condition
+    """
     def __init__(self, mrho, tau, u, f, rho, output,
                  mean_uy, mean_ux, pore_diameter, reynolds_number,
                  velocity_factor, img=None, porosity=None, boundary=None):
-        """
-        Hdf5 model write class
 
-        Parameters:
-        -----------
-            mrho: (float) mean fluid density
-            tau: (float) lb relaxation time
-            u: (np.ndarray) fluid velocity array
-            f: (np.ndarray) distribution function
-            rho: (np.ndarray) density array
-            output: (str) hdf file name
-            mean_uy: (float) mean fluid velocity y direction
-            mean_ux: (float) mean fluid velocity x direction
-            pore_diameter: (float) mean pore diameter
-            reynolds_number: (float) calculated reynolds number
-            velocity_factor: (float) calculation velocity
-                conversion factor
-            img: (np.ndarray) binary image array
-            porosity: (float) porosity
-            boundary: (int) nlayers boundaty condition
-        
-        """
         self.__x = None
         print '[Writing to: %s]' % output
         try:
@@ -380,22 +443,26 @@ class LB2DModel(object):
     lattice boltzmann model. Calls upon either fortran or python
     kernels to run a model.
 
-    Use protective programming to ensure data fits within normal model
-    parameters. 
+    Please reference documentation for
+    *lb_colloids.LB.LB_2Dpermeability.*\ **LB2DModel**
+    for a full listing of attributes and methods.
+
+    Uses protective programming to ensure user supplied data fits within normal model
+    parameters.
+
+    All attributes can be reset before a model run by passing a valid value to them
 
     Parameters:
-    -----------
-    img: (ndarray) binarized image array
-    kernel: (str) the simulation kernel. Default is fortran
-    
-    Attributes:
-    -----------
-    # todo:
+    ----------
+    :param np.ndarray img:
+        binarized image array from LBImage
+    :param str kernel:
+        the simulation kernel. Default is fortran
 
-    Methods:
-    --------
+    Attributes:
+    ----------
     
-    run:  method to run the lb model and return a distribution function
+        run:  method to run the lb model and return a distribution function
     
     """
     def __init__(self, img, kernel='fortran'):
@@ -464,85 +531,145 @@ class LB2DModel(object):
 
         elif obj == 'ny':
             raise NotImplementedError('ny is a constant based on image properies')
+
+        elif obj == 'q':
+            raise NotImplementedError('q is a model domain constant')
+
+        elif obj == 'viscosity':
+            raise NotImplementedError('viscosity is a model calculated value')
+
+        elif obj == 'porosity':
+            raise NotImplementedError('porosity is a model calculated value')
         
         else:
             super(LB2DModel, self).__setattr__(obj, value)
             
     @property
     def img(self):
+        """
+        :return: Binarized lattice boltzmann fluid domain
+        """
         return self.__img
 
     @property
     def kernel(self):
+        """
+        :return: Kernel type (Python or Fortran)
+        """
         return self.__kernel
 
     @property
     def gravity(self):
+        """
+        :return: Body force applied to simulation
+        """
         return self.__gravity
 
     @property
     def tau(self):
+        """
+        :return: Simulation relaxation time
+        """
         return self.__tau
 
     @property
     def rho(self):
+        """
+        :return: Non-dimensional fluid density
+        """
         return self.__rho
 
     @property
     def resolution(self):
+        """
+        :return: Model resolution in physical units (meters)
+        """
         return self.__resolution
 
     @property
     def physical_rho(self):
+        """
+        :return: Physical density of the simulation fluid
+        """
         return self.__physical_rho
 
     @property
     def niters(self):
+        """
+        :return: Number of lattice Boltzmann time steps to be simulated
+        """
         return self.__niters
 
     @property
     def cs(self):
+        """
+        :return: Lattice speed of sound
+        """
         return self.__cs
 
     @property
     def cs2(self):
+        """
+        :return: Lattice speed of sound ** 2
+        """
         return self.__cs2
 
     @property
     def nx(self):
+        """
+        :return: Model size in the x-direction
+        """
         return self.__nx
 
     @property
     def ny(self):
+        """
+        :return: Model size in the y-direction
+        """
         return self.__ny
 
     @property
     def viscosity(self):
+        """
+        :return: Calculated lattice Boltzmann viscosity for the simulation
+        """
         return (1. / 3.) * (self.tau - 0.5)
 
     @property
     def physical_viscosity(self):
+        """
+        :return: Physical viscosity of the simulation fluid
+        """
         return self.__physical_viscosity
 
     @property
     def q(self):
+        """
+        :return: number of simulation fluid nodes
+        """
         return 9
 
     @property
     def porosity(self):
+        """
+        :return: calculated porosity of the simulation domain
+        """
         if self.__porosity is None:
             self.__get_image_attributes()
         return self.__porosity
 
     @property
     def nlayers(self):
+        """
+        :return: Calculated number of boundary layers applied to the simulation domain
+        """
         if self.__nlayers is None:
             self.__get_image_attributes()
         return self.__nlayers
 
     def get_reynolds_number(self):
         """
-        Returns the model's reynolds number after simulation
+        :return: the model's reynolds number after simulation
         """
         if not self.mean_rho or not self.mean_uy:
             print('Please run model before calculating reynolds number')
@@ -557,13 +684,13 @@ class LB2DModel(object):
 
     def get_mean_pore_size(self):
         """
-        Returns the mean pore diameter of the domain
+        :return: the mean pore diameter of the domain
         """
         return get_mean_pore_size(self.__img, self.__nx)
 
     def get_velocity_conversion(self):
         """
-        Returns the conversion factor from LB velocity to Phys.
+        :return: the conversion factor from LB velocity to Phys.
         """
         pore_diameter = self.get_mean_pore_size() * self.resolution
         reynolds_number = self.get_reynolds_number()
@@ -598,12 +725,22 @@ class LB2DModel(object):
 
        Parameters:
         -----------
-            image_int (int) interval to dump velocity images to a file folder
-            image_folder (str) path to folder to dump images to
-            image_name (int) base name for images
-            vmax (float) matplotlib vmax
-            vmin (float) matplotlib vmin
-            verbose (int) print interval for iterations
+            :param int image_int:
+                interval to dump velocity images to a file folder
+            :param str image_folder:
+                path to folder to dump images to
+            :param int image_name:
+                base name for images
+            :param float vmax:
+                matplotlib vmax
+            :param float vmin:
+                matplotlib vmin
+            :param int verbose:
+                print interval for iterations
+
+        Returns:
+        -------
+            :return: Lattice Boltzmann simulation distribution function
         """
         if self.__kernel == 'fortran':
             f = self.__run_fortran(output=output, image_int=image_int, image_folder=image_folder,
