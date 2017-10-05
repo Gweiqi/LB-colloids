@@ -1,3 +1,19 @@
+"""
+The LB_Colloid modules contains base methods to simulate colloid transport for
+colloid simulation. This is the control center which contains the classes Colloid
+and TrackTime. Colloid is the base representation of a colloid and contains
+streaming and updating rules. TrackTime is the simulation timer, which tracks
+both number of time steps and the time step length. Also of importance is the run()
+method. This method initiates a colloid simulation from a IO.Config object.
+
+A user can initiate a model run assuming a Colloid_IO.Config() object has been built.
+Please see the Input Output section for details on building the Colloid_IO.Config() object
+
+>>> from lb_colloids import ColloidModel
+>>>
+>>> config = IO.Config()  # We assume that the Colloid_IO.Config() object is already built. See the Colloid_IO section for details
+>>> ColloidModel.run(config)
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -10,24 +26,13 @@ from copy import copy
 
 class Colloid:
     """
-    Wrapper class to initiate and track colloid position through the LB Model
+    Primary colloid class to instantiate and track colloids through a colloid simulation
 
-    Inputs:
-    -------
-    xlen: (int) grid length after interpolation in the x-direction
-    resolution: (float) grid resolution after interpolation
+    Parameters:
+    ----------
+    :param int xlen: grid length after interpolation in the x-direction
+    :param float resolution: grid resolution after interpolation
 
-    Methods:
-    --------
-    _append_xposition: method object that appends the list tracking a colloids x position
-    _append_yposition: method object that appends the list tracking a colloids y position
-    update_position: method that updates postion of colloids by calling the append methods
-    strip_positions: method that strips all but last item from colloid position lists
-    
-    Returns:
-    --------
-    xposition: (list, float) a list of x-position values normalized to the grid resolution
-    yposition: (list, float) a list of y-position values normalized to grid resolution (top left is 0,0)
     """
     positions = []
 
@@ -49,6 +54,10 @@ class Colloid:
         Colloid.positions.append(tuple([self.idx_rx[-1], self.idx_ry[-1]]))
 
     def reset_master_positions(self):
+        """
+        Resets the master position storage mechanism for all colloids. Master position
+        storage is used to later generate colloid-colloid DLVO fields.
+        """
         Colloid.positions = []
 
     def _append_xposition(self, item):
@@ -89,6 +98,12 @@ class Colloid:
         """
         grid index method to update continuous colloid system using the discete grid forces.
         idxry must be inverted because we assume (0,0) at top left corner and down is negitive.
+
+        Parameters:
+        ----------
+        :param np.ndarray xvelocity: colloid simulation velocity array in the x domain
+        :param np.ndarray yvelocity: colloid simulation velocity array in the y domain
+        :param ts float: physical time step in seconds
         """
 
         irx = self.xposition[-1]
@@ -182,15 +197,33 @@ class Colloid:
             self._append_flag(1)
 
     def update_special(self, irx, iry, flag):
+        """
+        Special updater class for colloids that have exited the model
+        domain or experienced an internal error
+
+        Parameters:
+        ----------
+        :param int irx: grid index in the x domain
+        :param int iry: grid index in the y domain
+        :param int flag: number indicator of special condition. 3 = normal breakthrough condition
+        """
         self._append_xposition(irx)
         self._append_yposition(iry)
         self._append_flag(flag)
 
     def strip_positions(self):
+        """
+        Memory saving function to strip unused, save colloid position information
+        """
         self.xposition = [self.xposition[-1]]
         self.yposition = [self.yposition[-1]]
 
     def store_position(self, timer):
+        """
+        Method to store colloid position and update the the time of storage
+
+        :param float timer: current model time
+        """
         self._append_time(timer)
         self._append_storex(self.xposition[-1])
         self._append_storey(self.yposition[-1])
@@ -201,9 +234,11 @@ class Colloid:
 
 class TrackTime:
     """
-    TrackTime class is the model timer, enables stripping stored time steps which
-    is useful to free memoryafter storing the data externally. Is necessary for
+    TrackTime class is the model timer. This class enables stripping stored time steps which
+    is useful to free memory after writing the data to an external file. Is necessary for
     output class functionality!
+
+    :param int ts: model time step set by user (physical time)
     """
     model_time = 1
 
@@ -215,16 +250,25 @@ class TrackTime:
         self.totim = [self.time*self.ts]
 
     def update_time(self):
+        """
+        Method to update the current model time and store it
+        """
         self.time += 1
         TrackTime.model_time += 1
         self.timer.append(self.time)
         self.totim.append(self.time*self.ts)
 
     def strip_time(self):
+        """
+        Memory saving method that removes unused information from timer arrays
+        """
         self.timer = [self.timer[-1]]
         self.totim = [self.totim[-1]]
 
     def print_time(self):
+        """
+        Method prints time in a standard format to the terminal
+        """
         print(self.timer[-1], "%.3f" % self.totim[-1])
 
 
@@ -235,10 +279,10 @@ def fmt(x, pos):
     return r'${} \times 10^{{{}}}$'.format(a, b)
 
 
-def run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
-                   ncols, timer, print_time, store_time,
-                   colloidcolloid, ModelDict, pathline=None,
-                   timeseries=None, endpoint=None):
+def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
+                    ncols, timer, print_time, store_time,
+                    colloidcolloid, ModelDict, pathline=None,
+                    timeseries=None, endpoint=None):
     """
     definition to allow the use of multiple ionic strengths ie. attachment then flush, etc....
     """
@@ -304,11 +348,14 @@ def run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
 
 def run(config):
     """
-    Model definition to setup and run the LB_Colloids from config file
-    or from OO.
+    Model definition to setup and run the LB_Colloids from config file.
+    This is the also the preferred user interaction method to run simulations
+    when working with python.
 
-    config: (class colloid_IO.Config) object or list of colloid_IO.Config objects
-    :return:
+    Parameters:
+    ----------
+    :param colloid_IO.config config: object or list of colloid_IO.Config objects
+
     """
 
     if isinstance(config, list):
@@ -467,10 +514,10 @@ def run(config):
     # generate initial pulse of colloids.
     x = [Colloid(xlen, ylen, gridres) for i in range(ncols)]
 
-    run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
-                   ncols, timer, print_time,
-                   store_time, colloidcolloid, ModelDict,
-                   pathline, timeseries, endpoint)
+    _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
+                    ncols, timer, print_time,
+                    store_time, colloidcolloid, ModelDict,
+                    pathline, timeseries, endpoint)
 
     if multiple_config:
         for confignumber in range(len(multiple_config)):
@@ -514,10 +561,10 @@ def run(config):
             vx = vx.velocity + LBx
             vy = vy.velocity + LBy
 
-            run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
-                           ncols, timer, print_time,
-                           store_time, colloidcolloid, ModelDict,
-                           pathline, timeseries, endpoint)
+            _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
+                            ncols, timer, print_time,
+                            store_time, colloidcolloid, ModelDict,
+                            pathline, timeseries, endpoint)
 
     if OutputDict['plot']:
         # set up option for vy vs. LBy plotting
