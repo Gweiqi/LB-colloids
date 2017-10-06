@@ -5,26 +5,22 @@ import copy
 
 
 class ForceToVelocity:
+    """
+    Class that calculates a "velocity-like" value from force arrays
+
+    Parameters:
+    ----------
+    :param np.ndarray forces: Array of forces felt by a colloid
+    :keyword float ts: Physical time step value
+    :keyword float rho_colloid: Colloid particle density, default :math: `2650 kg/m^3`
+    :keyword float ac: colloid radius, default 1e-6 m
+
+    Returns:
+    -------
+    :return: velocity (np.array, np.float) Array of "velocities" calculated from forces
+    """
     def __init__(self, forces, **kwargs):
-        """
-        Class that calculates acceleration from force
 
-        Inputs:
-        -------
-        forces: (np.array, np.float) Array of forces felt by a colloid
-        ts: (float) Lattice Boltzmann time step value
-        rho_colloid: (float) Colloid particle density 
-        ac: (float) colloid radius
-
-        Defaults:
-        ---------
-        rho_colloid: (float) 2650 kg/m^3
-        ac: (float) 1e-6
-
-        Returns:
-        --------
-        velocity (np.array, np.float) Array of velocities calc. from forces
-        """
         params = {'rho_colloid': 2650., 'ac': 1e-6, 'ts': 1.}
         for kwarg in kwargs:
             params[kwarg] = kwargs[kwarg]
@@ -33,61 +29,53 @@ class ForceToVelocity:
         ac = params['ac']
         ts = params['ts']
         self.mass_colloid = (4. / 3.) * np.pi * (ac * ac * ac) * rho_colloid
-        self.velocity = 0.5 * (forces * ts) / self.mass_colloid  # todo: test this assumption!
+        self.velocity = 0.5 * (forces * ts) / self.mass_colloid
         
         
 class Velocity:
+    """
+    Class that dimensionalizes LB velocity from non-dimensional lattice Boltzmann units
+
+    Parameters:
+    ----------
+    :param np.ndarray LBx: Array of Lattice Boltzmann velocities in the x-direction
+    :param np.ndarray LBy: Array of Lattice Boltzmann velocities in the y-direction
+    :keyword float ts: Time step value, default is 1.
+    :keyword float scale_lb: Scale the dimensionalized velocity from lattice Boltzmann. Use with caution. Default is 1
+    :param float velocity_factor: LB to physical velocity conversion factor. Default is 1
+
+    Returns:
+    -------
+    :return: xvelocity (np.array, np.float) array of dimensionalized velocities in the x-direction
+    :return: yvelocity (np.array, np.float) array of dimensionalized velocities in the y-direction
+    """
     def __init__(self, LBx, LBy, velocity_factor, **kwargs):
-        """
-        Class that dimensionalizes LB velocity
-
-        Inputs:
-        -------
-        LBx: (np.array, np.float) array of Lattice Boltzmann velocities in the x-direction
-        LBy: (np.array, np.float) array of Lattice Boltzmann velocities in the y-direction
-        ts: (float) time step value, setup is 1. model run should be much less!
-        velocity_factor: (float) LB to physical velocity conversion factor
-
-        Returns:
-        --------
-        xVelocity: (np.array, np.float) array of dimensionalized velocities in the x-direction
-        yVelocity: (np.array, np.float) array of dimensionalized velocities in the y-direction
-        """
-        # todo: add a lb time step for dimensionalization? What is the best way to recover this?
-        # todo: Maybe look at reynolds number for dimensionalization
 
         params = {'lb_timestep': 1e-5, 'ts': 1, 'scale_lb': 1.}
 
         for kwarg in kwargs:
             params[kwarg] = kwargs[kwarg]
 
-        # ts = params['lb_timestep']
         ts = params['ts']
-        # todo: use the reynolds number calculation and then divide by gridref!
+
         self.xvelocity = LBx * velocity_factor * params['scale_lb']
         self.yvelocity = LBy * velocity_factor * params['scale_lb']
         
 
 class Gravity:
+    """
+    Class to generate the estimated gravitational force experienced by a colloid
+
+    Parameters:
+    ----------
+    :keyword float rho_colloid: Particle density of a colloid in :math: `kg/m^3`. Default is 2650.
+    :keyword float ac: colloid radius in m. Default is 1e-6
+
+    Returns:
+    -------
+    :return: gravity (float) Gravitational force that a colloid experiences
+    """
     def __init__(self, **kwargs):
-        """
-        Class to estimate the gravitational force experienced by a colloid:
-
-        Inputs:
-        -------
-        rho_colloid: (float) particle density of a colloid in kg/m*3
-        ac: (float) colloid radius in m
-
-        Defaults:
-        ---------
-        rho_colloid = 2650 kg/m*3 (standard particle density of soil)
-        ac = 1e-6 m
-        
-        Returns:
-        --------
-        colloid_mass: (float) assumes that colloids are spherical in nature
-        gravity: (float) gravitational force that a colloid experiences in vector form
-        """
 
         params = {'rho_colloid': 2650., 'ac': 1e-6}
         for kwarg in kwargs:
@@ -101,31 +89,21 @@ class Gravity:
 
 
 class Bouyancy:
+    """
+    Class to estimate the gravitational force experienced by a colloid. Gravity
+    is applied as a positive value to maintain vector direction.
+
+    Parameters:
+    ----------
+    :keyword flaot rho_water: density of water :math: `kg/m^3`. Default is 997.
+    :keyword float rho_colloid: particle density of a colloid in :math: `kg/m^3`. Default is 2650.
+    :keyword float ac: colloid radius in m. Default is 1e-6.
+
+    Returns:
+    -------
+    :return: bouyancy (float) Bouyancy force that a colloid experiences
+    """
     def __init__(self, **kwargs):
-        """
-        Class to estimate the gravitational force experienced by a colloid:
-
-        Inputs:
-        -------
-        rho_water: (float) density of water kg/m*3
-        rho_colloid: (float) particle density of a colloid in kg/m*3
-        ac: (float) colloid radius in m
-
-        Defaults:
-        ---------
-        rho_colloid = 2650 kg/m*3 (standard particle density of soil)
-        ac = 1e-6 m
-        
-        Returns:
-        --------
-        colloid_mass: (float) assumes that colloids are spherical in nature
-        gravity: (float) gravitational force that a colloid experiences
-
-        Note:
-        -----
-        acceleration due to gravity is kept positive to maintain the proper vector direction
-        """
-
         params = {'rho_water': 997., 'rho_colloid': 2650., 'ac': 1e-6}
         for kwarg in kwargs:
             params[kwarg] = kwargs[kwarg]
@@ -135,39 +113,33 @@ class Bouyancy:
         ac = params['ac']
         
         self.water_mass = (4./3.)*np.pi*(ac*ac*ac)*rho_water
-        self.bouyancy = self.water_mass * 9.81  # not sure, I think this was a combined calculation
-                                                # (self.water_mass*rho_water*9.81)/(rho_colloid)
+        self.bouyancy = self.water_mass * 9.81
 
 
 class Brownian:
+    """
+    Class to estimate brownian forces on colloids. Uses the relationships outlined in Qui et. al. 2010
+    where
+
+    [*add math directive here*]
+
+    Parameters:
+    ----------
+    :param np.ndarray f1: Drag force correction term [Gao et. al. 2010. Computers and Math with App]
+    :param np.ndarray f4: Drag force correction term [Gao et. al. 2010]
+    :keyword float ac: Colloid radius. Default 1e-6
+    :keyword float viscosity: Dynamic viscosity of water. Default 8.9e-4 Pa S.
+    :keyword float T: Absolute temperature in K. Default is 298.15
+
+    Returns:
+    -------
+    :return: brownian_x: (np.ndarray) array of browian (random)
+        forces in the x direction [Qiu et. al 2011.]
+    :return: brownian_y: (np.ndarray) array of browian (random)
+        forces in the y direction [Qiu et. al 2011.]
+    """
     def __init__(self, f1, f4, **kwargs):
-        """
-        Class to estimate brownian forces on colloids
 
-        Inputs:
-        -------
-        f1: (np.array, np.float) Drag force correction term
-            {Gao et. al. 2010. Computers and Math with App}
-        f4: (np.array, np.float) Drag force correction term
-            {Gao et. al. 2010. Computers and Math with App}
-        ac: (float) Colloid radius
-        viscosity: (float) dynamic viscosity of water
-        T = (float) Absolute Temperature in K
-
-        Defaults:
-        ---------
-        ac: 1e-6 m
-        viscosity: 1.002e-3 (dynamic viscosity of water @ 20 C)
-        epsion: 6*pi*viscosity*ac {Gao et. al. 2010. Computers and Math with App}
-        T = 298.17 K
-
-        Returns:
-        --------
-        brownian_x: (np.array, np.float) array of browian (random)
-            forces in the x direction {Qiu et. al 2011. VZJ}
-        brownian_y: (np.array, np.float) array of browian (random)
-            forces in the y direction {Qiu et. al 2011. VZJ}
-        """
         # todo: update brownian motion to include the timestep!!!!
         params = {'viscosity': 8.9e-4, 'ac': 1e-6, 'T': 298.15}
         for kwarg in kwargs:
@@ -195,40 +167,34 @@ class Brownian:
 
 
 class Drag:
+    """
+    Class to calculate colloidal drag forces from fluid velocity arrays. Based from calculations
+    outlined in Gao et, al 2010 and Qui et. al. 2011.
+
+    *Insert math directive here*
+
+    Parameters:
+    ----------
+    :param np.ndarray ux: fluid velocity in the x-direction
+    :param np.ndarray uy: fluid velocity in the y-direction
+    :param np.ndarray Vx: colloid velocity in the x-direction
+    :param np.ndarray Vy: colloid velocity in the y-direction
+    :param np.ndarray f1: Hydrodynamic force correction term [Gao et. al. 2010.]
+    :param np.ndarray f2: Hydrodynamic force correction term [Gao et. al. 2010.]
+    :param np.ndarray f3: Hydrodynamic force correction term [Gao et. al. 2010.]
+    :param np.ndarray f4: Hydrodynamic force correction term [Gao et. al. 2010.]
+    :keyword float ac: Colloid radius. Default is 1e-6 m
+    :keyword float viscosity: Dynamic fluid viscosity of water. Default 8.9e-4 Pa S
+    :keyword float rho_colloid: Colloid particle density. Default :math: `2650 kg/m^3`
+    :keyword float rho_water: Water density. Default :math: `997 kg/m^3`
+
+    Returns:
+    -------
+    :return: drag_x (np.ndarray) non-vectorized drag forces in the x-direction
+    :return: drag_y: (np.ndarray) non-vectorized drag forces in the y-direction
+    """
     def __init__(self, ux, uy, f1, f2, f3, f4, **kwargs):
-        
-        """
-        Class to calculate colloidal drag forces from fluid velocity arrays
-        
-        Inputs:
-        -------
-        ux: (np.array, np.float) fluid velocity in the x-direction
-        uy: (np.array, np.float) fluid velocity in the y-direction
-        Vx: (np.array, np.float) colloid velocity in the x-direction (assuming equal to ux for calculation)
-        Vy: (np.array, np.float) colloid velocity in the y-direction (assuming equal to uy for calculation)
-        f1: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
-        f2: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
-        f3: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
-        f4: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
-        ac: (float) Colloid radius
-        viscosity: (float) dynamic fluid viscosity of water
-        rho_colloid: (float) particle density
-        rho_water: (float) water density 
-        
-        Constants:
-        ----------
-        ac: 1e-6 m
-        viscosity: 1/6 (non dimensional viscosity): assumes LB tau == 1
-        epsion: 6*pi*viscosity*ac {Gao et. al. 2010. Computers and Math with App}
-        viscosity: 1.002e-3 (dynamic viscosity of water @ 20 C)
-        rho_colloid: 2650. kg/m**3 (standard particle density of soil)
-        rho_water: 1000. kg/m**3 (density of water @ 20C)
-        
-        Returns:
-        --------
-        drag_x: (np.array, np.float) vectorized drag forces in the x-direction non-vectorized
-        drag_y: (np.array, np.float) vectorized drag forces in the y-direction non-vectorized
-        """
+
         params = {'ac': 1e-6, 'viscosity': 8.9e-4, 'rho_colloid': 2650., 'rho_water': 997.,
                   'T': 298.15, 'ts': 1.}
         for kwarg in kwargs:
@@ -241,8 +207,8 @@ class Drag:
         self.epsilon = 6. * np.pi * self.viscosity * self.ac
         self.Vcol = -((self.rho_colloid - self.rho_water)*((2*self.ac)**2)*9.81)/(18*self.viscosity)
         # todo: update this all to a fortran routine that is called each iteration. Replace VCol with stored value!
-        self.drag_x = self.drag_xforce(ux, self.Vcol, self.epsilon, f3, f4)  # *xvArr
-        self.drag_y = self.drag_yforce(uy, self.Vcol, self.epsilon, f1, f2)  # *yvArr
+        self.drag_x = self.drag_xforce(ux, self.Vcol, self.epsilon, f3, f4)
+        self.drag_y = self.drag_yforce(uy, self.Vcol, self.epsilon, f1, f2)
 
         self.all_physical_params = copy.copy(params)
         
@@ -256,31 +222,29 @@ class Drag:
 
         
 class Gap:
+    """
+    Class that calculates the non-dimensional gap distance between colloid and surface.
+
+    This class also calculates hydrodynamic force correction terms outlined in Gao et. al. 2010.
+    Note: Passing a np.nan value into here can return an overflow warning!
+
+    *Insert math directive here*
+
+    Parameters:
+    ----------
+    :param np.ndarray xarr: Array of x-distances to nearest solid surface
+    :param np.ndarray yarr: Array of y-distances to nearest solid surface
+    :keyword float ac: Radius of a colloid. Default is 1e-6
+
+    Returns:
+    -------
+    :return: f1 (np.ndarray) Drag force correction term [Gao et al 2010]
+    :return: f2 (np.ndarray) Drag force correction term [Gao et al 2010]
+    :return: f3 (np.ndarray) Drag force correction term [Gao et al 2010]
+    :return: f4 (np.ndarray) Drag force correction term [Gao et al 2010]
+    """
     def __init__(self, xarr, yarr, **kwargs):
-        """
-        Inputs:
-        -------
-        xarr: (np.array, np.float) array of x-distances to nearest solid surface
-        yarr: (np.array, np.float) array of x-distances to nearest solid surface
-        ac: (np.float) radius of a colloid
 
-        Defaults:
-        ---------
-        ac = 1e-6 m
-
-        Returns:
-        -------
-        yhbar: (np.array, np.float) Normalized gap distance by colloid radius in y-direction
-        xhbar: (np.array, np.float) Normalized gap distance by colloid radius in x-direction
-        f1: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
-        f2: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
-        f3: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
-        f4: (np.array, np.float) Drag force correction term {Gao et. al. 2010. Computers and Math with App}
-
-        Note:
-        -----
-        Passing np.nan can return an overflow warning. 
-        """
 
         params = {'ac': 1e-6}
         for kwarg in kwargs:
@@ -312,72 +276,65 @@ class Gap:
 
 
 class DLVO:
+    """
+    Class method to calculate vectorized DLVO force arrays for colloid surface interaction using
+    methods outlined in Qui et. al. 2011 and Liang et. al. 2008? *Check this later*
+
+    Parameterization of this class is handled primary through the ChemistryDict by **kwargs
+
+    *Insert math directive*
+
+    Parameters:
+    -------
+    :param np.ndarray xarr: Physical distance from solid boundaries in the x direction
+    :param np.ndarray yarr: Physical distance from solid boundaries in the y direction
+    :keyword dict valence: Valences of all species in solution. (Optional)
+    :keyword dict concentration: Concentration of all species in solution (Optional)
+    :keyword float zeta_colloid: Measured_zeta potential of colloid (Reccomended).
+        Default -40.5e-3 Na-Kaolinite Colloid [Chorom 1995. Eur. Jour. of Soil Science]
+    :keyword float zeta_surface: Bulk_zeta potential of porous media (Reccomended).
+        Default -60.9e-3 Glass bead media [Ducker 1992, Langmuir V8]
+    :keyword float I: Ionic strength of simulated solution (Reccomended). Default 1e-3 M
+    :keyword float ac: Colloid radius in meters. Default 1e-6 m.
+    :keyword float epsilon_r: Relative dielectric permativity of water. (Optional)
+        Default 78.304 @ 298 K [Malmberg and Maryott 1956. Jour. Res. Nat. Beau. Std. V56(1)
+
+    :keyword float sheer_plane: Equivelent to the thickness of one layer of water molecules. (Optional)
+        Default 3e-10 m [Interface Science and Technology, 2008. Volume 16 Chapter 3]
+    :keyword float T: Temperature of simulation fluid. Default 298.15 k
+    :keyword float lvdwst_colloid: Lifshits-van der Waals surface tension component from colloid. (Reccomended)
+        Default is 39.9e-3 J/m**2 [Giese et. al. 1996, Jour. Disp. Sci. & Tech. 17(5)]
+    :keyword float lvdwst_solid: Lifshits-van der Waals surface tension component from solid. (Reccomended)
+        Default is 33.7e-3 J/m**2 [Giese et. al. 1996]
+    :keyword float lvdwst_water: Lifshits-van der Waals surface tension component from water. (Reccomended)
+        Default is 21.8e-3 J/m**2 [Interface Science and Technology, 2008. V16(2)]
+    :keyword float psi+_colloid: Lewis acid base electron acceptor parameter. (Reccomended)
+        Default is 0.4e-3 J/m**2 [Giese et. al. 1996]
+    :keyword float psi+_solid: Lewis acid base electron acceptor parameter. (Reccomended)
+        Default is 1.3e-3 J/m**2 [Giese et. al. 1996]
+    :keyword float psi+_water: Lewis acid base electron acceptor parameter. (Reccomended)
+        Default is 25.5e-3 J/m**2 [Interface Science and Technology, 2008. V16(2)]
+    :keyword float psi-_colloid: Lewis acid base electron donor parameter. (Reccomended)
+        Default is 34.3e-3 J/m**2 [Giese et. al. 1996]
+    :keyword float psi-_solid: Lewis acid base electron donor parameter. (Reccomended)
+        Default is 62.2e-3 J/m**2 [Giese et. al. 1996]
+    :keyword float psi-_water: Lewis acid base electron donor parameter. (Reccomended)
+        Default is 25.5e-3 J/m**2 [Interface Science and Technology, 2008. V16(2)]
+    :keyword np.ndarray xvArr: Array of vector directions.This array is applied to properly represent attractive
+        and repulsive forces
+    :keyword np.ndarray yvArr: Array of vector directions.This array is applied to properly represent attractive
+        and repulsive forces
+
+    Return:
+    ------
+    :return: EDLx (np.ndarray) vectorized np.array of electric-double-layer force values in the x-direction
+    :return: EDLy (np.ndarray) vectorized np.array of electric-double-layer force values in the y-direction
+    :return: LVDWx (np.ndarray) vectorized np.array of lifshitz-van-der-walls force values in the x-direction
+    :return: LVDWy (np.ndarray) vectorized np.array of lifshitz-van-der-walls force values in the y-direction
+    :return: LewisABx (np.ndarray) vectorized np.array of lewis acid base force values in the x-direction
+    :return: LewisABy (np.ndarray) vectorized np.array of lewis acid base force values in the y-direction
+    """
     def __init__(self, xarr, yarr, **kwargs):
-        """
-        Defaults and parameterization handled by kwargs dictionary feeding into the params dict.
-        
-        Inputs:
-        -------
-        xarr: (np.array() float) distances from solid boundaries in the x direction
-        yarr: (np.array() float) distances from solid boundaries in the y direction
-        valence: (dictionary, int) valences of all species in solution
-        concentration: (dictionary, float) optional dictionary of species concentrations for model run Molar
-        zeta_colloid: (float) measured_zeta potential of colloid in Volts
-        zeta_surface: (float) bulk_zeta potential of porous media in Volts
-        adjust_zeta: (bool) boolean flag that adjusts zeta if ionic strength is varied from zeta potential measurement
-            ionic strength
-        I_initial: (float) required if adjust_zeta is True: Molar ionic strength that zeta potential was measured at
-        I: (float) optional [recommended!]: Molar ionic strength of simulated solution 
-        ac: (float) colloid radius in meters
-        e: (float) electron charge
-        epsilon_0: (float) dielectric permativity of a vacuum
-        epsilon_r: (float) relative permativity of water
-        boltzmann: (float) boltzmann constant
-        sheer_plane: (float) equivelent to the thickness of one layer of water molecules
-        T: (float) temperature of simulation fluid in degrees Kelvin
-        lvdwst_*: (float) * = colloid, water, solid. Lifshits-van der Waals component
-        psi+_*: (float) * = colloid, water, solid. Electron acceptor parameter
-        psi-_*: (float) * = colloid, water, solid. Electron donor parameter
-        xvArr: (np.array() float) np.array of direction vectors. It is inverted in DLVO to represent attractive
-            and repulsive forces properly
-        yvArr: (np.array() float) np.array of directiion vectors. It is inverted in DLVO to represent attractive
-            and repulsive forces properly
-
-
-        Defaults:
-        ---------
-        I: 10e-4 Molar
-        ac: 1E-6 meters 
-        e: 1.6e-19 C (charge of one electron)
-        epsilon_0: 8.85e-12 C**2/(J*m) 
-        epsilon_r: 78.304 @ 298 K {Malmberg and Maryott 1956. Jour. Res. Nat. Beau. Std. V56(1)}
-        valence: {'Na': 1.} [default assumes a Na+ ion solution]
-        concentration: {'Na': 10e-4} [default assumes ionic strength of 10e-4]
-        boltzmann: 1.38e-23 J/K
-        sheer_plane: 3e-10 meters {Interface Science and Technology, 2008. Volume 16 Chapter 3}
-        T: 298.17 deg K
-        zeta_colloid: -40.5e-3 zeta potential of Na-kaolinite {Chorom 1995. Eur. Jour. of Soil Sci.}
-        zeta_solid: -60.9e-3 zeta potential of glass-beads {Ducker 1992. Langmuir V8}
-        lvdwst_colloid: 39.9e-3 J/m**2 {Giese et. al. 1996, Jour. Disp. Sci. & Tech. 17(5)}
-        lvdwst_solid: 33.7e-3 J/m**2 {Giese et. al. 1996, Jour. Disp. Sci. & Tech. 17(5)}
-        lvdwst_water: 21.8e-3 J/m**2 {Interface Science and Technology, 2008. Volume 16. Chapter 2}
-        psi+_colloid: 0.4e-3 J/m**2 {Giese et. al. 1996, Jour. Disp. Sci. & Tech. 17(5)}
-        psi+_solid: 1.3e-3 J/m**2 {Giese et. al. 1996, Jour. Disp. Sci. & Tech. 17(5)}
-        psi+_water: 25.5e-3 J/m**2 {Interface Science and Technology, 2008. Volume 16. Chapter 2}
-        psi-_colloid: 34.3e-3 J/m**2 {Giese et. al. 1996, Jour. Disp. Sci. & Tech. 17(5)}
-        psi-_solid: 62.2e-3 J/m**2 {Giese et. al. 1996, Jour. Disp. Sci. & Tech. 17(5)}
-        psi-_water: 25.5e-3 J/m**2 {Interface Science and Technology, 2008. Volume 16. Chapter 2}
-
-        Output:
-        ------
-        DLVO forces
-        EDLx: (np.array, float) vectorized np.array of electric-double-layer force values in the x-direction
-        EDLy: (np.array, float) vectorized np.array of electric-double-layer  force values in the y-direction
-        LVDWx: (np.array, float) vectorized np.array of lifshitz-van-der-walls force values in the x-direction
-        LVDWy: (np.array, float) vectorized np.array of lifshitz-van-der-walls force values in the y-direction
-        LewisABx: (np.array, float) vectorized np.array of lewis acid base force values in the x-direction
-        LewisABy: (np.array, float) vectorized np.array of lewis acid base force values in the y-direction
-        """
 
         params = {'concentration': {'Na': 10e-4}, 'adjust_zeta': False, 'I_initial': False, 'I': 10e-4, 'ac': 1e-6,
                   'epsilon_r': 78.304, 'valence': {'Na': 1.}, 'sheer_plane': 3e-10, 'T': 298.15,
@@ -448,9 +405,16 @@ class DLVO:
 
     def ionic(self, valence, concentration):
         """
-        Input is dictionaries of valence and concentration values (Molar)
+        Calculates the 2*I from user supplied valence and concentraitons
 
-        Output is float 2*Ionic strength as Z**2 * M
+        Parameters:
+        ----------
+        :param dict valence: Dictionary of chemical species, valence
+        :param dict concentration: Dictionary of chemical species, concentration
+
+        Returns:
+        -------
+        :return: I (float) 2*ionic stength
         """
         I = 0
         for key in valence:
@@ -458,22 +422,65 @@ class DLVO:
         return I
 
     def debye(self, epsilon_0, epsilon_r, kb, T, e, ionic_strength):
+        """
+        Method to calculate Debye length
+
+        Parameters:
+        ----------
+        :param float epsilon_0: Permativity of a vacuum
+        :param float epsilon_r: Relative permativity of water
+        :param float kb: Boltzmann constant
+        :param float T: fluid temperature in K
+        :param float e: electron charge
+        :param float ionic_strength: 2*ionic strength
+
+        Returns:
+        -------
+        :return: Debye length (float)
+        """
         NA = 6.02e23
         k_inverse = np.sqrt((epsilon_0*epsilon_r*kb*T)/(e*e*NA*ionic_strength))
         return 1./k_inverse
 
     def _colloid_potential(self, zeta, ac, kd, z):
+        """
+        Calculates the surface potential on a colloid
+
+        Parameters:
+        ----------
+        :param float zeta: Zeta potential of colloid
+        :param float ac: Colloid radius
+        :param float kd: Debye length
+        :param float z: Thickness of the sheer plane (stern layer)
+
+        Returns:
+        -------
+        :return: (float) colloid surface potential
+        """
         potential = zeta*(1.+(z/ac))*np.exp(kd*z)
         return potential
 
     def _surface_potential(self, zeta, kd, z):
+        """
+        Calculates the surface potential of the solid phase
+
+        Parameters:
+        ----------
+        :param float zeta: Zeta potential of Solid phase
+        :param float kd: Debye length
+        :param float z: Thickness of the sheer plane (stern layer)
+
+        Returns:
+        -------
+        :return: (float) Solid phase surface potential
+        """
         potential = zeta*np.exp(kd*z)
         return potential
     
     def _EDL_energy(self, E0, Er, ac, cp, sp, kd, arr):
         """
-        Inputs:
-        -------
+        Parameters:
+        ----------
         E0: (float) dilectric permativity in a vacuum
         Er: (float) fluid permativity
         ac: (float) colloid radius
@@ -511,8 +518,8 @@ class DLVO:
     # todo: remove attractive force calculations and replace with Hamaker & Liang calcs.
     def _Lifshitz_van_der_Walls(self, arr, ac, vdw_st_water, vdw_st_colloid, vdw_st_solid):
         """
-        Inputs:
-        -------
+        Parameters:
+        ----------
         arr: (np.array, np.float) array of distances from solid surfaces
         ac: (float) colloid radius
         vdw_st_water: (float) vdW surface tension of water
@@ -540,8 +547,8 @@ class DLVO:
     def _lewis_acid_base(self, arr, ac, eplus_colloid, eplus_solid, eplus_water, eneg_colloid,
                          eneg_solid, eneg_water):
         """
-        Inputs:
-        -------
+        Parameters:
+        ----------
         arr: (np.array, np.float) array of distances from solid surfaces
         e_plus_*: (float) electron acceptor parameter for each specific phase
         e_minus_*: (float) electron donor parameter for each specific phase
@@ -551,7 +558,7 @@ class DLVO:
         h0: contact plane between colloid and surface  {Interface Science and Technology, 2008. Volume 16. Chapter 3}
         chi: water decay length {van Oss 2008}
 
-        Output:
+        Returns:
         -------
         lab: (np.array, np.float) array of lewis acid base interaction energies
         
@@ -570,7 +577,6 @@ class DLVO:
         return lab
 
 
-# todo: colloid-colloid interaction forces
 class ColloidColloid(object):
     """
     Class to include colloid-colloid interaction forces via DLVO chemical
