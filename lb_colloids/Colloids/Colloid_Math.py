@@ -1,3 +1,36 @@
+"""
+ColloidMath is the primary mathematics module for Colloid Simulations.
+This module contains both Physical and Chemical formulations of colloid forces within a
+porous media. The DLVO and ColloidColloid classes contain complex formulations
+of chemical interaction forces. Other classes contain physical force calculations or
+provide mathematical conversion from Force to a Velocity like unit that can be used
+to recover the change in colloid position. Users should not have to call these classes
+directly when running a model.
+
+Basic examples of how these modules are called assume that a user has already provided input to
+the lbIO.Config() module and the appropriate dictionaries have been built.
+
+>>> from lb_colloids import ColloidMath as cm
+>>>
+>>> grav = cm.Gravity(**PhysicalDict)
+>>> grav.gravity  # returns the gravity force on a colloid
+>>> bouy = cm.Bouyancy(**PhysicalDict)
+>>> bouy.bouyancy  # returns the bouyancy force on a colloid
+>>> gap = cm.Gap(xarr, yarr, **PhysicalDict)
+>>> brownian = cm.Brownian(gap.f1, gap.f2, **PhysicalDict)
+>>> brownian.brownian_x  # returns brownian force in the x-direction on a colloid
+>>> brownian.brownian_y
+>>> drag = cm.Drag(ux, uy, gap.f1, gap.f2, gap.f3, gap.f4, **PhysicalDict)
+>>> drag.drag_x  # returns an array of drag forces in the x-direction
+>>> dlvo = cm.DLVO(xarr, yarr, **ChemicalDict)
+>>> dlvo.EDLx  # returns an array of electric double layer forces in the x-direction
+>>> dlvo.LewisABy  # returns an array of lewis acid base forces in the y-direction
+>>> dlvo.LVDWx  # returns an array of lifshitz-van der waals forces in the x-direction
+>>> colcol = cm.ColloidColloid(xarr, **ChemicalDict)
+>>> colcol.x_array  # returns an array of dlvo forces for colloid-colloid interactions
+>>> colcol.update(Colloid.positions)  # updates the class to generate new colloid-colloid interaction arrays
+"""
+
 from .LB_Colloid import Colloid
 import numpy as np
 import sys
@@ -530,7 +563,7 @@ class DLVO:
         --------
         h0: contact plane between colloid and surface {Interface Science and Technology, 2008. Volume 16. Chapter 3}
 
-        Output:
+        Returns:
         -------
         lvdw: (np.array, np.float) array of lifshitz_vdW interaction energies
         """
@@ -579,32 +612,33 @@ class DLVO:
 
 class ColloidColloid(object):
     """
-    Class to include colloid-colloid interaction forces via DLVO chemical
-    potential forces.
+    The ColloidColloid class is used to calculate colloid-colloid interaction forces
+    using the formulations presented in Liang 2008, Qui 2012, and Israelichevi 1996.
+    Attractive forces are based on the Liang & Israelichevi formulation. Electric
+    doulbe layer forces are calculated using Qui et. al. 2012.
+
+    The ColloidColloid object also provides methods to update ColloidColloid force
+    array fields during model streaming.
 
     Parameters:
     ----------
-        arr: (np.ndarray) Any nd.array that represents the shape of the colloid
-            domain
-        resolution (float) Colloid model resolution
-        **kwargs: Please see DLVO class for documentation on kwarg options
+    :param np.ndarray arr: A np.ndarray that represents the shape of the colloid
+        domain
+    :param float resolution: Colloid model resolution
 
-    Properties:
-    -----------
-        x: (np.ndarray) full model colloidal force array for the x direction
-        y: (np.ndarray) full model colloidal force array for the y direction
-        x_distance_array: (np.ndarray) Calculated angular distance array for
-            a colloid in x direction
-        y_distance_array: (np.ndarray) Calculated angular distance array for
-            a colloid in y direction
-        positions: (list) Nx2 list of all colloid positions in model space
-        ionic_strength: (float) fluid ionic strength calculated as 2I
-        debye: (float) the inverse debye length of the system
-        colloid_potential: (float) the calculated colloid surface potential
-
-    Methods:
-    -------
-        update(colloids):
+    :keyword dict valence: Valences of all species in solution. (Optional)
+    :keyword dict concentration: Concentration of all species in solution (Optional)
+    :keyword float zeta_colloid: Measured_zeta potential of colloid (Reccomended).
+        Default -40.5e-3 Na-Kaolinite Colloid [Chorom 1995. Eur. Jour. of Soil Science]
+    :keyword float zeta_surface: Bulk_zeta potential of porous media (Reccomended).
+        Default -60.9e-3 Glass bead media [Ducker 1992, Langmuir V8]
+    :keyword float I: Ionic strength of simulated solution (Reccomended). Default 1e-3 M
+    :keyword float ac: Colloid radius in meters. Default 1e-6 m.
+    :keyword float epsilon_r: Relative dielectric permativity of water. (Optional)
+        Default 78.304 @ 298 K [Malmberg and Maryott 1956. Jour. Res. Nat. Beau. Std. V56(1)
+    :keyword float sheer_plane: Equivelent to the thickness of one layer of water molecules. (Optional)
+        Default 3e-10 m [Interface Science and Technology, 2008. Volume 16 Chapter 3]
+    :keyword float T: Temperature of simulation fluid. Default 298.15 k
     """
     def __init__(self, arr, **kwargs):
 
@@ -664,7 +698,7 @@ class ColloidColloid(object):
 
         Parameters:
         ----------
-            colloids: (list, <class: Colloids.LB_Colloid.Colloid)
+        :param list colloids: (list, <class: Colloids.LB_Colloid.Colloid)
         """
         self.__reset()
         # self.positions
@@ -745,7 +779,7 @@ class ColloidColloid(object):
     @property
     def debye(self):
         """
-        Property method to calculate the inverse debye length on the fly
+        Property method to calculate the debye length on the fly
         """
         if isinstance(self.__debye, bool):
             na = 6.02e23
@@ -757,6 +791,9 @@ class ColloidColloid(object):
 
     @property
     def colloid_potential(self):
+        """
+        Property method that generates colloid potential
+        """
         if isinstance(self.__colloid_potential, bool):
             self.__colloid_potential = self.__params['zeta_colloid']*(1. +
                                        (self.__params['sheer_plane']/self.__params['ac']))\
