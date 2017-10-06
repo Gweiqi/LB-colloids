@@ -11,11 +11,19 @@ of mathematical relationships are provided here for completeness.
 .. math::
     \\rho = \sum_{i=1}^{n} f_{i}
 
+.. math::
+
     \\rho \pmb{u} = \sum_{i=1}^{n} f_{i} \pmb{e_{i}}
+
+.. math::
 
     v = \\frac{1}{6} (\\frac{2}{\\tau}- 1)
 
+.. math::
+
     f_{i}(x + e_{i}, t + \\Delta t) = f_{i}(x, t) - \\frac{f_{i} - f_{i}^{eq}}{\\tau}
+
+.. math::
 
     f_{i}^{eq} = \\rho w_{i}[1 + 3\pmb{e_{i} \cdot \mu} +
     \\frac{9}{2}(\pmb{e_{i} \cdot \mu})^{2} - \\frac{3}{2} \mu^{2}

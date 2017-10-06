@@ -280,9 +280,15 @@ class Gap:
     .. math::
         f_{1}(\\bar{h}) = 1.0 - 0.443 exp(-1.299\\bar{h}) - 0.5568 exp(-0.32\\bar{h}^{0.75})
 
+    .. math::
+
         f_{2}(\\bar{h}) = 1.0 + 1.455 exp(-1.2596\\bar{h}) - 0.7951 exp(-0.56\\bar{h}^{0.50})
 
+    .. math::
+
         f_{3}(\\bar{h}) = 1.0 - 0.487 exp(-5.423\\bar{h}) - 0.5905 exp(-37.83\\bar{h}^{0.50})
+
+    .. math::
 
         f_{4}(\\bar{h}) = 1.0 - 0.35 exp(-0.25\\bar{h}) - 0.40 exp(-10\\bar{h})
 
@@ -343,6 +349,8 @@ class DLVO:
     .. math::
 
         \\frac{1}{\kappa} = (\\frac{\epsilon_{r} \epsilon_{0} k T}{e^{2} N_{A} I^{*}})^{\\frac{1}{2}}
+
+    .. math::
 
         \Phi^{EDL} = \pi \epsilon_{0} \epsilon_{r} a_{c}
         (2 \psi_{s} \psi_{c}
@@ -664,7 +672,11 @@ class ColloidColloid(object):
         (\\frac{kT}{Ze})^{2} * [tanh(\\frac{Ze\psi_c}{4kT})]^{2}
         * exp(-\kappa h)
 
+    .. math::
+
         A_{H} = 384 \pi \\frac{\psi_{c}^{2} h k T I^{*}}{\kappa^{2}} exp(- \kappa h)
+
+    .. math::
 
         \Phi^{A} = - \\frac{A_{H}}{6}[\\frac{2a_{c}^{2}}{h^{2} + 4a_{c}h} +
         \\frac{2a_{c}^{2}}{(h + 2a_{c})^{2}} + ln(1 - \\frac{4a_{c}^{2}}{(h + 2a_{c})^{2}})]
