@@ -45,7 +45,7 @@ class ForceToVelocity:
     ----------
     :param np.ndarray forces: Array of forces felt by a colloid
     :keyword float ts: Physical time step value
-    :keyword float rho_colloid: Colloid particle density, default :math: `2650 kg/m^3`
+    :keyword float rho_colloid: Colloid particle density, default :math:`2650 kg/m^3`
     :keyword float ac: colloid radius, default 1e-6 m
 
     Returns:
@@ -99,9 +99,13 @@ class Gravity:
     """
     Class to generate the estimated gravitational force experienced by a colloid
 
+    .. math::
+
+        F_{G} = \\frac{-4 \pi r^{3} \\rho_{c} g}{3}
+
     Parameters:
     ----------
-    :keyword float rho_colloid: Particle density of a colloid in :math: `kg/m^3`. Default is 2650.
+    :keyword float rho_colloid: Particle density of a colloid in :math:`kg/m^3`. Default is 2650.
     :keyword float ac: colloid radius in m. Default is 1e-6
 
     Returns:
@@ -126,10 +130,14 @@ class Bouyancy:
     Class to estimate the gravitational force experienced by a colloid. Gravity
     is applied as a positive value to maintain vector direction.
 
+    .. math::
+
+        F_{b} = \\frac{4 \pi r^{3} \\rho_{w} g}{3}
+
     Parameters:
     ----------
-    :keyword flaot rho_water: density of water :math: `kg/m^3`. Default is 997.
-    :keyword float rho_colloid: particle density of a colloid in :math: `kg/m^3`. Default is 2650.
+    :keyword flaot rho_water: density of water :math:`kg/m^3`. Default is 997.
+    :keyword float rho_colloid: particle density of a colloid in :math:`kg/m^3`. Default is 2650.
     :keyword float ac: colloid radius in m. Default is 1e-6.
 
     Returns:
@@ -154,7 +162,10 @@ class Brownian:
     Class to estimate brownian forces on colloids. Uses the relationships outlined in Qui et. al. 2010
     where
 
-    [*add math directive here*]
+    .. math::
+        F_{x}^{B} = \epsilon \sqrt{\\frac{2D_{0}}{f_{1}dt}}G(0,1)
+
+        F_{y}^{B} = \epsilon \sqrt{\\frac{2D_{0}}{f_{4}dt}}G(0,1)
 
     Parameters:
     ----------
@@ -204,7 +215,10 @@ class Drag:
     Class to calculate colloidal drag forces from fluid velocity arrays. Based from calculations
     outlined in Gao et, al 2010 and Qui et. al. 2011.
 
-    *Insert math directive here*
+    .. math::
+        F_{x}^{drag} = \\frac{\epsilon}{f_{4}} (f_{3}u_{x} - V_{x})
+
+        F_{y}^{drag} = \epsilon (f_{2} u_{y} - \\frac{V_{y}}{f_{1}})
 
     Parameters:
     ----------
@@ -218,8 +232,8 @@ class Drag:
     :param np.ndarray f4: Hydrodynamic force correction term [Gao et. al. 2010.]
     :keyword float ac: Colloid radius. Default is 1e-6 m
     :keyword float viscosity: Dynamic fluid viscosity of water. Default 8.9e-4 Pa S
-    :keyword float rho_colloid: Colloid particle density. Default :math: `2650 kg/m^3`
-    :keyword float rho_water: Water density. Default :math: `997 kg/m^3`
+    :keyword float rho_colloid: Colloid particle density. Default :math:`2650 kg/m^3`
+    :keyword float rho_water: Water density. Default :math:`997 kg/m^3`
 
     Returns:
     -------
@@ -261,7 +275,14 @@ class Gap:
     This class also calculates hydrodynamic force correction terms outlined in Gao et. al. 2010.
     Note: Passing a np.nan value into here can return an overflow warning!
 
-    *Insert math directive here*
+    .. math::
+        f_{1}(\\bar{h}) = 1.0 - 0.443 exp(-1.299\\bar{h}) - 0.5568 exp(-0.32\\bar{h}^{0.75})
+
+        f_{2}(\\bar{h}) = 1.0 + 1.455 exp(-1.2596\\bar{h}) - 0.7951 exp(-0.56\\bar{h}^{0.50})
+
+        f_{3}(\\bar{h}) = 1.0 - 0.487 exp(-5.423\\bar{h}) - 0.5905 exp(-37.83\\bar{h}^{0.50})
+
+        f_{4}(\\bar{h}) = 1.0 - 0.35 exp(-0.25\\bar{h}) - 0.40 exp(-10\\bar{h})
 
     Parameters:
     ----------
@@ -315,7 +336,17 @@ class DLVO:
 
     Parameterization of this class is handled primary through the ChemistryDict by **kwargs
 
-    *Insert math directive*
+    Mathematics used in calcuation of DLVO interaction energies are:
+
+    .. math::
+
+        \\frac{1}{\kappa} = (\\frac{\epsilon_{r} \epsilon_{0} k T}{e^{2} N_{A} I^{*}})^{\\frac{1}{2}}
+
+        \Phi^{EDL} = \pi \epsilon_{0} \epsilon_{r} a_{c}
+        (2 \psi_{s} \psi_{c}
+        ln(\\frac{1 + exp(-\kappa h)}{1 - exp(-\kappa h)})
+        + (\psi_{s}^{2} + \psi_{c}^{2})
+        ln(1 - exp(-2 \kappa h)))
 
     Parameters:
     -------
@@ -439,6 +470,10 @@ class DLVO:
     def ionic(self, valence, concentration):
         """
         Calculates the 2*I from user supplied valence and concentraitons
+
+        .. math::
+
+            I^{*} = \sum_{i} Z_{i}^{2} M_{i}
 
         Parameters:
         ----------
@@ -619,6 +654,18 @@ class ColloidColloid(object):
 
     The ColloidColloid object also provides methods to update ColloidColloid force
     array fields during model streaming.
+
+    Colloid colloid interaction energies are calculated via:
+
+    .. math::
+        \Phi^{EDL} = 32 \pi \epsilon_{0} \epsilon_{r} a_{c}
+        (\\frac{kT}{Ze})^{2} * [tanh(\\frac{Ze\psi_c}{4kT})]^{2}
+        * exp(-\kappa h)
+
+        A_{H} = 384 \pi \\frac{\psi_{c}^{2} h k T I^{*}}{\kappa^{2}} exp(- \kappa h)
+
+        \Phi^{A} = - \\frac{A_{H}}{6}[\\frac{2a_{c}^{2}}{h^{2} + 4a_{c}h} +
+        \\frac{2a_{c}^{2}}{(h + 2a_{c})^{2}} + ln(1 - \\frac{4a_{c}^{2}}{(h + 2a_{c})^{2}})]
 
     Parameters:
     ----------
