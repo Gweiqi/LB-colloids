@@ -8,7 +8,9 @@ to recover the change in colloid position. Users should not have to call these c
 directly when running a model.
 
 Basic examples of how these modules are called assume that a user has already provided input to
-the lbIO.Config() module and the appropriate dictionaries have been built.
+the lbIO.Config() module and the appropriate dictionaries have been built. For more information
+on required parameters and keywords please inspect API documentation for each respective class.
+Docstrings also provide basic mathematical relationships for each class.
 
 >>> from lb_colloids import ColloidMath as cm
 >>>
@@ -163,9 +165,9 @@ class Brownian:
     where
 
     .. math::
-        F_{x}^{B} = \epsilon \sqrt{\\frac{2D_{0}}{f_{1}dt}}G(0,1)
+        F_{x}^{B} = \\xi \sqrt{\\frac{2D_{0}}{f_{1}dt}}G(0,1)
 
-        F_{y}^{B} = \epsilon \sqrt{\\frac{2D_{0}}{f_{4}dt}}G(0,1)
+        F_{y}^{B} = \\xi \sqrt{\\frac{2D_{0}}{f_{4}dt}}G(0,1)
 
     Parameters:
     ----------
@@ -216,9 +218,9 @@ class Drag:
     outlined in Gao et, al 2010 and Qui et. al. 2011.
 
     .. math::
-        F_{x}^{drag} = \\frac{\epsilon}{f_{4}} (f_{3}u_{x} - V_{x})
+        F_{x}^{drag} = \\frac{\\xi}{f_{4}} (f_{3}u_{x} - V_{x})
 
-        F_{y}^{drag} = \epsilon (f_{2} u_{y} - \\frac{V_{y}}{f_{1}})
+        F_{y}^{drag} = \\xi (f_{2} u_{y} - \\frac{V_{y}}{f_{1}})
 
     Parameters:
     ----------

@@ -4,6 +4,22 @@ contained in this module. The LB2DModel class is the main class the user
 will interact with as it will call other functions to run and save the lattice
 Boltzmann simulation
 
+Basic mathematical relationships have been implemented from the literature. For
+a complete handling of the mathematics please see Chen and Doolen 1996. A listing
+of mathematical relationships are provided here for completeness.
+
+.. math::
+    \\rho = \sum_{i=1}^{n} f_{i}
+
+    \\rho \pmb{u} = \sum_{i=1}^{n} f_{i} \pmb{e_{i}}
+
+    v = \\frac{1}{6} (\\frac{2}{\\tau}- 1)
+
+    f_{i}(x + e_{i}, t + \\Delta t) = f_{i}(x, t) - \\frac{f_{i} - f_{i}^{eq}}{\\tau}
+
+    f_{i}^{eq} = \\rho w_{i}[1 + 3\pmb{e_{i} \cdot \mu} +
+    \\frac{9}{2}(\pmb{e_{i} \cdot \mu})^{2} - \\frac{3}{2} \mu^{2}
+
 Although lattice Boltzmann mathematics are included within the python
 methods contained within this module, it is highly reccomended that the user
 use the default Fortran Kernal option to run LB models. The python kernal is approximately
