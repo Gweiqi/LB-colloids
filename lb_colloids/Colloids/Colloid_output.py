@@ -1,3 +1,19 @@
+"""
+The Colloid_output module contains classes to read LB Colloid simulation
+outputs and perform post processing. Many classes are available to
+provide plotting functionality. ModelPlot and CCModelPlot are useful for
+visualizing colloid-surface forces and colloid-colloid forces respectively.
+
+example import of the Colloid_output.py module is as follows
+>>> from lb_colloids import ColloidOutput
+>>> import matplotlib.pyplot as plt
+>>>
+>>> hdf = "mymodel.hdf5"
+>>> mp = ColloidOutput.ModelPlot(hdf)
+>>> # model plot accepts matplotlib args and kwargs!!!
+>>> mp.plot('edl_x', cmap='viridis')
+>>> plt.show()
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -10,20 +26,19 @@ class Breakthrough(object):
     """
     Class to prepare and plot breakthrough curve data from endpoint
     files.
+
     Parameters:
-        filename (str) <>.endpoint file
+    ----------
+    :param str filename: <>.endpoint file
 
     Attributes:
-        df: (pandas DataFrame) dataframe of endpoint data
-        resolution: (float) model resolution
-        timestep: (float) model timestep
-        continuous: (int) interval of continuous release, 0 means pulse
-        ncol: (float) number of colloids per release in simulation
-        total_ncol: (int) total number of colloids in simulation
-
-    Properties:
-        breakthrough_curve: (pandas DataFrame) data frame of
-            raw breakthrough data.
+    ----------
+    :ivar df: (pandas DataFrame): dataframe of endpoint data
+    :ivar resolution: (float): model resolution
+    :ivar timestep: (float): model timestep
+    :ivar continuous: (int): interval of continuous release, 0 means pulse
+    :ivar ncol: (float): number of colloids per release in simulation
+    :ivar total_ncol: (int): total number of colloids in simulation
     """
     def __init__(self, filename):
         if not filename.endswith('.endpoint'):
@@ -43,10 +58,8 @@ class Breakthrough(object):
     @property
     def breakthrough_curve(self):
         """
-        Dynamic calculation of breakthrough curve data
-
-        Returns
-            self.__breakthrough_curve
+        Property method that performs a dynamic
+        calculation of breakthrough curve data
         """
         max_ts = self.df['nts'].max()
         if self.__breakthrough_curve is None:
@@ -100,9 +113,6 @@ class Breakthrough(object):
         """
         Method to retrieve the pore volume calculation
         conversion for plotting colloids.
-
-        Returns:
-            pv_factor (float)
         """
         pv_factor = abs(self.__reader.uy)/(self.__reader.ylen * self.resolution)
         return pv_factor
@@ -113,9 +123,10 @@ class Breakthrough(object):
         chart.
 
         Parameters:
-            time: (bool) if true x-axis is time, false is nts
-            args: matplotlib args for 1d charts
-            kwargs: matplotlib keyword arguments for 1d charts
+        ----------
+        :param bool time: if true x-axis is time, false is nts
+        :param *args: matplotlib args for 1d charts
+        :param **kwargs: matplotlib keyword arguments for 1d charts
         """
         if time:
             if self.continuous:
@@ -140,11 +151,13 @@ class Breakthrough(object):
 
     def plot_pv(self, *args, **kwargs):
         """
-        Method to plot pdf data with pore volumes (non-dimensional time)
+        Method to plot breakthrough data with pore
+        volumes (non-dimensional time)
 
         Parameters:
-            args: matplotlib args for 1d plotting
-            kwargs: matplotlib kwargs for 1d plotting
+        ----------
+        :param *args: matplotlib args for 1d plotting
+        :param **kwargs: matplotlib kwargs for 1d plotting
         """
         pv_factor = self.pore_volume_conversion()
         if self.continuous:
@@ -162,25 +175,23 @@ class Breakthrough(object):
 
 class DistributionFunction(object):
     """
-    Class to plot a pdf function of colloid breakthrough
+    Class to plot a probablity distribution function of colloid breakthrough
     from endpoint files.
 
     Parameters:
-        filename: (str)
-        nbin: number of bins for pdf calculation
+    ----------
+    :param str filename: <>.endpoint file name
+    :param int nbin: number of bins for pdf calculation
 
     Attributes:
-        df: (pandas DataFrame) dataframe of endpoint data
-        resolution: (float) model resolution
-        timestep: (float) model timestep
-        continuous: (int) interval of continuous release, 0 means pulse
-        ncol: (float) number of colloids per release in simulation
-        total_ncol: (int) total number of colloids in simulation
-        pdf: (np.recarray) colloid pdf
-
-    Methods:
-        reset_pdf: Allows user to adjust the bin size and
-            recalculate the pdf
+    ----------
+    :ivar df: (pandas DataFrame): dataframe of endpoint data
+    :ivar resolution: (float): model resolution
+    :ivar timestep: (float): model timestep
+    :ivar continuous: (int): interval of continuous release, 0 means pulse
+    :ivar ncol: (float): number of colloids per release in simulation
+    :ivar total_ncol: (int): total number of colloids in simulation
+    :ivar pdf: (np.recarray) colloid probability distribution function
     """
     def __init__(self, filename, nbin=1000):
         if not filename.endswith('.endpoint'):
@@ -204,12 +215,9 @@ class DistributionFunction(object):
         based upon user supplied bin size.
 
         Parameters:
-            nbin: (int) number of time steps to base bin on
-            normalize: (bool) method to calculate pdf by residence time or end time
-
-        Returns:
-            () probability distribution function of colloid
-            breakthrough.
+        ----------
+        :param int nbin: number of time steps to base bin on
+        :param bool normalize: method to calculate pdf by residence time or end time
         """
         self.bin = nbin
         self.__normalize = normalize
@@ -245,22 +253,19 @@ class DistributionFunction(object):
         """
         Method to retrieve the pore volume calculation
         conversion for plotting colloids.
-
-        Returns:
-            pv_factor (float)
         """
         pv_factor = abs(self.__reader.uy)/(self.__reader.ylen * self.resolution)
         return pv_factor
 
     def plot(self, time=True, *args, **kwargs):
         """
-        Convience method to plot data into a matplotlib
-        chart.
+        Method to plot data into a matplotlib chart.
 
         Parameters:
-            time: (bool) if true x-axis is time, false is nts
-            args: matplotlib args for 1d charts
-            kwargs: matplotlib keyword arguments for 1d charts
+        ----------
+        :param bool time: if true x-axis is time, false is nts
+        :param *args: matplotlib args for 1d charts
+        :param **kwargs: matplotlib keyword arguments for 1d charts
         """
 
         if time:
@@ -291,8 +296,9 @@ class DistributionFunction(object):
         Method to plot pdf data with pore volumes (non-dimensional time)
 
         Parameters:
-            args: matplotlib args for 1d plotting
-            kwargs: matplotlib kwargs for 1d plotting
+        ----------
+        :param *args: matplotlib args for 1d plotting
+        :param **kwargs: matplotlib kwargs for 1d plotting
         """
         pv_factor = self.pore_volume_conversion()
         plt.plot(self.pdf['nts'] * pv_factor * self.timestep,
@@ -305,11 +311,12 @@ class ADE(object):
     Class to calculate macroscopic advection dispersion
     equation parameters for field scale model parameterization
 
+    Class needs to be re-named and updated to CDE equation
+
     Parameters:
-        filename: (str) ascii output file name from colloid model
-        nbin: (int) number of timesteps to bin a pdf for calculation
-
-
+    ----------
+    :param str filename: ascii output file name from colloid model
+    :param int nbin: number of timesteps to bin a pdf for calculation
     """
     def __init__(self, filename, nbin=1000):
 
@@ -336,10 +343,11 @@ class ADE(object):
     def reset_pdf(self, nbin, normalize=False):
         """
         User method to reset values based on changing
-        the timestep to bin pdf values
+        the pdf bin values
 
         Parameter:
-            nbin: (int) number of timesteps to bin a pdf for calculation
+        :param int nbin: number of timesteps to bin a pdf for calculation
+        :param bool normalize: flag to calculate pdf by residence time or end time
         """
         self.__dist_func.reset_pdf(nbin, normalize)
         self.pdf = self.__dist_func.pdf
@@ -350,18 +358,17 @@ class ADE(object):
         Scipy optimize method to solve least sqares
         for jury 1991. Pulse flux.
 
-        Parameters
-            D: (float) Diffusivity initial guess
-            R: (float) Retardation initial guess
-            Note: D and R cannot be 0!
-
-            ftol: (float) scipy function tolerance for solution
-            max_nfev: (int) maximum number of function iterations
-            **kwargs: scipy least squares kwargs
+        Parameters:
+        ----------
+        :param float D: Diffusivity initial guess. Cannot be 0
+        :param float R: Retardation initial guess. Cannot be 0
+        :param float ftol: scipy function tolerance for solution
+        :param int max_nfev: maximum number of function iterations
+        :param **kwargs: scipy least squares kwargs
 
         Returns:
-            scipy least squares dictionary.
-            Answer in dict['x']
+        -------
+        :return: scipy least squares dictionary. Answer in dict['x']
         """
         # todo: test this method! look up references for clearer examples!
         from scipy.optimize import leastsq, minimize, least_squares
@@ -419,20 +426,19 @@ class ADE(object):
                         max_nfev=1000, **kwargs):
         """
         Scipy optimize method to solve least squares
-        for van genuchten 1986
+        for van genuchten 1986. Miscable displacement.
 
-         Parameters
-            D: (float) Diffusivity initial guess
-            R: (float) Retardation initial guess
-            Note: D and R cannot be 0!
-
-            ftol: (float) scipy function tolerance for solution
-            max_nfev: (int) maximum number of function iterations
-            **kwargs: scipy least squares kwargs
+        Parameters:
+        ----------
+        :param float D: Diffusivity initial guess. Cannot be 0
+        :param float R: Retardation initial guess. Cannot be 0
+        :param float ftol: scipy function tolerance for solution
+        :param int max_nfev: maximum number of function iterations
+        :param **kwargs: scipy least squares kwargs
 
         Returns:
-            scipy least squares dictionary.
-            Answer in dict['x']
+        -------
+        :return: scipy least squares dictionary. Answer in dict['x']
         """
         from scipy.optimize import least_squares
         l = self.ylen * self.resolution
@@ -531,15 +537,8 @@ class ModelPlot(object):
     and plot for data analysis.
 
     Parameters:
-        hdf5: (str) hdf5 file name
-
-    Properties:
-        keys: method to retrieve valid data keys for hdf5 file
-
-    Methods:
-        get_data: key method to retrieve data from hdf5 file
-        get_data_by_path: method to retrieve data by hdf5 file path
-        plot: method to plot data by key name
+    ----------
+    :param str hdf5: hdf5 file name
     """
     def __init__(self, hdf5):
         if not hdf5.endswith('hdf') and\
@@ -558,10 +557,12 @@ class ModelPlot(object):
         force arrays
 
         Parameters:
-            key: (str) valid dictionary key from self.keys
+        ----------
+        :param str key: valid dictionary key from self.keys
 
         Returns:
-            data <varies>
+        -------
+        :return: data <varies>
         """
         return self.__hdf.get_data(key)
 
@@ -569,11 +570,13 @@ class ModelPlot(object):
         """
         Method to retrieve hdf5 data by specific path
 
-        Parameters
-            path: (str) hdf5 directory path to data
+        Parameters:
+        ----------
+        :param str path: hdf5 directory path to data
 
-        Return
-            data <varies>
+        Returns:
+        -------
+        :return: data <varies>
         """
         return self.__hdf.get_data_by_path(path)
 
@@ -581,9 +584,11 @@ class ModelPlot(object):
         """
         Hdf array plotting using Hdf5Reader keys
 
-            key: (str) valid dictionary key from self.keys
-            *args: matplotlib plotting args
-            **kwargs: matplotlib plotting kwargs
+        Parameters:
+        ----------
+        :param str key: valid dictionary key from self.keys
+        :param *args: matplotlib plotting args
+        :param **kwargs: matplotlib plotting kwargs
         """
         # todo: create a function_fmt for axis options
 
@@ -611,9 +616,10 @@ class ModelPlot(object):
         the system.
 
         Parameters:
-            nbin: refinement for quiver plotting
-            args: matplotlib plotting args
-            kwargs: matplotlib plotting kwargs
+        ----------
+        :param int nbin: refinement for quiver plotting
+        :param *args: matplotlib plotting args
+        :param **kwargs: matplotlib plotting kwargs
         """
         x = self.__hdf.get_data('velocity_x')
         y = self.__hdf.get_data('velocity_y')
@@ -639,18 +645,8 @@ class CCModelPlot(object):
     More sophisticated than standard ModelPlot
 
     Parameters:
-        hdf5: (str) hdf5 file name
-
-    Properties:
-        keys: returns valid dictionary keys for
-            colloid plotting
-
-    Methods:
-        get_data: retrieves data by keyword
-        get_data_by_path: retrieves data by hdf5 data path
-        plot: plot 1d profile of dlvo curves
-        plot_mesh: plot 2d dlvo profile.
-
+    ----------
+    :param str hdf5: hdf5 file name
     """
     data_paths = {'col_col_x': 'colloidcolloid/x',
                   'col_col_y': 'colloidcolloid/y',
@@ -673,19 +669,27 @@ class CCModelPlot(object):
     @property
     def keys(self):
         """
-        Method to return valid keys to obtain data
+        Property method to return valid keys to obtain data
         """
         return CCModelPlot.keys
 
     def get_data(self, key):
         """
         Method to return data by key
+
+        Parameters:
+        ----------
+        :param str key: valid model key
         """
         return self.__hdf5.get_data(key)
 
     def get_data_by_path(self, path):
         """
         Method to return data by hdf5 path
+
+        Parameters:
+        ----------
+        :param str path: valid HDF5 data path
         """
         return self.__hdf5.get_data_by_path(path)
 
@@ -694,9 +698,10 @@ class CCModelPlot(object):
         Plotting method for 1d colloid-colloid dlvo profiles
 
         Parameters:
-            key: (str) valid data key
-            args: matplotlib plotting args
-            kwargs: matplotlib plotting kwargs
+        ----------
+        :param str key: valid data key
+        :param *args: matplotlib plotting args
+        :param **kwargs: matplotlib plotting kwargs
         """
         # todo: store at fine discretization also for nicer plotting!!!!
 
@@ -735,9 +740,10 @@ class CCModelPlot(object):
         dlvo profiles.
 
         Parameters:
-            key: (str) valid data key
-            args: matplotlib plotting args
-            kwargs:  matplotlib plotting kwargs
+        ----------
+        :param str key: valid data key
+        :param *args: matplotlib plotting args
+        :param **kwargs: matplotlib plotting kwargs
         """
         from matplotlib.colors import LogNorm
         if key not in ('col_col', 'col_col_fine',
@@ -784,11 +790,14 @@ class CCModelPlot(object):
 
 class ColloidVelocity(object):
     """
-    Method to return colloid velocity and stats.
-    relating to colloid velocity for a simulation.
+    Method to return colloid velocity and statistics
+    relating to colloid velocity for a simulation. Class
+    needs to be rebuilt to work with timeseries and pathline
+    files for a more precise velocity measurement
 
     Parameters:
-        filename: (str) endpoint file name
+    ----------
+    :param str filename: endpoint file name
 
     """
     def __init__(self, filename):
@@ -835,26 +844,44 @@ class ColloidVelocity(object):
 
     @property
     def max(self):
+        """
+        :return: maximum colloid velocity
+        """
         return self.velocity['velocity'].max()
 
     @property
     def min(self):
+        """
+        :return: minimum colloid velocity
+        """
         return self.velocity['velocity'].min()
 
     @property
     def mean(self):
+        """
+        :return: mean colloid velocity
+        """
         return self.velocity['velocity'].mean()
 
     @property
     def var(self):
+        """
+        :return: variance of colloid velocities
+        """
         return np.var(self.velocity['velocity'])
 
     @property
     def stdev(self):
+        """
+        :return: standard deviation of colloid velocities
+        """
         return np.std(self.velocity['velocity'])
 
     @property
     def cv(self):
+        """
+        :return: coeficient of variance of colloid velocities
+        """
         return (self.stdev / self.mean) * 100
 
     def plot(self, *args, **kwargs):
@@ -864,8 +891,8 @@ class ColloidVelocity(object):
 
         Parameters
         ----------
-            args: matplotlib plotting args
-            kwargs: matplotlib plotting kwargs
+        :param *args: matplotlib plotting args
+        :param **kwargs: matplotlib plotting kwargs
         """
         plt.plot(self.velocity['colloid'],
                  self.velocity['velocity'],
@@ -874,11 +901,15 @@ class ColloidVelocity(object):
     def plot_histogram(self, nbin=10, width=0.01,
                        *args, **kwargs):
         """
-        User method to plot a histogram of velocities
+        User method to plot a histogram of velocities using
+        a bar chart.
 
         Parameters:
-            nbin: (int) number of specific bins for plotting
-            width: (float) matplotlib bar width.
+        ----------
+        :param int nbin: number of specific bins for plotting
+        :param float width: matplotlib bar width.
+        :param *args: matplotlib plotting args
+        :param **kwargs: matplotlib plotting kwargs
         """
 
         adjuster = 0.00001
@@ -904,19 +935,14 @@ class ColloidVelocity(object):
         plt.bar(velocity, ncols, width, *args, **kwargs)
 
 
-# todo: think about this one. Does it belong here?
+# todo: think about this one. Does it belong here? Finish class. Integrate into LB
 class LBOutput(object):
     """
     Class to anaylze LB fluid/solid properties
 
     Parameters:
-        hdf: (str) hdf5 output filename
-
-    Attributes:
-
-    Parameters:
-
-
+    ----------
+    :param str hdf: hdf5 output filename
     """
     data_paths = {'velocity_x': None,
                   'velocity_y': None,
@@ -932,23 +958,22 @@ class LBOutput(object):
 
     @property
     def keys(self):
+        """
+        :return: Lattice boltzmann data keys
+        """
         return LBOutput.data_paths.keys()
-
 
 
 class ASCIIReader(object):
     """
-    Class to read in text based output files to a
-    pandas dataframe
+    Class to read in text based output files <endpoint, timestep, pathline>
+    to a pandas dataframe
 
     Parameters:
-        filename: (str) output filename (ie. endpoint, timestep, or pathline)
+    ----------
+    :param str filename: output filename (ie. endpoint, timestep, or pathline)
 
     """
-
-    # todo: use a comment block to and add continuos/pulse and possibly ncol
-    # todo: to the header
-
     dtypes = {'colloid': np.int,
               'flag': np.int,
               'nts': np.int,
@@ -985,7 +1010,8 @@ class ASCIIReader(object):
         Method to read the header from ascii output files for LB-Colloids
 
         Parameters:
-            filename: (str) output filename (ie. endpoint, timestep, or pathline)
+        ----------
+        :param str filename: colloid model output filename (ie. endpoint, timestep, or pathline)
         """
         with open(filename) as f:
             for idx, line in enumerate(f):
@@ -1034,7 +1060,8 @@ class ASCIIReader(object):
         Sets data to pandas dataframe
 
         Parameters:
-            filename: (str) output filename (ie. endpoint, timestep, or pathline)
+        ----------
+        :param str filename: colloid model output filename (ie. endpoint, timestep, or pathline)
         """
         with open(filename) as f:
             t = []
@@ -1067,15 +1094,12 @@ class ASCIIReader(object):
 class Hdf5Reader(object):
     """
     Reader object to read in HDF5 stored outputs
-    from colloid models.
+    from colloid models. Contains a data_paths dictionary
+    which allows the user to use keys to access data
 
     Parameters:
-        hdf5 (str) LB-Colloid hdf5 file name
-
-    Methods:
-        keys: method to retrieve valid data keys for hdf5 file
-        get_data: key method to retrieve data from hdf5 file
-        get_data_by_path: method to retrieve data by hdf5 file path
+    ----------
+    :param str hdf5: LB-Colloid hdf5 file name
     """
     data_paths = {'image': 'Binary_image',
                   'lb_velocity_x': 'results/uarray',
@@ -1119,6 +1143,9 @@ class Hdf5Reader(object):
 
     @property
     def keys(self):
+        """
+        :return: list of valid hdf5 data keys
+        """
         return [i for i in Hdf5Reader.data_paths]
 
     def get_data(self, key):
@@ -1126,10 +1153,12 @@ class Hdf5Reader(object):
         Method to retrieve hdf5 data by dict. key
 
         Parameters:
-            key: (str) valid dictionary key from self.keys
+        ----------
+        :param str key: valid dictionary key from self.keys
 
         Returns:
-            data <varies>
+        -------
+        :return: data <varies>
         """
         if key not in Hdf5Reader.data_paths:
             raise KeyError('Dictionary key not in valid keys. Use get_data_by_path')
@@ -1170,13 +1199,15 @@ class Hdf5Reader(object):
 
     def get_data_by_path(self, path):
         """
-        Method to retrieve hdf5 data by specific path
+        Method to retrieve hdf5 data by specific hdf5 path
 
-        Parameters
-            path: (str) hdf5 directory path to data
+        Parameters:
+        ----------
+        :param str path: hdf5 directory path to data
 
-        Return
-            data <varies>
+        Returns:
+        ------
+        :return: data <varies>
         """
         hdf = H.File(self.file_name, 'r')
         data = hdf[path][()]
