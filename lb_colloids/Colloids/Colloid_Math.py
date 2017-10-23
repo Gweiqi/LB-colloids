@@ -103,7 +103,7 @@ class Gravity:
 
     .. math::
 
-        F_{G} = \\frac{-4 \pi r^{3} \\rho_{c} g}{3}
+        F^{G} = \\frac{-4 \pi a_{c}^{3} \\rho_{c} g}{3}
 
     Parameters:
     ----------
@@ -134,7 +134,7 @@ class Bouyancy:
 
     .. math::
 
-        F_{b} = \\frac{4 \pi r^{3} \\rho_{w} g}{3}
+        F^{b} = \\frac{4 \pi a_{c}^{3} \\rho_{w} g}{3}
 
     Parameters:
     ----------
@@ -218,9 +218,9 @@ class Drag:
     outlined in Gao et, al 2010 and Qui et. al. 2011.
 
     .. math::
-        F_{x}^{drag} = \\frac{\\xi}{f_{4}} (f_{3}u_{x} - V_{x})
+        F_{x}^{D} = \\frac{\\xi}{f_{4}} (f_{3}u_{x} - V_{x})
 
-        F_{y}^{drag} = \\xi (f_{2} u_{y} - \\frac{V_{y}}{f_{1}})
+        F_{y}^{D} = \\xi (f_{2} u_{y} - \\frac{V_{y}}{f_{1}})
 
     Parameters:
     ----------

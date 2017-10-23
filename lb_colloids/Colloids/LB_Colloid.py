@@ -383,7 +383,7 @@ def run(config):
     ncols = ModelDict['ncols']
     preferential_flow = False
     # call the HDF5 array early to get domian size for output
-    LB = cs.HDF5_reader(modelname)
+    LB = cs.Hdf5Reader(modelname)
 
     OutputDict['xlen'] = LB.imarray.shape[1] * gridsplit
     OutputDict['ylen'] = LB.imarray.shape[0] * gridsplit
@@ -444,7 +444,7 @@ def run(config):
     
     # Use grids function to measure distance from pore space and correct
     # boundaries for interpolation effects. 
-    Grids = cs.Gridarray(Col_img, gridres, gridsplit)
+    Grids = cs.GridArray(Col_img, gridres, gridsplit)
     xArr = Grids.gridx
     yArr = Grids.gridy
     

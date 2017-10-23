@@ -25,8 +25,8 @@ of mathematical relationships are provided here for completeness.
 
 .. math::
 
-    f_{i}^{eq} = \\rho w_{i}[1 + 3\pmb{e_{i} \cdot \mu} +
-    \\frac{9}{2}(\pmb{e_{i} \cdot \mu})^{2} - \\frac{3}{2} \mu^{2}
+    f_{i}^{eq} = \\rho w_{i}[1 + 3\pmb{e_{i} \cdot u} +
+    \\frac{9}{2}(\pmb{e_{i} \cdot u})^{2} - \\frac{3}{2} u^{2}
 
 Although lattice Boltzmann mathematics are included within the python
 methods contained within this module, it is highly reccomended that the user
@@ -46,7 +46,6 @@ Example showing the build and run of a D2Q9 LB2DModel
 >>> model.tau = 0.8
 >>> result = model.run(output="LBModel.hdf5")
 """
-
 import numpy as np
 import h5py as H
 import LB_pretty as pretty

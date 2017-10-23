@@ -1,3 +1,9 @@
+"""
+Colloid_Setup contains background classes and methods to prepare a
+model domain for colloid simulation. The user should not need to
+import or call methods directly from this module.
+"""
+
 import numpy as np
 from scipy import interpolate
 from copy import copy
@@ -5,9 +11,26 @@ import h5py as H
 import sys
 
 
-class HDF5_reader:
-    def __init__(self, HDF_name):
-        hdf = H.File(HDF_name, 'r+')
+class Hdf5Reader(object):
+    """
+    Hdf5 reader class to grab results from lattice Boltzmann model runs
+    to parameterize the colloid simulation. Consider moving this class to
+    the Colloid_IO module
+
+    Parameters:
+    ----------
+    :param str HDF_name: lattice boltzmann hdf file name.
+
+    :ivar np.ndarray imarray: binary image array defining model boundaries
+    :ivar np.ndarray uarry: velocity array of [y, x]
+    :ivar np.ndarray yu: y velocity array from lattice Boltzmann simulation
+    :ivar np.ndarray xu: x velocity array from lattice Boltzmann simulation
+    :ivar float mean_yu: mean velocity in the y direction
+    :ivar float mean_xu: mean velocity in the x direction
+    :ivar float velocity_factor: velocity dimensionalization factor
+    """
+    def __init__(self, hdf_name):
+        hdf = H.File(hdf_name, 'r+')
         self.imarray = hdf['Binary_image'][()]
         self.uarray = hdf['results/uarray'][()]
         self.yu = hdf['results/uarray'][()][0]
@@ -17,32 +40,21 @@ class HDF5_reader:
         self.velocity_factor = hdf['results/velocity_factor'][()]
         hdf.close()
 
-class Gridarray:
+
+class GridArray(object):
+    """
+    Gridarray class creates arrays of distances from pore spaces, corrects for
+    interpolation effects at pore boundaries, and creates vector arrays that are
+    later used to give direction to forces.
+
+    Parameters:
+    ----------
+    :param (np.array, bool) arr: Array of boolean porous media (segmented image array)
+    :param float gridres: model resolution in meters
+    :param int gridsplit: interpolation factor for refining grid mesh
+    :param bool solid: solid phase boolean identifier, default=True
+    """
     def __init__(self, arr, gridres, gridsplit, solid=True):
-        """
-        Gridarray class creates arrays of distances from pore spaces, corrects for
-        interpolation effects at pore boundaries, and creates vector arrays that are
-        later used to give direction to forces.
-        
-        Inputs:
-        -------
-        arr: (np.array, np.bool) Array of boolean porous media (segmented image array)
-        gridres: (float) model resolution in meters
-        gridsplit: (int) interpolation factor for refining grid mesh
-        solid: (bool) solid phase boolean identifier
-
-        Defaults:
-        ---------
-        solid: True
-
-        Returns:
-        --------
-        gridx: (np.array, np.float) Array of distances from nearest solid phase in the x-direction
-        gridy: (np.array, np.float) Array of distances from nearest solid phase in the y-direction
-        vector_x: (np.array, np.float) Array of specific vector directions in the x-direction (-1 == left, 1 == right)
-        vector_y: (np.array, np.float) Array of specific vector directions in the y-direction (-1 == down, 1 == up)
-        
-        """
         self.yarr = np.copy(arr.T)
         self._vimgx, self._vimgy = self._create_vector_array(arr, solid)
         self.__gridx, self.__vector_x = self._arrx(arr, self._vimgx, gridres, gridsplit)
@@ -50,18 +62,30 @@ class Gridarray:
 
     @property
     def gridx(self):
+        """
+        :return: (np.array, np.float) Array of distances from nearest solid phase in the x-direction
+        """
         return copy(self.__gridx)
 
     @property
     def gridy(self):
+        """
+        :return: (np.array, np.float) Array of distances from nearest solid phase in the y-direction
+        """
         return copy(self.__gridy)
 
     @property
     def vector_x(self):
+        """
+        :return: (np.array, np.float) Array of specific vector directions in the x-direction (-1 == left, 1 == right)
+        """
         return copy(self.__vector_x)
 
     @property
     def vector_y(self):
+        """
+        :return: (np.array, np.float) Array of specific vector directions in the y-direction (-1 == down, 1 == up)
+        """
         return copy(self.__vector_y)
 
     def _create_vector_array(self, img, solid):
@@ -244,6 +268,18 @@ class Gridarray:
 
 
 def LBVArray(LBv, img):
+    """
+    Method to create a velocity array for use in the colloid simulation model
+
+    Parameters:
+    ----------
+    :param np.ndarray LBv: lattice boltzmann velocity array
+    :param np.ndarray img: boolean image array
+
+    Returns:
+    -------
+    :return: np.ndarray of velocity
+    """
     vel = np.zeros((len(LBv), len(LBv[0])))
     invert = np.invert(img.astype(bool))
     vel = np.array([LBv[i] * invert[i] for i in range(len(LBv))])
@@ -252,6 +288,19 @@ def LBVArray(LBv, img):
 
 
 def InterpV(LBv, gridsplit, img=False):
+    """
+    Interpolation method for the lattice Boltzmann velocity array
+
+    Parameters:
+    ----------
+    :param np.ndarray LBv: lattice boltzmann velocity array with pore boundaries enforced
+    :param float gridsplit: interpolation factor
+    :param bool img: flag to indicate boolean image interpolation or velocity interpolation
+
+    Returns:
+    -------
+    :return: (np.ndarray) interpolated velocity array
+    """
     ylen = len(LBv)
     xlen = len(LBv[0])
     xindex = np.arange(0, xlen)

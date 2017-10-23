@@ -5,6 +5,7 @@ provide plotting functionality. ModelPlot and CCModelPlot are useful for
 visualizing colloid-surface forces and colloid-colloid forces respectively.
 
 example import of the Colloid_output.py module is as follows
+
 >>> from lb_colloids import ColloidOutput
 >>> import matplotlib.pyplot as plt
 >>>
@@ -345,7 +346,8 @@ class ADE(object):
         User method to reset values based on changing
         the pdf bin values
 
-        Parameter:
+        Parameters:
+        ----------
         :param int nbin: number of timesteps to bin a pdf for calculation
         :param bool normalize: flag to calculate pdf by residence time or end time
         """
