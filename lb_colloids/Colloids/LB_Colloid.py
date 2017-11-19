@@ -1,3 +1,19 @@
+"""
+The LB_Colloid module contains base classes to simulate colloid transport for
+colloid simulation. This module acts as the control center. The class Colloid
+is the base representation of a colloid and contains
+streaming and updating rules. The class TrackTime is the simulation timer, which tracks
+both number of time steps and the time step length. Also of importance is the run()
+method. This method initiates a colloid simulation from a IO.Config object.
+
+A user can initiate a model run with a Colloid_IO.Config() object.
+Please see the Input Output section for details on building the Colloid_IO.Config() object
+
+>>> from lb_colloids import ColloidModel
+>>>
+>>> config = IO.Config()  # We assume that the Colloid_IO.Config() object is already built. See the Colloid_IO section for details
+>>> ColloidModel.run(config)
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -10,25 +26,16 @@ from copy import copy
 
 class Colloid:
     """
-    Wrapper class to initiate and track colloid position through the LB Model
+    Primary colloid class to instantiate and track colloids through a colloid simulation
 
-    Inputs:
-    -------
-    xlen: (int) grid length after interpolation in the x-direction
-    resolution: (float) grid resolution after interpolation
+    Parameters:
+    ----------
+    :param int xlen: grid length after interpolation in the x-direction
+    :param float resolution: grid resolution after interpolation
 
-    Methods:
-    --------
-    _append_xposition: method object that appends the list tracking a colloids x position
-    _append_yposition: method object that appends the list tracking a colloids y position
-    update_position: method that updates postion of colloids by calling the append methods
-    strip_positions: method that strips all but last item from colloid position lists
-    
-    Returns:
-    --------
-    xposition: (list, float) a list of x-position values normalized to the grid resolution
-    yposition: (list, float) a list of y-position values normalized to grid resolution (top left is 0,0)
     """
+    positions = []
+
     def __init__(self, xlen, ylen, resolution):
         self.xposition = [random.uniform(0.1, 0.9)*xlen*resolution]
         self.yposition = [-resolution]
@@ -40,10 +47,18 @@ class Colloid:
         self.__cell_time = [0.]
         self.time = [0]
         self.colloid_start_time = copy(TrackTime.model_time)
-        self.colloid_end_time = "None"
+        self.colloid_end_time = np.nan
         self.flag = [1]
         self.ylen = ylen
         self.xlen = xlen
+        Colloid.positions.append(tuple([self.idx_rx[-1], self.idx_ry[-1]]))
+
+    def reset_master_positions(self):
+        """
+        Resets the master position storage mechanism for all colloids. Master position
+        storage is used to later generate colloid-colloid DLVO fields.
+        """
+        Colloid.positions = []
 
     def _append_xposition(self, item):
         self.xposition.append(item)
@@ -69,6 +84,9 @@ class Colloid:
     def _append_idx_ry(self, item):
         self.idx_ry.append(item)
 
+    def _append_master_positions(self, idx_rx, idx_ry):
+        Colloid.positions.append(tuple([idx_rx, idx_ry]))
+
     def __update_cell_time(self, item, new_cell=False):
         if new_cell:
             self.__cell_time = [item]
@@ -80,6 +98,12 @@ class Colloid:
         """
         grid index method to update continuous colloid system using the discete grid forces.
         idxry must be inverted because we assume (0,0) at top left corner and down is negitive.
+
+        Parameters:
+        ----------
+        :param np.ndarray xvelocity: colloid simulation velocity array in the x domain
+        :param np.ndarray yvelocity: colloid simulation velocity array in the y domain
+        :param ts float: physical time step in seconds
         """
 
         irx = self.xposition[-1]
@@ -93,7 +117,7 @@ class Colloid:
 
         if flag == 3:
             # this is the breakthrough condition
-            irx = float('NaN')
+            # irx = float('NaN')
             iry = float('NaN')
             self.update_special(irx, iry, 3)
 
@@ -132,7 +156,7 @@ class Colloid:
                 if idxry >= self.ylen:
                     self._append_flag(3)
                     self.colloid_end_time = copy(TrackTime.model_time)
-                    self._append_xposition(float("NaN"))
+                    self._append_xposition(irx)
                     self._append_yposition(float("NaN"))
                     return
                 else:
@@ -152,10 +176,10 @@ class Colloid:
 
             xv = xvelocity[idxry][idxrx]
             yv = yvelocity[idxry][idxrx]
-        
-            # velocity is L/T, but since we are dealing with acceleration fields 0.5*(a)t^2 is used
-            deltarx = xv * ts  # self.__cell_time[-1]
-            deltary = yv * ts  # self.__cell_time[-1]
+
+            # more appropriate use 0.5 * 'velocity' * ts, but separate terms?
+            deltarx = xv * ts
+            deltary = yv * ts
 
             rx = irx + deltarx
             ry = iry + deltary
@@ -167,20 +191,39 @@ class Colloid:
                 ry = -self.resolution
                 self.__update_cell_time(ts, new_cell=True)
 
+            self._append_master_positions(idxrx, idxry)
             self._append_xposition(rx)
             self._append_yposition(ry)
             self._append_flag(1)
 
     def update_special(self, irx, iry, flag):
+        """
+        Special updater class for colloids that have exited the model
+        domain or experienced an internal error
+
+        Parameters:
+        ----------
+        :param int irx: grid index in the x domain
+        :param int iry: grid index in the y domain
+        :param int flag: number indicator of special condition. 3 = normal breakthrough condition
+        """
         self._append_xposition(irx)
         self._append_yposition(iry)
         self._append_flag(flag)
 
     def strip_positions(self):
+        """
+        Memory saving function to strip unused, save colloid position information
+        """
         self.xposition = [self.xposition[-1]]
         self.yposition = [self.yposition[-1]]
 
     def store_position(self, timer):
+        """
+        Method to store colloid position and update the the time of storage
+
+        :param float timer: current model time
+        """
         self._append_time(timer)
         self._append_storex(self.xposition[-1])
         self._append_storey(self.yposition[-1])
@@ -191,29 +234,41 @@ class Colloid:
 
 class TrackTime:
     """
-    TrackTime class is the model timer, enables stripping stored time steps which
-    is useful to free memoryafter storing the data externally. Is necessary for
+    TrackTime class is the model timer. This class enables stripping stored time steps which
+    is useful to free memory after writing the data to an external file. Is necessary for
     output class functionality!
+
+    :param int ts: model time step set by user (physical time)
     """
-    model_time = 0
+    model_time = 1
 
     def __init__(self, ts):
+        TrackTime.model_time = 1
         self.ts = ts
-        self.timer = [0]
+        self.timer = [1]
         self.time = self.timer[-1]
         self.totim = [self.time*self.ts]
 
     def update_time(self):
+        """
+        Method to update the current model time and store it
+        """
         self.time += 1
         TrackTime.model_time += 1
         self.timer.append(self.time)
         self.totim.append(self.time*self.ts)
 
     def strip_time(self):
+        """
+        Memory saving method that removes unused information from timer arrays
+        """
         self.timer = [self.timer[-1]]
         self.totim = [self.totim[-1]]
 
     def print_time(self):
+        """
+        Method prints time in a standard format to the terminal
+        """
         print(self.timer[-1], "%.3f" % self.totim[-1])
 
 
@@ -224,18 +279,36 @@ def fmt(x, pos):
     return r'${} \times 10^{{{}}}$'.format(a, b)
 
 
-def run_save_model(x, iters, vx, vy, ts, timer, print_time, store_time,
-                   pathline=None, timeseries=None, endpoint=None):
+def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
+                    ncols, timer, print_time, store_time,
+                    colloidcolloid, ModelDict, pathline=None,
+                    timeseries=None, endpoint=None):
     """
     definition to allow the use of multiple ionic strengths ie. attachment then flush, etc....
     """
-    vx0 = copy(vx)
-    vy0 = copy(vy)
+    continuous = 0
+    if 'continuous' in ModelDict:
+        continuous = ModelDict['continuous']
+
+    colloidcolloid.update(x)
+    conversion = cm.ForceToVelocity(1, **ModelDict).velocity
 
     while timer.time <= iters:
         # update colloid position and time
+        if continuous:
+            if timer.time % continuous == 0 and timer.time != 0:
+                x += [Colloid(xlen, ylen, gridres) for i in range(ncols)]
+
+        colloidcolloid.update(x)
+        cc_vx = colloidcolloid.x_array * conversion  # /1e-6
+        cc_vy = colloidcolloid.y_array * conversion  # /1e-6
+        Colloid.positions = []
+        vx0 = vx + cc_vx
+        vy0 = vy + cc_vy
+
         for col in x:
-            col.update_position(vx, vy, ts)
+            col.update_position(vx0, vy0, ts)
+
         timer.update_time()
 
         # check for a printing prompt
@@ -258,8 +331,9 @@ def run_save_model(x, iters, vx, vy, ts, timer, print_time, store_time,
                 timeseries.write_output(timer, x, pathline=False)
 
             else:
-                col.store_position(timer)
-                col.strip_positions()
+                for col in x:
+                    col.store_position(timer)
+                    col.strip_positions()
                 
         # check if user wants an endpoint file
         if timer.time == iters:
@@ -269,19 +343,28 @@ def run_save_model(x, iters, vx, vy, ts, timer, print_time, store_time,
                     col.strip_positions()
                 endpoint.write_output(timer, x, pathline=False)
 
+    del colloidcolloid
+
 
 def run(config):
     """
-    Model definition to setup and run the LB_Colloids from config file
-    or from OO.
+    Model definition to setup and run the LB_Colloids from config file.
+    This is the also the preferred user interaction method to run simulations
+    when working with python.
 
-    config: (class colloid_IO.Config) object or list of colloid_IO.Config objects
-    :return:
+    Parameters:
+    ----------
+    :param colloid_IO.config config: object or list of colloid_IO.Config objects
+
     """
 
     if isinstance(config, list):
-        multiple_config = config[1:]
-        config = config
+        if len(config) > 1:
+            multiple_config = config[1:]
+            config = config[0]
+        else:
+            multiple_config = []
+            config = config[0]
     else:
         multiple_config = []
 
@@ -299,20 +382,30 @@ def run(config):
     iters = ModelDict['iters']
     ncols = ModelDict['ncols']
     preferential_flow = False
+    # call the HDF5 array early to get domian size for output
+    LB = cs.Hdf5Reader(modelname)
 
-    if 'multiple_config' in ModelDict:
-        if ModelDict['multiple_config']:
-            assert 'nconfig' in ModelDict
-        else:
-            ModelDict['multiple_config'] = False
+    OutputDict['xlen'] = LB.imarray.shape[1] * gridsplit
+    OutputDict['ylen'] = LB.imarray.shape[0] * gridsplit
+
+    OutputDict['mean_ux'] = LB.mean_xu
+    OutputDict['mean_uy'] = LB.mean_yu
+
+    if 'continuous' in ModelDict:
+        OutputDict['continuous'] = ModelDict['continuous']
     else:
-        ModelDict['multiple_config'] = False
+        OutputDict['continuous'] = 0
 
     # setup output and boolean flags.    
     if 'print_time' in OutputDict:
         print_time = OutputDict['print_time']
     else:
         print_time = iters
+
+    if 'showfig' in OutputDict:
+        pass
+    else:
+        OutputDict['showfig'] = False
 
     pathline = None
     timeseries = None
@@ -340,21 +433,18 @@ def run(config):
 
     print(ncols)
     # get data from LB Model
-    LB = cs.HDF5_reader(modelname)
-
     LBy = cs.LBVArray(LB.yu, LB.imarray)
     LBx = cs.LBVArray(LB.xu, LB.imarray)
     velocity_factor = LB.velocity_factor
 
     # interpolate over grid array and interpolate veloctity profiles
-    # Col_vp = interp_v(LBvp, gridsplit)
     LBy = cs.InterpV(LBy, gridsplit)
     LBx = cs.InterpV(LBx, gridsplit)
     Col_img = cs.InterpV(LB.imarray, gridsplit, img=True)
     
     # Use grids function to measure distance from pore space and correct
     # boundaries for interpolation effects. 
-    Grids = cs.Gridarray(Col_img, gridres, gridsplit)
+    Grids = cs.GridArray(Col_img, gridres, gridsplit)
     xArr = Grids.gridx
     yArr = Grids.gridy
     
@@ -393,8 +483,6 @@ def run(config):
     dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx
     dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
     colloidcolloid = cm.ColloidColloid(Col_img, **ChemicalDict)
-    x = colloidcolloid.x
-    y = colloidcolloid.y
 
     if preferential_flow is True:
         fx = dlvox
@@ -419,17 +507,21 @@ def run(config):
     
     ylen = len(Col_img)
     xlen = len(Col_img[0])
-    x = [Colloid(xlen, ylen, gridres) for i in range(ncols)]
 
     # start model timer
     timer = TrackTime(ts)
 
-    run_save_model(x, iters, vx, vy, ts, timer, print_time,
-                   store_time, pathline, timeseries, endpoint)
+    # generate initial pulse of colloids.
+    x = [Colloid(xlen, ylen, gridres) for i in range(ncols)]
 
-    if ModelDict['multiple_config'] is True:
-        for confignumber in range(0, ModelDict['nconfig']-1):
-            config = IO.Config(multiple_config[confignumber])
+    _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
+                    ncols, timer, print_time,
+                    store_time, colloidcolloid, ModelDict,
+                    pathline, timeseries, endpoint)
+
+    if multiple_config:
+        for confignumber in range(len(multiple_config)):
+            config = multiple_config[confignumber]
             ModelDict = config.model_parameters()
             PhysicalDict = config.physical_parameters()
             ChemicalDict = config.chemical_parameters()
@@ -469,8 +561,10 @@ def run(config):
             vx = vx.velocity + LBx
             vy = vy.velocity + LBy
 
-            run_save_model(x, iters, vx, vy, ts, timer, print_time,
-                           store_time, pathline, timeseries, endpoint)
+            _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
+                            ncols, timer, print_time,
+                            store_time, colloidcolloid, ModelDict,
+                            pathline, timeseries, endpoint)
 
     if OutputDict['plot']:
         # set up option for vy vs. LBy plotting
@@ -478,6 +572,8 @@ def run(config):
         Col_img = cs.InterpV(LB.imarray, gridsplit, img=True)
         LBy[Col_img == 1] = np.nan
         LBy = np.ma.masked_invalid(LBy)
+        LBx[Col_img == 1] = np.nan
+        LBx = np.ma.masked_invalid(LBx)
 
         # setup meshgrid for precise plotting
         xx = np.arange(xlen + 1)
@@ -496,20 +592,32 @@ def run(config):
     
         cbar = plt.colorbar(format=ticker.FuncFormatter(fmt))
         cbar.set_label('m/s', rotation=270)
-    
-        plt.show()
+
+        if OutputDict['showfig']:
+            plt.show()
+
+        else:
+            try:
+                plt.savefig(OutputDict['endpoint'].strip('endpoint') + "png")
+                plt.close()
+            except:
+                plt.show()
+
+    else:
+        # mask the velocity objects for later output plotting
+        LBy[Col_img == 1] = np.nan
+        LBy = np.ma.masked_invalid(LBy)
+        LBx[Col_img == 1] = np.nan
+        LBx = np.ma.masked_invalid(LBx)
 
     IO.HDF5WriteArray(velocity.xvelocity,
                       velocity.yvelocity,
+                      colloidcolloid,
                       ModelDict,
                       dlvo.all_chemical_params,
                       drag_forces.all_physical_params)
 
-if __name__ == '__main__':
-    # todo: Need to fix this issue to check for multiple config
-    # todo: and then send it through as a list of dictionaries
-    config_file = IO.Config('Synthetic.config')
-    run(config_file)
 
-else:
+if __name__ == '__main__':
     pass
+

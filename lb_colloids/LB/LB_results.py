@@ -2,7 +2,10 @@ import numpy as np
 import h5py as H
 import optparse
 import sys
-#need to write self.delr in LB_dev
+
+# Depreciated code. Consider removal or updating to make relevent!
+
+# need to write self.delr in LB_dev
 class HDF5_reader:
     def __init__(self,HDF_name):
         hdf = H.File(HDF_name, 'r+')
