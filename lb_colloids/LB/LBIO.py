@@ -1,5 +1,5 @@
 """
-Lattice Boltzmann input control module. This module contains a Config class that
+lbIO is the lattice Boltzmann input control module. This module contains a Config class that
 reads in the lattice Boltzmann configuration file and parses the parameters
 contained within that file. HDF5 write options will eventually be moved from other
 portions of the lattice Boltzmann modeling system to LBIO.py

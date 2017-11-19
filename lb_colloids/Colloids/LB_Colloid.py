@@ -1,12 +1,12 @@
 """
-The LB_Colloid modules contains base methods to simulate colloid transport for
-colloid simulation. This is the control center which contains the classes Colloid
-and TrackTime. Colloid is the base representation of a colloid and contains
-streaming and updating rules. TrackTime is the simulation timer, which tracks
+The LB_Colloid module contains base classes to simulate colloid transport for
+colloid simulation. This module acts as the control center. The class Colloid
+is the base representation of a colloid and contains
+streaming and updating rules. The class TrackTime is the simulation timer, which tracks
 both number of time steps and the time step length. Also of importance is the run()
 method. This method initiates a colloid simulation from a IO.Config object.
 
-A user can initiate a model run assuming a Colloid_IO.Config() object has been built.
+A user can initiate a model run with a Colloid_IO.Config() object.
 Please see the Input Output section for details on building the Colloid_IO.Config() object
 
 >>> from lb_colloids import ColloidModel

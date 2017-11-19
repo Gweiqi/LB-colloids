@@ -1,5 +1,5 @@
 """
-The Colloid_output module contains classes to read LB Colloid simulation
+The Colloid_output module contains classes to read LB Colloids simulation
 outputs and perform post processing. Many classes are available to
 provide plotting functionality. ModelPlot and CCModelPlot are useful for
 visualizing colloid-surface forces and colloid-colloid forces respectively.

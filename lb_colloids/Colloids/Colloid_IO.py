@@ -1,7 +1,7 @@
 """
 Basic Input and Output control for Colloid Simulation models are hosted within
-Colloid_IO.py. Classes Config and ColloidConfig are main classes to set up
-model dictionaries that are passed along to the main simulation routines.
+Colloid_IO.py. Config and ColloidConfig are classes to set up
+model dictionaries can be passed along to the main simulation routines.
 ColloidConfig is a backend method for the super user. This provides a simple overridden
 dictionary class that is able to build configuration files and a list object that
 can be passed directly to the Config class.

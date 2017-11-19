@@ -8,7 +8,8 @@ class NamFile(object):
     reading classes
 
     Parameters:
-        nam_file: (str) name file path
+    ----------
+    :param str nam_file: nam file name
     """
     def __init__(self, nam_file):
 

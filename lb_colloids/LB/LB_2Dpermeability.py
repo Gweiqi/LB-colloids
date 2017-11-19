@@ -1,11 +1,11 @@
 """
 D2Q9 lattice Boltzmann simulations are performed using classes and methods
 contained in this module. The LB2DModel class is the main class the user
-will interact with as it will call other functions to run and save the lattice
-Boltzmann simulation
+will interact with within this module. LB2DModel calls a series of subroutines
+to run and save the lattice Boltzmann simulation
 
-Basic mathematical relationships have been implemented from the literature. For
-a complete handling of the mathematics please see Chen and Doolen 1996. A listing
+Basic mathematical relationships have been implemented from relevant academic literature. For
+a complete handling of the mathematics please Chen and Doolen 1996 is a great starting point. A listing
 of mathematical relationships are provided here for completeness.
 
 .. math::
