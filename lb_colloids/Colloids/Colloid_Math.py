@@ -479,10 +479,9 @@ class DLVO:
                                               self.eneg_colloid, self.eneg_solid, self.eneg_water)/yarr*self.yvArr
         self._combined_hamaker_constant()
 
-        self.attractive_x = self._combined_lvdw_lewis_ab(xarr) * self.xvArr
-        self.attractive_y = self._combined_lvdw_lewis_ab(yarr) * self.yvArr
+        self.attractive_x = self._combined_lvdw_lewis_ab(xarr)/xarr * self.xvArr
+        self.attractive_y = self._combined_lvdw_lewis_ab(yarr)/yarr * self.yvArr
         print('break')
-
 
     def ionic(self, valence, concentration):
         """
@@ -621,7 +620,7 @@ class DLVO:
         :return: (np.ndarray) attractive force profile for porous media
         """
         lvdw_lab0 = -self.hamaker / 6.
-        lvdw_lab1 = (self.ac / arr) + (self.ac / (arr * 2.* self.ac))
+        lvdw_lab1 = (self.ac / arr) + (self.ac / (arr + (2.* self.ac)))
         lvdw_lab2 = np.log(arr / (arr + self.ac))
 
         return lvdw_lab0 * (lvdw_lab1 + lvdw_lab2)
@@ -938,9 +937,13 @@ class ColloidColloid(object):
         else:
             raise TypeError("arr_type {} is not valid".format(arr_type))
 
+        """
         A = 384. * np.pi * c_arr * kb * self.__params['T']\
             * self.ionic_strength * self.colloid_potential * self.colloid_potential \
             * np.exp(-self.debye * np.abs(c_arr))/ (self.debye * self.debye)
+        """
+        # use Israelachvili 1991 for hamaker constant
+        A = self.colloid_potential * 24 * np.pi * 0.165e-9 ** 2
 
         lwdv0 = -A / 6.
         lvdw1 = (2. * self.__params['ac'] ** 2.) / (self.__params['ac'] ** 2. + 4. * self.__params['ac'] * c_arr)

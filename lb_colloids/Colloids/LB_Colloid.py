@@ -480,8 +480,8 @@ def run(config):
     physicalx = brownian.brownian_x + drag_forces.drag_x
     physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy
 
-    dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx
-    dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
+    dlvox = dlvo.EDLx + dlvo.attractive_x  # + dlvo.LVDWx + dlvo.LewisABx
+    dlvoy = dlvo.EDLy + dlvo.attractive_y  # dlvo.LVDWy + dlvo.LewisABy
     colloidcolloid = cm.ColloidColloid(Col_img, **ChemicalDict)
 
     if preferential_flow is True:
@@ -542,8 +542,8 @@ def run(config):
             physicalx = brownian.brownian_x + drag_forces.drag_x
             physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy
 
-            dlvox = dlvo.EDLx + dlvo.LVDWx + dlvo.LewisABx 
-            dlvoy = dlvo.EDLy + dlvo.LVDWy + dlvo.LewisABy
+            dlvox = dlvo.EDLx + dlvo.attractive_x  # dlvo.LVDWx + dlvo.LewisABx
+            dlvoy = dlvo.EDLy + dlvo.attractive_y  # dlvo.LVDWy + dlvo.LewisABy
 
             if preferential_flow is True:
                 fx = dlvox
