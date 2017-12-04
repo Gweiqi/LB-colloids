@@ -267,9 +267,29 @@ def mean_u(x, img):
     # remeber to pop off ghost layers
     uy = np.ma.masked_where(x[0] == img, x[0])
     ux = np.ma.masked_where(x[1] == img, x[1])
-    uy = np.ma.mean(uy)
-    ux = np.ma.mean(ux)
+    uy = float(np.ma.mean(uy))
+    ux = float(np.ma.mean(ux))
     return uy, ux
+
+
+def darcy_velocity(x, img, nbound):
+    """
+    Method to get the darcy velocity of the steady state lb model
+    based on outflow velocity
+    :param np.ndarray x: macroscopic velocity in the y-direction
+    :param np.ndarray img: image array corresponding to model domain
+    :param int nbound: number of boundary layers applied to model domain
+
+    :return: darcy velocity
+    """
+    u_out = x[-nbound - 1, :]
+    img_arr = img[-nbound -1, :]
+
+    velocity = np.mean(u_out)
+    porosity = (img_arr.size - np.sum(img_arr))/float(img_arr.size)
+
+    dv = velocity * porosity
+    return dv
 
 
 def mean_rho(rho, img):
@@ -488,7 +508,7 @@ class LB2DModel(object):
         run:  method to run the lb model and return a distribution function
     
     """
-    def __init__(self, img, kernel='fortran'):
+    def __init__(self, img, kernel='fortran',):
         self.__img = img
         self.__nlayers = None
         self.__porosity = None
@@ -829,6 +849,7 @@ class LB2DModel(object):
         u = [uy[:], ux[:]* -1]
 
         self.mean_uy, self.mean_ux = mean_u(u, self.__img)
+        # dv = darcy_velocity(u[0], self.__img, self.__nboundary)
         pore_diameter = self.get_mean_pore_size()
         reynolds_number = self.get_reynolds_number()
         velocity_factor = self.get_velocity_conversion()
@@ -891,6 +912,7 @@ class LB2DModel(object):
         u = [uy[:], ux[:] * -1]
 
         self.mean_uy, self.mean_ux = mean_u(u, self.__img)
+        # dv = darcy_velocity(u[0], self.__img, self.__nboundary)
         pore_diameter = self.get_mean_pore_size()
         reynolds_number = self.get_reynolds_number()
         velocity_factor = self.get_velocity_conversion()

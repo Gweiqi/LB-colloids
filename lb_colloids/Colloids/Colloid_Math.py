@@ -481,7 +481,6 @@ class DLVO:
 
         self.attractive_x = self._combined_lvdw_lewis_ab(xarr)/xarr * self.xvArr
         self.attractive_y = self._combined_lvdw_lewis_ab(yarr)/yarr * self.yvArr
-        print('break')
 
     def ionic(self, valence, concentration):
         """

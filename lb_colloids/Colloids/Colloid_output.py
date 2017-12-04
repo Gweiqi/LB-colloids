@@ -115,7 +115,8 @@ class Breakthrough(object):
         Method to retrieve the pore volume calculation
         conversion for plotting colloids.
         """
-        pv_factor = abs(self.__reader.uy)/(self.__reader.ylen * self.resolution)
+        pv_factor = (abs(self.__reader.uy) * self.__reader.velocity_factor) /\
+                    (self.__reader.ylen * self.resolution)
         return pv_factor
 
     def plot(self, time=True, *args, **kwargs):
@@ -255,7 +256,8 @@ class DistributionFunction(object):
         Method to retrieve the pore volume calculation
         conversion for plotting colloids.
         """
-        pv_factor = abs(self.__reader.uy)/(self.__reader.ylen * self.resolution)
+        pv_factor = (abs(self.__reader.uy) * self.__reader.velocity_factor) /\
+                    (self.__reader.ylen * self.resolution)
         return pv_factor
 
     def plot(self, time=True, *args, **kwargs):
@@ -597,7 +599,8 @@ class ModelPlot(object):
         if key in ('lvdw_x', 'lvdw_y',
                    'lewis_x', 'lewis_y',
                    'edl_x', 'edl_y',
-                   'dlvo_x', 'dlvo_y'):
+                   'dlvo_x', 'dlvo_y',
+                   'attractive_x', 'attractive_y'):
 
             x_axis = self.__hdf.get_data('distance_array')
             arr = self.__hdf.get_data(key)
@@ -996,6 +999,7 @@ class ASCIIReader(object):
         self.ylen = 0
         self.ux = 0
         self.uy = 0
+        self.velocity_factor = 1.
         self.continuous = 0
         self.__data_startline = 0
         self.__header = []
@@ -1044,6 +1048,10 @@ class ASCIIReader(object):
                 elif line.startswith('uy'):
                     t = line.split()
                     self.uy = float(t[-1].rstrip())
+
+                elif line.startswith('velocity_factor'):
+                    t = line.split()
+                    self.velocity_factor = float(t[-1].rstrip())
 
                 elif line.startswith('Continuous'):
                     t = line.split()
@@ -1116,6 +1124,8 @@ class Hdf5Reader(object):
                   'lvdw_y': 'colloids/lvdw/y',
                   'edl_x': 'colloids/edl/x',
                   'edl_y': 'colloids/edl/y',
+                  'attractive_x': 'colloids/attractive/x',
+                  'attractive_y': 'colloids/attractive/y',
                   'lewis_x': 'colloids/lewis_acid_base/x',
                   'lewis_y': 'colloids/lewis_acid_base/y',
                   'velocity_x': 'colloids/ux',
@@ -1175,20 +1185,24 @@ class Hdf5Reader(object):
 
         elif key == 'dlvo_x':
             data = hdf[Hdf5Reader.data_paths['edl_x']][()] +\
-                hdf[Hdf5Reader.data_paths['lewis_x']][()] +\
-                hdf[Hdf5Reader.data_paths['lvdw_x']][()]
+                hdf[Hdf5Reader.data_paths['attractive_x']][()]
+            #  hdf[Hdf5Reader.data_paths['lewis_x']][()] +\
+            #  hdf[Hdf5Reader.data_paths['lvdw_x']][()]
             data = data[0]
 
         elif key == 'dlvo_y':
             data = hdf[Hdf5Reader.data_paths['edl_y']][()] +\
-                hdf[Hdf5Reader.data_paths['lewis_y']][()] +\
-                hdf[Hdf5Reader.data_paths['lvdw_y']][()]
+                hdf[Hdf5Reader.data_paths['attractive_y']][()]
+            #  hdf[Hdf5Reader.data_paths['lewis_y']][()] +\
+            #  hdf[Hdf5Reader.data_paths['lvdw_y']][()]
             data = data[0]
 
         elif key in ('lvdw_x', 'lvdw_y',
                      'lewis_x', 'lewis_y',
                      'edl_x', 'edl_y',
                      'dlvo_x', 'dlvo_y',
+                     'attractive_x',
+                     'attractive_y',
                      'distance_array'):
 
             data = hdf[Hdf5Reader.data_paths[key]][()][0]

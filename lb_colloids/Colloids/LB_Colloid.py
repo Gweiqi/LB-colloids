@@ -390,6 +390,7 @@ def run(config):
 
     OutputDict['mean_ux'] = LB.mean_xu
     OutputDict['mean_uy'] = LB.mean_yu
+    OutputDict['velocity_factor'] = LB.velocity_factor
 
     if 'continuous' in ModelDict:
         OutputDict['continuous'] = ModelDict['continuous']
