@@ -611,6 +611,13 @@ class ModelPlot(object):
                      'bouyancy'):
             raise KeyError('{}: key not valid for plotting'.format(key))
 
+        elif key in ('dlvo_fine', 'edl_fine',
+                     'attractive_fine'):
+
+            x_axis = self.__hdf.get_data('distance_fine')
+            arr = self.__hdf.get_data(key)
+            plt.plot(x_axis, arr, *args, **kwargs)
+
         else:
             plt.imshow(self.__hdf.get_data(key), *args, **kwargs)
 
@@ -1144,7 +1151,11 @@ class Hdf5Reader(object):
                   'distance_fine_y': 'colloid_colloid/fine/distance/y',
                   'col_col_fine_x': 'colloid_colloid/fine/x',
                   'col_col_fine_y': 'colloid_colloid/fine/y',
-                  'col_col_fine': None}
+                  'col_col_fine': None,
+                  'edl_fine': 'colloids/edl_fine',
+                  'attractive_fine': 'colloids/attractive_fine',
+                  'dlvo_fine': None,
+                  'distance_fine': 'colloids/distance_fine'}
 
     def __init__(self, hdf5):
         if not hdf5.endswith('hdf') and\
@@ -1197,13 +1208,21 @@ class Hdf5Reader(object):
             #  hdf[Hdf5Reader.data_paths['lvdw_y']][()]
             data = data[0]
 
+        elif key == 'dlvo_fine':
+            data = hdf[Hdf5Reader.data_paths['edl_fine']][()] + \
+                   hdf[Hdf5Reader.data_paths['attractive_fine']][()]
+            data = data[0]
+
         elif key in ('lvdw_x', 'lvdw_y',
                      'lewis_x', 'lewis_y',
                      'edl_x', 'edl_y',
                      'dlvo_x', 'dlvo_y',
                      'attractive_x',
                      'attractive_y',
-                     'distance_array'):
+                     'distance_array',
+                     'edl_fine',
+                     'attractive_fine',
+                     'distance_fine'):
 
             data = hdf[Hdf5Reader.data_paths[key]][()][0]
 
