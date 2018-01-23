@@ -1,7 +1,7 @@
 import numpy as np
 import random
 import math
-import PIL
+from PIL import Image
 import matplotlib.pyplot as plt
 
 
@@ -18,10 +18,21 @@ class PSphere(object):
         self.matrix_porosity = 0.
         self.particle_space = False
         self.pore_space = True
-        self.generate_plane()
-        self.check_porosity()
-        self.check_percolation()
+        self.percolates = False
+        good = False
 
+        while not good:
+            self.generate_plane()
+            self.check_percolation()
+            self.check_porosity()
+            print self.matrix_porosity
+            if abs(self.matrix_porosity - self.porosity) <= sensitivity:
+                if self.percolates:
+                    good = True
+            else:
+                print("Regenerating porous media")
+                self.matrix = np.ones((dimension, dimension), dtype=bool)
+                # self.percolates = False
 
     def generate_plane(self):
         """
@@ -149,21 +160,31 @@ class PSphere(object):
                             temp.append((j))
 
             if np.any(sweep[i]):
-                pass
+                self.percolates = True
 
             else:
-                self.generate_plane()
-                self.check_porosity()
-
+                self.percolates = False
+                pass
+                # self.generate_plane()
+                # self.check_percolation()
 
     def check_porosity(self):
-        porosity = 1. - (np.count_nonzero(self.matrix)/float(self.dimension * self.dimension))
+        porosity = (np.count_nonzero(self.matrix)/float(self.dimension * self.dimension))
         if abs(porosity - self.porosity) > self.sensitivity:
-            self.generate_plane()
-            self.check_porosity()
-        else:
-            self.check_percolation()
-            self.matrix_porosity = porosity
+            print('Warning: medium porosity outside sensitivity')
+
+        self.matrix_porosity = porosity
+
+    def save_image(self, image_name):
+        """
+
+        :param image_name:
+        """
+        matrix = np.invert(self.matrix)
+        plt.imsave(image_name, matrix, cmap="gray")
+        #im = Image.fromarray(matrix)
+        #im.save(image_name)
+
 
 if __name__ == "__main__":
     psphere = PSphere()

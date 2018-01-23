@@ -42,7 +42,7 @@ class Images:
 
         self.__mode = self.image.mode
         
-        if self.__mode == 'RGB':
+        if self.__mode in ('RGB', 'RGBA'):
             rgb = np.array(self.image)
             r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
             self.image = 0.2990*r + 0.5870*g + 0.1140*b
@@ -126,7 +126,7 @@ class BoundaryCondition:
         """
         :return: unique image grayscale values
         """
-        return np.unique(self.data)
+        return np.unique(self.image)
 
     @property
     def solid_voxels(self):
