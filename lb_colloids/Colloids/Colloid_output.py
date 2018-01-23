@@ -959,7 +959,10 @@ class LBOutput(object):
     data_paths = {'velocity_x': None,
                   'velocity_y': None,
                   'resolution': None,
-                  }
+                  'porosity': None,
+                  'pore_diameter': None,
+                  'conversion_factor': None,
+                  'reynolds_number': None}
 
     def __init__(self, hdf5):
         if not hdf5.endswith('.hdf') and not\
@@ -974,6 +977,21 @@ class LBOutput(object):
         :return: Lattice boltzmann data keys
         """
         return LBOutput.data_paths.keys()
+
+    def get_data(self, key):
+        """
+        Method to select data from hdf5 file based on key, instead
+        of data path
+
+        Parameters:
+        ----------
+        :param str key: lattice boltzmann data key
+
+        Returns:
+        -------
+        :return: data
+        """
+        pass
 
 
 class ASCIIReader(object):
