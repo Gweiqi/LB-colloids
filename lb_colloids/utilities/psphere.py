@@ -164,7 +164,7 @@ class PSphere(object):
 
             else:
                 self.percolates = False
-                pass
+                return
                 # self.generate_plane()
                 # self.check_percolation()
 
