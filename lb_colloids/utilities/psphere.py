@@ -182,8 +182,7 @@ class PSphere(object):
         """
         matrix = np.invert(self.matrix)
         plt.imsave(image_name, matrix, cmap="gray")
-        #im = Image.fromarray(matrix)
-        #im.save(image_name)
+        plt.close()
 
 
 if __name__ == "__main__":

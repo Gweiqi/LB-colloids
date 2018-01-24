@@ -958,6 +958,8 @@ class LBOutput(object):
     """
     data_paths = {'velocity_x': None,
                   'velocity_y': None,
+                  'lb_velocity_x': None,
+                  'lb_velocity_y': None,
                   'resolution': None,
                   'porosity': None,
                   'pore_diameter': None,
@@ -991,7 +993,15 @@ class LBOutput(object):
         -------
         :return: data
         """
-        pass
+        if key in ("velocity_x", "velocity_y"):
+            factor = self.__hdf5.get_data("conversion_factor")
+            key = "lb_{}".format(key)
+            data = self.__hdf5.get_data(key) * factor
+
+        else:
+            data = self.__hdf5.get_data(key)
+
+        return data
 
 
 class ASCIIReader(object):
