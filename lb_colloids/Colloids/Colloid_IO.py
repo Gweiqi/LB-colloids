@@ -337,6 +337,7 @@ class Output:
         self.header += "ylen: {}\nux: {}\nuy: {}\n".format(defaults['ylen'],
                                                              defaults['mean_ux'],
                                                              defaults['mean_uy'])
+        self.header += "velocity_factor: {}\n".format(defaults['velocity_factor'])
         self.header += "Continuous: {}\n\n".format(defaults['continuous'])
         self.header += "#" * 136 + "\n"
         self.header += '{:>8}\t{:>5}\t{:>5}\t{:>11}\t{:>12}\t' \
@@ -577,6 +578,10 @@ class HDF5WriteArray(object):
         xvArr = chemical_dict.pop('xvArr')
         yvArr = chemical_dict.pop('yvArr')
         dlvo = cm.DLVO(arr, arr, xvArr=varr, yvArr=varr, **chemical_dict)
+        # set up a fine colloid surface array for plotting
+        fine_arr = np.array([np.linspace(1e-9, 1e-7, 1000)])
+        varr = np.array([np.ones(1000)])
+        fine_dlvo = cm.DLVO(fine_arr, fine_arr, xvArr=varr, yvArr=varr, **chemical_dict)
         chemical_dict['xvArr'] = xvArr
         chemical_dict['yvArr'] = yvArr
         res = chemical_dict['lbres']
@@ -616,6 +621,11 @@ class HDF5WriteArray(object):
                              'lewis_acid_base/y': dlvo.LewisABy,
                              'lvdw/x': dlvo.LVDWx,
                              'lvdw/y': dlvo.LVDWy,
+                             'attractive/x': dlvo.attractive_x,
+                             'attractive/y': dlvo.attractive_y,
+                             'edl_fine': fine_dlvo.EDLx,
+                             'attractive_fine': fine_dlvo.attractive_x,
+                             'distance_fine': fine_arr,
                              'distance_arr': arr}
             for key, value in dlvo_profiles.items():
                 h.create_dataset('colloids/{}'.format(key), data=value)

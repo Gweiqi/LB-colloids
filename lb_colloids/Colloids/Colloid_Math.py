@@ -442,6 +442,7 @@ class DLVO:
         self.eneg_solid = params['psi-_solid']
         self.xvArr = params['xvArr']*-1
         self.yvArr = params['yvArr']*-1
+        self.hamaker = None
 
         self.all_chemical_params = copy.copy(params)
 
@@ -476,6 +477,10 @@ class DLVO:
 
         self.LewisABy = self._lewis_acid_base(yarr, self.ac, self.eplus_colloid, self.eplus_solid, self.eplus_water,
                                               self.eneg_colloid, self.eneg_solid, self.eneg_water)/yarr*self.yvArr
+        self._combined_hamaker_constant()
+
+        self.attractive_x = self._combined_lvdw_lewis_ab(xarr)/xarr * self.xvArr
+        self.attractive_y = self._combined_lvdw_lewis_ab(yarr)/yarr * self.yvArr
 
     def ionic(self, valence, concentration):
         """
@@ -592,6 +597,32 @@ class DLVO:
     def _adjust_zeta_surface(self, potential, kd, z):
         zeta = potential/(np.exp(kd*z))
         return zeta
+
+    def _combined_hamaker_constant(self):
+        """
+        Method to calculate the hamaker constant for surface-colloid interactions
+        based on Israelachvili 1991
+        """
+        s_ah = self.surface_potential * (24 * np.pi * 0.165e-9 ** 2)
+        c_ah = self.colloid_potential * (24 * np.pi * 0.165e-9 ** 2)
+
+        self.hamaker = np.sqrt(s_ah * c_ah)
+
+    def _combined_lvdw_lewis_ab(self, arr):
+        """
+        Method to calculate the combined attractive force profile based on liang et. al.
+        instead of using vdw and lewis acid base profiles seperately
+        Parameters:
+        ----------
+        :param np.ndarray arr: distance array
+
+        :return: (np.ndarray) attractive force profile for porous media
+        """
+        lvdw_lab0 = -self.hamaker / 6.
+        lvdw_lab1 = (self.ac / arr) + (self.ac / (arr + (2.* self.ac)))
+        lvdw_lab2 = np.log(arr / (arr + self.ac))
+
+        return lvdw_lab0 * (lvdw_lab1 + lvdw_lab2)
 
     # todo: remove attractive force calculations and replace with Hamaker & Liang calcs.
     def _Lifshitz_van_der_Walls(self, arr, ac, vdw_st_water, vdw_st_colloid, vdw_st_solid):
@@ -844,7 +875,7 @@ class ColloidColloid(object):
         """
         if isinstance(self.__debye, bool):
             na = 6.02e23
-            k_inverse = np.sqrt((self.__params['epsilon_r']*self.__params['epsilon_r']
+            k_inverse = np.sqrt((self.__params['epsilon_0']*self.__params['epsilon_r']
                                 *self.__params['kb']*self.__params['T'])/
                                 (self.__params['e']*self.__params['e']*na*self.ionic_strength))
             self.__debye = 1./k_inverse
@@ -858,7 +889,7 @@ class ColloidColloid(object):
         if isinstance(self.__colloid_potential, bool):
             self.__colloid_potential = self.__params['zeta_colloid']*(1. +
                                        (self.__params['sheer_plane']/self.__params['ac']))\
-                                        *np.exp(self.debye*self.__params['zeta_colloid'])
+                                        *np.exp(self.debye*self.__params['sheer_plane'])
         return self.__colloid_potential
 
     def __get_full_dlvo_array(self, arr_type):
@@ -905,9 +936,13 @@ class ColloidColloid(object):
         else:
             raise TypeError("arr_type {} is not valid".format(arr_type))
 
+        """
         A = 384. * np.pi * c_arr * kb * self.__params['T']\
             * self.ionic_strength * self.colloid_potential * self.colloid_potential \
             * np.exp(-self.debye * np.abs(c_arr))/ (self.debye * self.debye)
+        """
+        # use Israelachvili 1991 for hamaker constant
+        A = self.colloid_potential * 24 * np.pi * 0.165e-9 ** 2
 
         lwdv0 = -A / 6.
         lvdw1 = (2. * self.__params['ac'] ** 2.) / (self.__params['ac'] ** 2. + 4. * self.__params['ac'] * c_arr)
@@ -916,7 +951,7 @@ class ColloidColloid(object):
 
         lewis_vdw = lwdv0 * (lvdw1 + lvdw2 + lvdw3)
 
-
+        """
         edl0 = 128. * np.pi * self.__params['ac'] * self.__params['ac'] *\
                0.5 * self.ionic_strength * 1.38e-23 * self.__params['T']
         edl1 = (2. * self.__params['ac']) * self.debye ** 2.
@@ -935,17 +970,15 @@ class ColloidColloid(object):
         edl3 = np.exp(-self.debye * c_arr)
 
         edl = (edl0 / edl1) * (edl2 ** 2.) * edl3
-
         """
-        # original formulation 1939, may work due to changing potential with ionic strength
-        edl0 = (78.45 * self.__params['ac']**2. * self.colloid_potential * self.colloid_potential) / 2.
-        edl1 = np.log(1. + np.exp(-self.debye*c_arr))
+
+        # original formulation by Derjaguin 1939
+        edl0 = (self.__params['epsilon_0'] * self.__params['epsilon_r'] * self.__params['ac'] * self.colloid_potential * self.colloid_potential) / 2.
+        edl1 = np.log(1. + np.exp(-self.debye * c_arr))
 
         edl = edl0 * edl1
-        """
 
         # todo: look more into the dlvo col-col interactions
-        # dlvo = (lewis_vdw + edl)/c_arr
         dlvo = (edl - lewis_vdw)/c_arr # lewis_vdw + edl)/c_arr
 
         if arr_type.lower() == "x":

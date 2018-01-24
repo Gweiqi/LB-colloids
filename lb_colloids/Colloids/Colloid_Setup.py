@@ -35,8 +35,8 @@ class Hdf5Reader(object):
         self.uarray = hdf['results/uarray'][()]
         self.yu = hdf['results/uarray'][()][0]
         self.xu = hdf['results/uarray'][()][1]
-        self.mean_yu = hdf['results/mean_ux'][()]
-        self.mean_xu = hdf['results/mean_uy'][()]
+        self.mean_xu = hdf['results/mean_ux'][()]
+        self.mean_yu = hdf['results/mean_uy'][()]
         self.velocity_factor = hdf['results/velocity_factor'][()]
         hdf.close()
 
