@@ -168,6 +168,34 @@ class PSphere(object):
                 # self.generate_plane()
                 # self.check_percolation()
 
+    def calculate_surface_area(self, resolution):
+        """
+        Calculates the volumetric surface area of the porous media
+
+        Parameters:
+        ----------
+        :param float resolution: model resolution applied to image
+
+        :return: volumetric surface area of the porous media L^2/L^3
+        """
+        surface = 0
+        for i, xdim in enumerate(self.matrix):
+            for j in range(1, len(xdim)):
+                if (xdim[j-1], xdim[j]) == (True, False) or\
+                        (xdim[j-1], xdim[j]) == (False, True):
+                    surface += 1
+
+        for i, ydim in enumerate(self.matrix.T):
+            for j in range(1, len(ydim)):
+                if (ydim[j-1], ydim[j]) == (True, False) or\
+                        (ydim[j-1], ydim[j]) == (False, True):
+                    surface += 1
+
+        sa0 = surface * resolution ** 2
+        img_volume = (self.dimension * resolution) ** 2 * 1. * resolution
+
+        return sa0 / img_volume
+
     def check_porosity(self):
         porosity = (np.count_nonzero(self.matrix)/float(self.dimension * self.dimension))
         if abs(porosity - self.porosity) > self.sensitivity:
