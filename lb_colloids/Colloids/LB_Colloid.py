@@ -85,7 +85,7 @@ class Colloid:
         self.idx_ry.append(item)
 
     def _append_master_positions(self, idx_rx, idx_ry):
-        Colloid.positions.append(tuple([idx_rx, idx_ry]))
+        Colloid.positions.append([idx_rx, idx_ry])
 
     def __update_cell_time(self, item, new_cell=False):
         if new_cell:

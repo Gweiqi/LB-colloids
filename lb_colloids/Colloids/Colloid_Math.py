@@ -34,6 +34,7 @@ Docstrings also provide basic mathematical relationships for each class.
 """
 
 from .LB_Colloid import Colloid
+import ColUtils
 import numpy as np
 import sys
 import copy
@@ -1052,7 +1053,7 @@ class ColloidColloid(object):
 
         return arr * self.__resolution  # /1e-6
 
-    def __create_colloid_colloid_array(self, f_arr, c_arr):
+    def __create_colloid_colloid_array(self, f_arr, c_arr, kernal="fortran"):
         """
         Method to set colloidal forces to a model array.
 
@@ -1066,58 +1067,71 @@ class ColloidColloid(object):
                 dimension
         """
         center = (c_arr.shape[0] - 1) // 2
-        colloids = self.positions
+        colloids = np.array(self.positions)
 
-        for colloid in colloids:
-            x, y = colloid
+        if kernal == 'fortran':
+            collen = len(colloids)
+            fxlen = f_arr.shape[1]
+            fylen = f_arr.shape[0]
+            cxlen = c_arr.shape[1]
+            cylen = c_arr.shape[0]
 
-            if np.isnan(x) or np.isnan(y):
-                pass
+            # we send colcol setting utility to fortran for efficiency sake
+            f_arr = ColUtils.colcolarray(c_arr, colloids, fxlen,
+                                         fylen, cxlen, cylen,
+                                         center, collen)
 
-            else:
-                x -= center
-                y -= center
+        else:
+            for colloid in colloids:
+                x, y = colloid
 
-                if x < 0:
-                    c_left_x = -x
-                    c_right_x = c_arr.shape[1]
-                    f_right_x = c_arr.shape[1] + x
-                    f_left_x = 0
-
-                elif x + c_arr.shape[1] > f_arr.shape[1]:
-                    f_left_x = x
-                    f_right_x = f_arr.shape[1]
-                    c_left_x = 0
-                    c_right_x = -(x - f_arr.shape[1])
-
-                else:
-                    c_left_x = 0
-                    c_right_x = c_arr.shape[1]
-                    f_left_x = x
-                    f_right_x = x + c_arr.shape[1]
-
-                if y < 0:
-                    c_top_y = -y
-                    c_bottom_y = c_arr.shape[0]
-                    f_top_y = 0
-                    f_bottom_y = c_arr.shape[0] + y
-
-                elif y + c_arr.shape[0] > f_arr.shape[0]:
-                    c_top_y = 0
-                    c_bottom_y = -(y - f_arr.shape[0])
-                    f_top_y = y
-                    f_bottom_y = f_arr.shape[0]
-
-                else:
-                    c_top_y = 0
-                    c_bottom_y = c_arr.shape[0]
-                    f_top_y = y
-                    f_bottom_y = y + c_arr.shape[0]
-
-                try:
-                    f_arr[f_top_y:f_bottom_y, f_left_x:f_right_x] += c_arr[c_top_y:c_bottom_y, c_left_x:c_right_x]
-                except ValueError:
+                if np.isnan(x) or np.isnan(y):
                     pass
+
+                else:
+                    x -= center
+                    y -= center
+
+                    if x < 0:
+                        c_left_x = -x
+                        c_right_x = c_arr.shape[1]
+                        f_right_x = c_arr.shape[1] + x
+                        f_left_x = 0
+
+                    elif x + c_arr.shape[1] > f_arr.shape[1]:
+                        f_left_x = x
+                        f_right_x = f_arr.shape[1]
+                        c_left_x = 0
+                        c_right_x = -(x - f_arr.shape[1])
+
+                    else:
+                        c_left_x = 0
+                        c_right_x = c_arr.shape[1]
+                        f_left_x = x
+                        f_right_x = x + c_arr.shape[1]
+
+                    if y < 0:
+                        c_top_y = -y
+                        c_bottom_y = c_arr.shape[0]
+                        f_top_y = 0
+                        f_bottom_y = c_arr.shape[0] + y
+
+                    elif y + c_arr.shape[0] > f_arr.shape[0]:
+                        c_top_y = 0
+                        c_bottom_y = -(y - f_arr.shape[0])
+                        f_top_y = y
+                        f_bottom_y = f_arr.shape[0]
+
+                    else:
+                        c_top_y = 0
+                        c_bottom_y = c_arr.shape[0]
+                        f_top_y = y
+                        f_bottom_y = y + c_arr.shape[0]
+
+                    try:
+                        f_arr[f_top_y:f_bottom_y, f_left_x:f_right_x] += c_arr[c_top_y:c_bottom_y, c_left_x:c_right_x]
+                    except ValueError:
+                        pass
 
         return f_arr
 
