@@ -1008,7 +1008,7 @@ class ColloidColloid(object):
                 of force the colloid would be exposed to.
         """
 
-        if 1e-6 > self.__resolution >= 1e-7:
+        if 1.01e-6 >= self.__resolution >= 1e-7:
             self.__center = 2
             arr = np.ones((5, 5))
             center = 2
@@ -1024,7 +1024,7 @@ class ColloidColloid(object):
             center = 250
 
         else:
-            raise AssertionError("model resolution is out of bounds")
+            raise AssertionError("model resolution: {} is out of bounds".format(self.__resolution))
 
         for i, n in enumerate(arr):
             for j, m in enumerate(n):

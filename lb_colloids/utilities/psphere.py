@@ -191,8 +191,8 @@ class PSphere(object):
                         (ydim[j-1], ydim[j]) == (False, True):
                     surface += 1
 
-        sa0 = surface * resolution ** 2
-        img_volume = (self.dimension * resolution) ** 2 * 1. * resolution
+        sa0 = surface * (resolution ** 2) * 10 ** 2  # facilitates radial correction?
+        img_volume = (self.dimension ** 2) * resolution ** 3
 
         return sa0 / img_volume
 
