@@ -4,6 +4,7 @@
 
 subroutine colcolarray(c_arr, colloids, fxlen, fylen, cxlen, cylen, ccenter, collen, f_arr)
     ! subroutine creates the colloid colloid interaction array for DLVO
+    ! not faster than numpy!!!!!!
     integer, intent(in)                            :: fxlen
     integer, intent(in)                            :: fylen
     integer, intent(in)                            :: cxlen
@@ -83,21 +84,38 @@ subroutine colcolarray(c_arr, colloids, fxlen, fylen, cxlen, cylen, ccenter, col
         endif
     enddo
 
-    do i=1, fylen
-        do j = 1, fxlen
-            if (ISNAN(f_arr(i, j))) then
-                f_arr(i, j) = 0
+    !do i=1, fylen
+    !    do j = 1, fxlen
+    !        if (ISNAN(f_arr(i, j))) then
+    !            f_arr(i, j) = 0
 
-            else if (f_arr(i, j).gt.1.0) then
-                f_arr(i, j) = 0
+    !        else if (f_arr(i, j).gt.1.0) then
+    !            f_arr(i, j) = 0
 
-            else if (f_arr(i, j).lt.-1.0) then
-                f_arr(i, j) = 0
+    !        else if (f_arr(i, j).lt.-1.0) then
+    !            f_arr(i, j) = 0
 
-            else
-                continue
+    !        else
+    !            continue
 
-            endif
+    !        endif
+    !    enddo
+    !enddo
+end subroutine colcolarray
+
+
+subroutine add_arrays(arr1, arr2, xlen, ylen, outarr)
+    integer, intent(in)                        :: ylen, xlen
+    real*8, dimension(ylen, xlen), intent(in)  :: arr1, arr2
+    real*8, dimension(ylen, xlen), intent(out) :: outarr
+    integer                                    :: i = 0, j = 0
+
+    outarr(:, :) = 0.0
+
+    do j = 1, xlen
+        do i = 1, ylen
+            outarr(i, j) = arr1(i, j) + arr2(i, j)
         enddo
     enddo
-end subroutine colcolarray
+
+end subroutine add_arrays

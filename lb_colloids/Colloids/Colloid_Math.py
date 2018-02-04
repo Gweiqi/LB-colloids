@@ -1055,7 +1055,7 @@ class ColloidColloid(object):
 
         return arr * self.__resolution  # /1e-6
 
-    def __create_colloid_colloid_array(self, c_arr, kernal="fortran"):
+    def __create_colloid_colloid_array(self, c_arr, kernal="python"):
         """
         Method to set colloidal forces to a model array.
 
@@ -1071,6 +1071,7 @@ class ColloidColloid(object):
         colloids = np.array(self.positions)
 
         if kernal == 'fortran':
+            # this is actually slower than the numpy function! Who would've figured!
             collen = len(colloids)
             fxlen = int(self.__xlen)
             fylen = int(self.__ylen)
