@@ -149,6 +149,7 @@ class Colloid:
             try:
                 idxry = int(iry//-self.resolution)
                 idxrx = int(irx//self.resolution)
+
                 xv = xvelocity[idxry][idxrx]
                 yv = yvelocity[idxry][idxrx]
                 

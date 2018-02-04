@@ -749,6 +749,8 @@ class ColloidColloid(object):
         self.__arr = arr
         self.__xarr = np.zeros(arr.shape)
         self.__yarr = np.zeros(arr.shape)
+        self.__xlen = arr.shape[1]
+        self.__ylen = arr.shape[0]
         self.__debye = False
         self.__colloid_potential = False
         self.__ionic_strength = False
@@ -764,8 +766,8 @@ class ColloidColloid(object):
         """
         Resets the calculation arrays
         """
-        self.__xarr = np.zeros(self.__arr.shape)
-        self.__yarr = np.zeros(self.__arr.shape)
+        # self.__xarr = np.zeros(self.__arr.shape)
+        # self.__yarr = np.zeros(self.__arr.shape)
         self.__pos = []
         self.__x = False
         self.__y = False
@@ -904,15 +906,15 @@ class ColloidColloid(object):
             dvlo: (np.ndarray) full array of dlvo interaction forces from colloids
         """
         if arr_type.lower() == "x":
-            arr = self.__xarr
+            # arr = self.__xarr
             dlvo_colloid = self.x
         elif arr_type.lower() == "y":
-            arr = self.__yarr
+            # arr = self.__yarr
             dlvo_colloid = self.y
         else:
             raise TypeError("arr_type {} is not valid".format(arr_type))
 
-        dlvo = self.__create_colloid_colloid_array(arr, dlvo_colloid)
+        dlvo = self.__create_colloid_colloid_array(dlvo_colloid)
 
         return dlvo
 
@@ -1053,13 +1055,12 @@ class ColloidColloid(object):
 
         return arr * self.__resolution  # /1e-6
 
-    def __create_colloid_colloid_array(self, f_arr, c_arr, kernal="fortran"):
+    def __create_colloid_colloid_array(self, c_arr, kernal="fortran"):
         """
         Method to set colloidal forces to a model array.
 
         Parameters:
         -----------
-            f_arr: (np.ndarray) np.zeros array to calculate foces into
             c_arr: (np.ndarray) calculated colloid force array
 
         Return:
@@ -1071,10 +1072,10 @@ class ColloidColloid(object):
 
         if kernal == 'fortran':
             collen = len(colloids)
-            fxlen = f_arr.shape[1]
-            fylen = f_arr.shape[0]
-            cxlen = c_arr.shape[1]
-            cylen = c_arr.shape[0]
+            fxlen = int(self.__xlen)
+            fylen = int(self.__ylen)
+            cxlen = int(c_arr.shape[1])
+            cylen = int(c_arr.shape[0])
 
             # we send colcol setting utility to fortran for efficiency sake
             f_arr = ColUtils.colcolarray(c_arr, colloids, fxlen,
@@ -1082,6 +1083,7 @@ class ColloidColloid(object):
                                          center, collen)
 
         else:
+            f_arr = np.zeros((self.__ylen, self.__xlen))
             for colloid in colloids:
                 x, y = colloid
 

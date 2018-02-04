@@ -4,16 +4,22 @@
 
 subroutine colcolarray(c_arr, colloids, fxlen, fylen, cxlen, cylen, ccenter, collen, f_arr)
     ! subroutine creates the colloid colloid interaction array for DLVO
-    integer, intent(in)                            :: fxlen, fylen, cxlen, cylen, ccenter, collen
-    real*8, dimension(5, 5), intent(in)            :: c_arr
+    integer, intent(in)                            :: fxlen
+    integer, intent(in)                            :: fylen
+    integer, intent(in)                            :: cxlen
+    integer, intent(in)                            :: cylen
+    integer, intent(in)                            :: ccenter
+    integer, intent(in)                            :: collen
+    real*8, dimension(5, 5), intent(in)    :: c_arr
     integer, dimension(collen, 2), intent(in)      :: colloids
     real*8, dimension(fylen, fxlen), intent(out)   :: f_arr
-    integer                                        :: c, x, y, xi, yi, clx, crx, flx, frx, xclx, ycly, cty, cby, fty, fby, t
-    logical                                        :: verbose
+    integer                                        :: c = 0, x = 0, y = 0, xi = 0, yi = 0
+    integer                                        :: clx = 0, crx = 0, flx = 0, frx = 0
+    integer                                        :: xclx = 0, ycly = 0, cty = 0, cby = 0, fty = 0, fby = 0
+
 
     ! todo: Test and fuss with the fortran indexing calculation to get proper colloid force set.
-    f_arr(:, :) = 0.  ! set initial fortran array to zero value
-    verbose = .FALSE.
+    f_arr(:, :) = 0.0  ! set initial fortran array to zero value
 
     do c=1, collen
         x = colloids(c, 1)
@@ -36,7 +42,7 @@ subroutine colcolarray(c_arr, colloids, fxlen, fylen, cxlen, cylen, ccenter, col
                 crx = cxlen
                 flx = 1
                 frx = cxlen + xi
-                print *, flx ! this stupid shit, figure out how to remove me!
+                ! print *, flx ! this stupid shit, figure out how to remove me!
 
             else if (xclx.gt.fxlen) then
                 clx = 1
@@ -75,5 +81,23 @@ subroutine colcolarray(c_arr, colloids, fxlen, fylen, cxlen, cylen, ccenter, col
             f_arr(fty:fby, flx:frx) = f_arr(fty:fby, flx:frx) + c_arr(cty:cby, clx:crx)
 
         endif
+    enddo
+
+    do i=1, fylen
+        do j = 1, fxlen
+            if (ISNAN(f_arr(i, j))) then
+                f_arr(i, j) = 0
+
+            else if (f_arr(i, j).gt.1.0) then
+                f_arr(i, j) = 0
+
+            else if (f_arr(i, j).lt.-1.0) then
+                f_arr(i, j) = 0
+
+            else
+                continue
+
+            endif
+        enddo
     enddo
 end subroutine colcolarray
