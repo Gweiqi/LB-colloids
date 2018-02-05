@@ -20,7 +20,6 @@ import matplotlib.ticker as ticker
 import Colloid_Setup as cs
 import Colloid_Math as cm
 import Colloid_IO as IO
-import ColUtils
 import random
 from copy import copy
 
@@ -297,6 +296,7 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
 
     vx0 = vx
     vy0 = vy
+    colcolupdateinterval = ModelDict['col_col_update']
 
     while timer.time <= iters:
         # update colloid position and time
@@ -304,17 +304,13 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
             if timer.time % continuous == 0 and timer.time != 0:
                 x += [Colloid(xlen, ylen, gridres) for i in range(ncols)]
 
-        if timer.time % 10 == 0:
+        if timer.time % colcolupdateinterval == 0:
             colloidcolloid.update(x)
             cc_vx = colloidcolloid.x_array * conversion  # /1e-6
             cc_vy = colloidcolloid.y_array * conversion  # /1e-6
-            # Colloid.positions = []
 
             vx0 = vx + cc_vx
             vy0 = vy + cc_vy
-
-            # vx0 = ColUtils.add_arrays(vx, cc_vx, xlen, ylen)
-            # vy0 = ColUtils.add_arrays(vy, cc_vy, xlen, ylen)
 
         Colloid.positions = []
         for col in x:
@@ -418,6 +414,11 @@ def run(config):
         pass
     else:
         OutputDict['showfig'] = False
+
+    if 'col_col_update' in ModelDict:
+        pass
+    else:
+        ModelDict['col_col_upate'] = 1
 
     pathline = None
     timeseries = None
