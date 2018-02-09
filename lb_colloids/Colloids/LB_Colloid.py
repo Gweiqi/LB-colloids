@@ -418,7 +418,7 @@ def run(config):
     if 'col_col_update' in ModelDict:
         pass
     else:
-        ModelDict['col_col_upate'] = 1
+        ModelDict['col_col_update'] = 1
 
     pathline = None
     timeseries = None
