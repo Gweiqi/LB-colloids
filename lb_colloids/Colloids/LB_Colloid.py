@@ -326,6 +326,8 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
         Colloid.positions = []
         for col in x:
             col.update_position(vx0, vy0, ts)
+            if not store_time:
+                col.strip_positions()
 
         timer.update_time()
 
@@ -334,10 +336,10 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
             timer.print_time()
             
         # check store_times and strip younger time steps from memory
-        # todo: if store_time == 0:
-            # todo: just strip the positions for memory management!
+        if not store_time:
+            pass
 
-        if timer.time % store_time == 0.:
+        elif timer.time % store_time == 0.:
             if pathline is not None:
                 pathline.write_output(timer, x)
                 timer.strip_time()
