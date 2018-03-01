@@ -34,7 +34,7 @@ Docstrings also provide basic mathematical relationships for each class.
 """
 
 from .LB_Colloid import Colloid
-import ColUtils
+#  import ColUtils
 import numpy as np
 import sys
 import copy
@@ -191,7 +191,11 @@ class Brownian:
         params = {'viscosity': 8.9e-4, 'ac': 1e-6, 'T': 298.15}
         for kwarg in kwargs:
             params[kwarg] = kwargs[kwarg]
-                
+
+        self.mu = 0
+        self.sigma = 1
+        self.f1 = f1
+        self.f4 = f4
         self.ac = params['ac']
         self.ts = params['ts']
         self.viscosity = params['viscosity']
@@ -199,18 +203,18 @@ class Brownian:
         self.epsilon = 6. * np.pi * self.viscosity * self.ac
         self.T = params['T']
         self.diffusive = (self.boltzmann * self.T) / self.epsilon
-        self.brownian_x = self.Brown_xforce(self.epsilon, self.diffusive, f4)
-        self.brownian_y = self.Brown_yforce(self.epsilon, self.diffusive, f1)
+        # self.brownian_x = self.Brown_xforce(self.epsilon, self.diffusive, f4)
+        # self.brownian_y = self.Brown_yforce(self.epsilon, self.diffusive, f1)
 
-    def Brown_xforce(self, epsilon, diffusivity, f4):
-        mu, sigma = 0, 1.
-        Fbt = epsilon * np.sqrt(((2 * diffusivity)/(f4 * self.ts))) * np.random.normal(mu, sigma, (len(f4), len(f4[0])))
-        return Fbt
+    @property
+    def brownian_x(self):
+        return self.epsilon * np.sqrt(((2 * self.diffusive)/(self.f4 * self.ts))) * \
+               np.random.normal(self.mu, self.sigma, self.f4.shape)
 
-    def Brown_yforce(self, epsilon, diffusivity, f1):
-        mu, sigma = 0, 1.
-        Fbn = epsilon * np.sqrt(((2 * diffusivity)/(f1 * self.ts))) * np.random.normal(mu, sigma, (len(f1), len(f1[0])))
-        return Fbn
+    @property
+    def brownian_y(self):
+        return self.epsilon * np.sqrt(((2 * self.diffusive)/(self.f1 * self.ts))) * \
+               np.random.normal(self.mu, self.sigma, self.f1.shape)
 
 
 class Drag:
@@ -254,21 +258,41 @@ class Drag:
         self.viscosity = params['viscosity']
         self.rho_water = params['rho_water']
         self.rho_colloid = params['rho_colloid']
+        self.ux = ux
+        self.uy = uy
+        self.f1 = f1
+        self.f2 = f2
+        self.f3 = f3
+        self.f4 = f4
         self.epsilon = 6. * np.pi * self.viscosity * self.ac
-        self.Vcol = -((self.rho_colloid - self.rho_water)*((2*self.ac)**2)*9.81)/(18*self.viscosity)
-        # todo: update this all to a fortran routine that is called each iteration. Replace VCol with stored value!
-        self.drag_x = self.drag_xforce(ux, self.Vcol, self.epsilon, f3, f4)
-        self.drag_y = self.drag_yforce(uy, self.Vcol, self.epsilon, f1, f2)
+
+        self.vx = -((self.rho_colloid - self.rho_water)*((2*self.ac)**2)*9.81)/(18*self.viscosity)
+        self.vy = -((self.rho_colloid - self.rho_water)*((2*self.ac)**2)*9.81)/(18*self.viscosity)
+
+        # self.drag_x = self.drag_xforce(ux, self.Vcol, self.epsilon, f3, f4)
+        # self.drag_y = self.drag_yforce(uy, self.Vcol, self.epsilon, f1, f2)
 
         self.all_physical_params = copy.copy(params)
-        
-    def drag_xforce(self, ux, Vx, epsilon, f3, f4):
-        Fdt = (epsilon / f4) * ((f3 * ux) - Vx)
-        return Fdt
 
-    def drag_yforce(self, uy, Vy, epsilon, f1, f2):
-        Fdn = epsilon * ((f2 * uy) - (Vy / f1))
-        return Fdn
+    @property
+    def drag_x(self):
+        """
+        :return: drag force array in the x direction
+        """
+        return (self.epsilon / self.f4) * ((self.f3 * self.ux) - self.vx)
+
+    @property
+    def drag_y(self):
+        return self.epsilon * ((self.f2 * self.uy) - (self.vy / self.f1))
+
+    def update(self, vx, vy):
+        """
+        Updates the colloid velocity array for producing drag forces
+        :param vx:
+        :param vy:
+        """
+        self.vx = vx
+        self.vy = vy
 
         
 class Gap:
@@ -1072,6 +1096,9 @@ class ColloidColloid(object):
 
         if kernal == 'fortran':
             # this is actually slower than the numpy function! Who would've figured!
+            f_arr = np.zeros((self.__ylen, self.__xlen))
+            pass
+            """
             collen = len(colloids)
             fxlen = int(self.__xlen)
             fylen = int(self.__ylen)
@@ -1082,6 +1109,7 @@ class ColloidColloid(object):
             f_arr = ColUtils.colcolarray(c_arr, colloids, fxlen,
                                          fylen, cxlen, cylen,
                                          center, collen)
+            """
 
         else:
             f_arr = np.zeros((self.__ylen, self.__xlen))

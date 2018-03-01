@@ -31,12 +31,14 @@ class Colloid:
     Parameters:
     ----------
     :param int xlen: grid length after interpolation in the x-direction
+    :param int ylen: grid length after interpolation in the y-direction
     :param float resolution: grid resolution after interpolation
-
+    :param int tag: colloid number for output writing
     """
     positions = []
 
-    def __init__(self, xlen, ylen, resolution):
+    def __init__(self, xlen, ylen, resolution, tag=0):
+        self.tag = tag
         self.xposition = [random.uniform(0.1, 0.9)*xlen*resolution]
         self.yposition = [-resolution]
         self.resolution = resolution
@@ -282,11 +284,12 @@ def fmt(x, pos):
 
 def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
                     ncols, timer, print_time, store_time,
-                    colloidcolloid, ModelDict, pathline=None,
+                    colloidcolloid, brownian, ModelDict, pathline=None,
                     timeseries=None, endpoint=None):
     """
     definition to allow the use of multiple ionic strengths ie. attachment then flush, etc....
     """
+    tag = x[-1].tag + 1
     continuous = 0
     if 'continuous' in ModelDict:
         continuous = ModelDict['continuous']
@@ -302,15 +305,23 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
         # update colloid position and time
         if continuous:
             if timer.time % continuous == 0 and timer.time != 0:
-                x += [Colloid(xlen, ylen, gridres) for i in range(ncols)]
+                x += [Colloid(xlen, ylen, gridres, tag=i + tag) for i in range(ncols)]
+                tag = x[-1].tag + 1
 
         if timer.time % colcolupdateinterval == 0:
             colloidcolloid.update(x)
-            cc_vx = colloidcolloid.x_array * conversion  # /1e-6
-            cc_vy = colloidcolloid.y_array * conversion  # /1e-6
+            up_vx = (colloidcolloid.x_array + brownian.brownian_x) * conversion  # /1e-6
+            up_vy = (colloidcolloid.y_array + brownian.brownian_y) * conversion  # /1e-6
 
-            vx0 = vx + cc_vx
-            vy0 = vy + cc_vy
+            vx0 = vx + up_vx
+            vy0 = vy + up_vy
+
+            # todo: test this code and see if it works well
+            pop_list = [ix for ix, colloid in enumerate(x) if colloid.flag[-1] == 3]
+
+            for ix in pop_list:
+                endpoint.write_single_colloid(timer, x[ix])
+                x.pop(ix)
 
         Colloid.positions = []
         for col in x:
@@ -323,6 +334,9 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
             timer.print_time()
             
         # check store_times and strip younger time steps from memory
+        # todo: if store_time == 0:
+            # todo: just strip the positions for memory management!
+
         if timer.time % store_time == 0.:
             if pathline is not None:
                 pathline.write_output(timer, x)
@@ -336,6 +350,8 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
                     col.store_position(timer)  # use this for plotting functionality
                     col.strip_positions()
                 timeseries.write_output(timer, x, pathline=False)
+
+
 
             else:
                 for col in x:
@@ -490,8 +506,8 @@ def run(config):
     gravity = cm.Gravity(**PhysicalDict)
     bouyancy = cm.Bouyancy(**PhysicalDict)
 
-    physicalx = brownian.brownian_x + drag_forces.drag_x
-    physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy
+    physicalx = drag_forces.drag_x  #  brownian.brownian_x + drag_forces.drag_x
+    physicaly = drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy  # brownian.brownian_y +
 
     dlvox = dlvo.EDLx + dlvo.attractive_x  # + dlvo.LVDWx + dlvo.LewisABx
     dlvoy = dlvo.EDLy + dlvo.attractive_y  # dlvo.LVDWy + dlvo.LewisABy
@@ -525,11 +541,11 @@ def run(config):
     timer = TrackTime(ts)
 
     # generate initial pulse of colloids.
-    x = [Colloid(xlen, ylen, gridres) for i in range(ncols)]
+    x = [Colloid(xlen, ylen, gridres, tag=i) for i in range(ncols)]
 
     _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
                     ncols, timer, print_time,
-                    store_time, colloidcolloid, ModelDict,
+                    store_time, colloidcolloid, brownian, ModelDict,
                     pathline, timeseries, endpoint)
 
     if multiple_config:
@@ -576,7 +592,7 @@ def run(config):
 
             _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
                             ncols, timer, print_time,
-                            store_time, colloidcolloid, ModelDict,
+                            store_time, colloidcolloid, brownian, ModelDict,
                             pathline, timeseries, endpoint)
 
     if OutputDict['plot']:

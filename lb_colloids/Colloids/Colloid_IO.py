@@ -374,7 +374,7 @@ class Output:
                 output_string = '{:>8d}\t{:>5d}\t{:5d}\t{:09.8f}\t' \
                                 '{:10.9f}\t ' \
                                 '{:09.5f}\t{:09.5f}\t{:6f}\t{:6f}\t{:6f}\n'.format(
-                                    number, colloid.flag[-1], time[-1],
+                                    colloid.tag, colloid.flag[-1], time[-1],
                                     colloid.xposition[-1],
                                     colloid.yposition[-1],
                                     colloid.xposition[-1]/self.resolution,
@@ -389,7 +389,7 @@ class Output:
                 for number, colloid in enumerate(colloids):
                     output_string = '{:>8d}\t{:>5d}\t{:5d}\t{:09.8f}\t{:09.8f}\t' \
                                     '{:09.8f}\t{:09.8f}\t{:7f}\t{:7f}\t{:7f}\n'.format(
-                                        number, colloid.flag[-1], time[-1],
+                                        colloid.tag, colloid.flag[-1], time[-1],
                                         colloid.xposition[-1],
                                         colloid.yposition[-1],
                                         colloid.xposition[-1]/self.resolution,
@@ -400,7 +400,29 @@ class Output:
                     output.append(output_string)
 
         self._writer(self.filename, output)
-        
+
+    def write_single_colloid(self, timer, colloid):
+        """
+        Method to write a single colloid to an endpoint file upon breakthrough
+        :param TrackTime timer: Model TrackTime instance
+        :param LB_Colloid.Colloid colloid:
+        :return:
+        """
+        time = timer.time
+        output_string = '{:>8d}\t{:>5d}\t{:5d}\t{:09.8f}\t' \
+                        '{:10.9f}\t ' \
+                        '{:09.5f}\t{:09.5f}\t{:6f}\t{:6f}\t{:6f}\n'.format(
+            colloid.tag, colloid.flag[-1], time[-1],
+            colloid.xposition[-1],
+            colloid.yposition[-1],
+            colloid.xposition[-1] / self.resolution,
+            colloid.yposition[-1] / self.resolution,
+            colloid.colloid_start_time,
+            colloid.colloid_end_time,
+            colloid.colloid_end_time - colloid.colloid_start_time)
+
+        self._writer(self.filename, [output_string])
+
 
 class ColloidsConfig(dict):
     """
