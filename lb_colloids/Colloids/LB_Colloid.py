@@ -337,7 +337,7 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
             
         # check store_times and strip younger time steps from memory
         if not store_time:
-            pass
+            timer.strip_time()
 
         elif timer.time % store_time == 0.:
             if pathline is not None:

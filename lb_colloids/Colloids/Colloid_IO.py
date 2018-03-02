@@ -406,9 +406,8 @@ class Output:
         Method to write a single colloid to an endpoint file upon breakthrough
         :param TrackTime timer: Model TrackTime instance
         :param LB_Colloid.Colloid colloid:
-        :return:
         """
-        time = timer.time
+        time = timer.timer
         output_string = '{:>8d}\t{:>5d}\t{:5d}\t{:09.8f}\t' \
                         '{:10.9f}\t ' \
                         '{:09.5f}\t{:09.5f}\t{:6f}\t{:6f}\t{:6f}\n'.format(
