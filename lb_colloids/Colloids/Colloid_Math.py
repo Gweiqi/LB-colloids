@@ -186,8 +186,6 @@ class Brownian:
         forces in the y direction [Qiu et. al 2011.]
     """
     def __init__(self, f1, f4, **kwargs):
-
-        # todo: update brownian motion to include the timestep!!!!
         params = {'viscosity': 8.9e-4, 'ac': 1e-6, 'T': 298.15}
         for kwarg in kwargs:
             params[kwarg] = kwargs[kwarg]
@@ -444,6 +442,9 @@ class DLVO:
         for kwarg in kwargs:
             params[kwarg] = kwargs[kwarg]
 
+        calc_oh = False
+        self.__xarr = xarr
+        self.__yarr = yarr
         self.rho_colloid = params['rho_colloid']
         self.epsilon_0 = 8.85e-12
         self.epsilon_r = params['epsilon_r']
@@ -478,34 +479,69 @@ class DLVO:
         else:
             self.ionic_strength = self.ionic(params['valence'], params['concentration'])
         
-        self.k_debye = self.debye(self.epsilon_0, self.epsilon_r, self.boltzmann, self.T, self.e,
-                                  self.ionic_strength)
+        #self.k_debye = self.debye(self.epsilon_0, self.epsilon_r, self.boltzmann, self.T, self.e,
+        #                          self.ionic_strength)
                                          
         self.colloid_potential = self._colloid_potential(self.zeta_colloid, self.ac, self.k_debye, self.stern_z)
         self.surface_potential = self._surface_potential(self.zeta_solid, self.k_debye, self.stern_z)
 
         # Calculate the chemical potential
+        # todo: change these to property methods
         self.EDLx = self._EDL_energy(self.epsilon_0, self.epsilon_r, self.ac, self.colloid_potential,
                                      self.surface_potential, self.k_debye, xarr)/xarr*self.xvArr
 
         self.EDLy = self._EDL_energy(self.epsilon_0, self.epsilon_r, self.ac, self.colloid_potential,
                                      self.surface_potential, self.k_debye, yarr)/yarr*self.yvArr
-        
-        self.LVDWx = self._Lifshitz_van_der_Walls(xarr, self.ac, self.lvdwst_water, self.lvdwst_colloid,
-                                                  self.lvdwst_solid)/xarr*self.xvArr
 
-        self.LVDWy = self._Lifshitz_van_der_Walls(xarr, self.ac, self.lvdwst_water, self.lvdwst_colloid,
-                                                  self.lvdwst_solid)/yarr*self.yvArr
+        if calc_oh is True:
+            # todo: change these over to property methods
+            self.LVDWx = self._Lifshitz_van_der_Walls(xarr, self.ac, self.lvdwst_water, self.lvdwst_colloid,
+                                                      self.lvdwst_solid)/xarr*self.xvArr
 
-        self.LewisABx = self._lewis_acid_base(xarr, self.ac, self.eplus_colloid, self.eplus_solid, self.eplus_water,
-                                              self.eneg_colloid, self.eneg_solid, self.eneg_water)/xarr*self.xvArr
+            self.LVDWy = self._Lifshitz_van_der_Walls(xarr, self.ac, self.lvdwst_water, self.lvdwst_colloid,
+                                                      self.lvdwst_solid)/yarr*self.yvArr
 
-        self.LewisABy = self._lewis_acid_base(yarr, self.ac, self.eplus_colloid, self.eplus_solid, self.eplus_water,
-                                              self.eneg_colloid, self.eneg_solid, self.eneg_water)/yarr*self.yvArr
+            self.LewisABx = self._lewis_acid_base(xarr, self.ac, self.eplus_colloid, self.eplus_solid, self.eplus_water,
+                                                  self.eneg_colloid, self.eneg_solid, self.eneg_water)/xarr*self.xvArr
+
+            self.LewisABy = self._lewis_acid_base(yarr, self.ac, self.eplus_colloid, self.eplus_solid, self.eplus_water,
+                                                  self.eneg_colloid, self.eneg_solid, self.eneg_water)/yarr*self.yvArr
+
+        else:
+            self.LVDWx = np.zeros((1,1))
+            self.LVDWy = np.zeros((1,1))
+            self.LewisABx = np.zeros((1,1))
+            self.LewisABy = np.zeros((1,1))
+
         self._combined_hamaker_constant()
 
         self.attractive_x = self._combined_lvdw_lewis_ab(xarr)/xarr * self.xvArr
         self.attractive_y = self._combined_lvdw_lewis_ab(yarr)/yarr * self.yvArr
+
+    @property
+    def attractive_x(self):
+        """
+        Calculates the combined attractive force between colloid surface
+        based upon Liang et. al. 2008
+
+        Returns:
+        -------
+        :return: np.ndarray
+        """
+        return self._combined_lvdw_lewis_ab(self.__xarr)/self.__xarr * self.xvArr
+
+    @property
+    def attractive_y(self):
+        """
+        Calculates the combined attractive force between colloid surface
+        based upon Liang et. al. 2008
+
+        Returns:
+        -------
+        :return: np.ndarray
+        """
+        return self._combined_lvdw_lewis_ab(self.__yarr) / self.__yarr * self.yvArr
+
 
     def ionic(self, valence, concentration):
         """
@@ -529,25 +565,18 @@ class DLVO:
             I += (float(concentration[key])*(float(valence[key])**2))
         return I
 
-    def debye(self, epsilon_0, epsilon_r, kb, T, e, ionic_strength):
+    @property
+    def k_debye(self):
         """
         Method to calculate Debye length
-
-        Parameters:
-        ----------
-        :param float epsilon_0: Permativity of a vacuum
-        :param float epsilon_r: Relative permativity of water
-        :param float kb: Boltzmann constant
-        :param float T: fluid temperature in K
-        :param float e: electron charge
-        :param float ionic_strength: 2*ionic strength
 
         Returns:
         -------
         :return: Debye length (float)
         """
         NA = 6.02e23
-        k_inverse = np.sqrt((epsilon_0*epsilon_r*kb*T)/(e*e*NA*ionic_strength))
+        k_inverse = np.sqrt((self.epsilon_0 * self.epsilon_r
+                             * self.boltzmann * self.T)/(self.e * self.e * NA * self.ionic_strength))
         return 1./k_inverse
 
     def _colloid_potential(self, zeta, ac, kd, z):
@@ -649,7 +678,6 @@ class DLVO:
 
         return lvdw_lab0 * (lvdw_lab1 + lvdw_lab2)
 
-    # todo: remove attractive force calculations and replace with Hamaker & Liang calcs.
     def _Lifshitz_van_der_Walls(self, arr, ac, vdw_st_water, vdw_st_colloid, vdw_st_solid):
         """
         Parameters:
@@ -785,6 +813,8 @@ class ColloidColloid(object):
         self.__x = False
         self.__y = False
         self.__center = False
+        self.__dlvo_xarray = False
+        self.__dlvo_yarray = False
 
     def __reset(self):
         """
@@ -795,6 +825,8 @@ class ColloidColloid(object):
         self.__pos = []
         self.__x = False
         self.__y = False
+        self.__dlvo_xarray = False
+        self.__dlvo_yarray = False
 
     def __get_colloid_positions(self):
         """
@@ -820,21 +852,24 @@ class ColloidColloid(object):
         :param list colloids: (list, <class: Colloids.LB_Colloid.Colloid)
         """
         self.__reset()
-        # self.positions
 
     @property
     def x_array(self):
         """
         Property method to generate the full x force array for colloid-colloid interaction
         """
-        return self.__get_full_dlvo_array("x")
+        if isinstance(self.__dlvo_xarray, bool):
+            self.__get_full_dlvo_array("x")
+        return self.__dlvo_xarray
 
     @property
     def y_array(self):
         """
         Property method to generate the full y force array for colloid-colloid interaction
         """
-        return self.__get_full_dlvo_array("y")
+        if isinstance(self.__dlvo_yarray, bool):
+            self.__get_full_dlvo_array("y")
+        return self.__dlvo_yarray
 
     @property
     def x(self):
@@ -929,16 +964,19 @@ class ColloidColloid(object):
         Returns:
             dvlo: (np.ndarray) full array of dlvo interaction forces from colloids
         """
-        if arr_type.lower() == "x":
-            # arr = self.__xarr
-            dlvo_colloid = self.x
-        elif arr_type.lower() == "y":
-            # arr = self.__yarr
-            dlvo_colloid = self.y
-        else:
-            raise TypeError("arr_type {} is not valid".format(arr_type))
+        dlvo_x = self.x
+        dlvo_y = self.y
 
-        dlvo = self.__create_colloid_colloid_array(dlvo_colloid)
+        # if arr_type.lower() == "x":
+            # arr = self.__xarr
+            # dlvo_colloid = self.x
+        # elif arr_type.lower() == "y":
+            # arr = self.__yarr
+            # dlvo_colloid = self.y
+        # else:
+            # raise TypeError("arr_type {} is not valid".format(arr_type))
+
+        dlvo = self.__create_colloid_colloid_array(dlvo_x, dlvo_y)
 
         return dlvo
 
@@ -1079,13 +1117,14 @@ class ColloidColloid(object):
 
         return arr * self.__resolution  # /1e-6
 
-    def __create_colloid_colloid_array(self, c_arr, kernal="python"):
+    def __create_colloid_colloid_array(self, c_arr, cy_arr, kernal="python"):
         """
         Method to set colloidal forces to a model array.
 
         Parameters:
         -----------
-            c_arr: (np.ndarray) calculated colloid force array
+            c_arr: (np.ndarray) calculated colloid force array in x direction
+            cy_arr: (np.ndarray) calculated colloid force array in y direction
 
         Return:
             f_arr: (np.ndarray) an array of colloidal forces in a single primary
@@ -1097,7 +1136,7 @@ class ColloidColloid(object):
         if kernal == 'fortran':
             # this is actually slower than the numpy function! Who would've figured!
             f_arr = np.zeros((self.__ylen, self.__xlen))
-            pass
+
             """
             collen = len(colloids)
             fxlen = int(self.__xlen)
@@ -1110,9 +1149,11 @@ class ColloidColloid(object):
                                          fylen, cxlen, cylen,
                                          center, collen)
             """
+            return f_arr
 
         else:
             f_arr = np.zeros((self.__ylen, self.__xlen))
+            fy_arr = np.zeros((self.__ylen, self.__xlen))
             for colloid in colloids:
                 x, y = colloid
 
@@ -1161,10 +1202,12 @@ class ColloidColloid(object):
 
                     try:
                         f_arr[f_top_y:f_bottom_y, f_left_x:f_right_x] += c_arr[c_top_y:c_bottom_y, c_left_x:c_right_x]
+                        fy_arr[f_top_y:f_bottom_y, f_left_x:f_right_x] += cy_arr[c_top_y:c_bottom_y, c_left_x:c_right_x]
                     except ValueError:
                         pass
 
-        return f_arr
+            self.__dlvo_xarray = f_arr
+            self.__dlvo_yarray = fy_arr
 
 
 # todo: write conversion of force to chemical potential
