@@ -319,9 +319,12 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
             # todo: test this code and see if it works well
             pop_list = [ix for ix, colloid in enumerate(x) if colloid.flag[-1] == 3]
 
-            for ix in pop_list:
+            for ix in pop_list[::-1]:
                 endpoint.write_single_colloid(timer, x[ix])
                 x.pop(ix)
+
+            # for ix in pop_list[::-1]:
+            #     x.pop(ix)
 
         Colloid.positions = []
         for col in x:
