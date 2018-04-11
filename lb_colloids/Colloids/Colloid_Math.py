@@ -30,10 +30,10 @@ Docstrings also provide basic mathematical relationships for each class.
 >>> dlvo.LVDWx  # returns an array of lifshitz-van der waals forces in the x-direction
 >>> colcol = cm.ColloidColloid(xarr, **ChemicalDict)
 >>> colcol.x_array  # returns an array of dlvo forces for colloid-colloid interactions
->>> colcol.update(Colloid.positions)  # updates the class to generate new colloid-colloid interaction arrays
+>>> colcol.update(Singleton.positions)  # updates the class to generate new colloid-colloid interaction arrays
 """
 
-from .LB_Colloid import Colloid
+from .LB_Colloid import Singleton
 #  import ColUtils
 import numpy as np
 import sys
@@ -840,7 +840,7 @@ class ColloidColloid(object):
         --------
             pos: (list) list of colloid positions within the model space
         """
-        self.__pos = Colloid.positions
+        self.__pos = Singleton.positions
         return self.__pos
 
     def update(self, colloids):

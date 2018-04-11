@@ -24,6 +24,14 @@ import random
 from copy import copy
 
 
+class Singleton(object):
+    """
+    Singleton object to hold Colloid positions. Potential object to hold
+    calculated arrays to avoid passing and reduce memory requirements
+    """
+    positions = []
+
+
 class Colloid:
     """
     Primary colloid class to instantiate and track colloids through a colloid simulation
@@ -46,21 +54,21 @@ class Colloid:
         self.storex = [self.xposition[0]]
         self.idx_rx = [int(self.xposition[-1]//resolution)]
         self.idx_ry = [-int(self.yposition[-1]//resolution)]
-        self.__cell_time = [0.]
+        # self.__cell_time = [0.]
         self.time = [0]
         self.colloid_start_time = copy(TrackTime.model_time)
         self.colloid_end_time = np.nan
         self.flag = [1]
         self.ylen = ylen
         self.xlen = xlen
-        Colloid.positions.append(tuple([self.idx_rx[-1], self.idx_ry[-1]]))
+        Singleton.positions.append(tuple([self.idx_rx[-1], self.idx_ry[-1]]))
 
     def reset_master_positions(self):
         """
         Resets the master position storage mechanism for all colloids. Master position
         storage is used to later generate colloid-colloid DLVO fields.
         """
-        Colloid.positions = []
+        Singleton.positions = []
 
     def _append_xposition(self, item):
         self.xposition.append(item)
@@ -87,7 +95,7 @@ class Colloid:
         self.idx_ry.append(item)
 
     def _append_master_positions(self, idx_rx, idx_ry):
-        Colloid.positions.append([idx_rx, idx_ry])
+        Singleton.positions.append([idx_rx, idx_ry])
 
     def __update_cell_time(self, item, new_cell=False):
         if new_cell:
@@ -140,7 +148,7 @@ class Colloid:
                 if not np.isnan(self.xposition[-1]) and not np.isnan(self.yposition[-1]):
                     self._append_xposition(self.xposition[-1])
                     self._append_yposition(self.yposition[-1])
-                    self.__update_cell_time(ts, new_cell=True)
+                    # self.__update_cell_time(ts, new_cell=True)
                 else:
                     self._append_xposition(random.uniform(0.1, 0.9) * self.xlen * self.resolution)
                     self._append_yposition(-self.resolution)
@@ -171,11 +179,12 @@ class Colloid:
                     # self._append_yposition(iry)
                     return
 
+            # todo: remove this unused block of code after validating it is not necessary
             # track time each colloid spends in a cell to account for acceleration effects
-            if idxrx == self.idx_rx[-1] and idxry == self.idx_ry[-1]:
-                self.__update_cell_time(ts)
-            else:
-                self.__update_cell_time(ts, new_cell=True)
+            # if idxrx == self.idx_rx[-1] and idxry == self.idx_ry[-1]:
+            #     self.__update_cell_time(ts)
+            # else:
+            #     self.__update_cell_time(ts, new_cell=True)
 
             xv = xvelocity[idxry][idxrx]
             yv = yvelocity[idxry][idxrx]
@@ -192,7 +201,7 @@ class Colloid:
             if ry >= 0.:
                 rx = random.uniform(0.1, 0.9)*self.xlen*self.resolution
                 ry = -self.resolution
-                self.__update_cell_time(ts, new_cell=True)
+                # self.__update_cell_time(ts, new_cell=True)
 
             self._append_master_positions(idxrx, idxry)
             self._append_xposition(rx)
@@ -220,6 +229,7 @@ class Colloid:
         """
         self.xposition = [self.xposition[-1]]
         self.yposition = [self.yposition[-1]]
+        self.flag = [self.flag[-1]]
 
     def store_position(self, timer):
         """
@@ -303,6 +313,7 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
 
     while timer.time <= iters:
         # update colloid position and time
+        p = Singleton.positions
         if continuous:
             if timer.time % continuous == 0 and timer.time != 0:
                 x += [Colloid(xlen, ylen, gridres, tag=i + tag) for i in range(ncols)]
@@ -326,11 +337,13 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
             # for ix in pop_list[::-1]:
             #     x.pop(ix)
 
-        Colloid.positions = []
+        Singleton.positions = []
         for col in x:
             col.update_position(vx0, vy0, ts)
             if not store_time:
                 col.strip_positions()
+
+        del col
 
         timer.update_time()
 
@@ -360,7 +373,7 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
 
             else:
                 for col in x:
-                    col.store_position(timer)
+                    col.store_position(timer.time)
                     col.strip_positions()
                 
         # check if user wants an endpoint file
