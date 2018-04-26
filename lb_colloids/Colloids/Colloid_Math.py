@@ -515,8 +515,8 @@ class DLVO:
 
         self._combined_hamaker_constant()
 
-        self.attractive_x = self._combined_lvdw_lewis_ab(xarr)/xarr * self.xvArr
-        self.attractive_y = self._combined_lvdw_lewis_ab(yarr)/yarr * self.yvArr
+        # self.attractive_x = self._combined_lvdw_lewis_ab(xarr)/xarr * self.xvArr
+        # self.attractive_y = self._combined_lvdw_lewis_ab(yarr)/yarr * self.yvArr
 
     @property
     def attractive_x(self):

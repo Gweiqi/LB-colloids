@@ -294,7 +294,7 @@ def fmt(x, pos):
 
 def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
                     ncols, timer, print_time, store_time,
-                    colloidcolloid, brownian, ModelDict, pathline=None,
+                    colloidcolloid, brownian, drag, ModelDict, pathline=None,
                     timeseries=None, endpoint=None):
     """
     definition to allow the use of multiple ionic strengths ie. attachment then flush, etc....
@@ -307,35 +307,38 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
     colloidcolloid.update(x)
     conversion = cm.ForceToVelocity(1, **ModelDict).velocity
 
-    vx0 = vx
-    vy0 = vy
+    vx0 = np.copy(vx)
+    vy0 = np.copy(vy)
     colcolupdateinterval = ModelDict['col_col_update']
+
+    vx0 += drag.drag_x
+    vy0 += drag.drag_y
 
     while timer.time <= iters:
         # update colloid position and time
-        p = Singleton.positions
+        # p = Singleton.positions
         if continuous:
             if timer.time % continuous == 0 and timer.time != 0:
                 x += [Colloid(xlen, ylen, gridres, tag=i + tag) for i in range(ncols)]
                 tag = x[-1].tag + 1
 
+        # todo: drag force updates!
         if timer.time % colcolupdateinterval == 0:
             colloidcolloid.update(x)
-            up_vx = (colloidcolloid.x_array + brownian.brownian_x) * conversion  # /1e-6
-            up_vy = (colloidcolloid.y_array + brownian.brownian_y) * conversion  # /1e-6
+            drag.update(vx0, vy0)
+            up_vx = (colloidcolloid.x_array +
+                     brownian.brownian_x + drag.drag_x) * conversion  # /1e-6
+            up_vy = (colloidcolloid.y_array +
+                     brownian.brownian_y + drag.drag_y) * conversion  # /1e-6
 
             vx0 = vx + up_vx
             vy0 = vy + up_vy
 
-            # todo: test this code and see if it works well
             pop_list = [ix for ix, colloid in enumerate(x) if colloid.flag[-1] == 3]
 
             for ix in pop_list[::-1]:
                 endpoint.write_single_colloid(timer, x[ix])
                 x.pop(ix)
-
-            # for ix in pop_list[::-1]:
-            #     x.pop(ix)
 
         Singleton.positions = []
         for col in x:
@@ -524,8 +527,8 @@ def run(config):
     gravity = cm.Gravity(**PhysicalDict)
     bouyancy = cm.Bouyancy(**PhysicalDict)
 
-    physicalx = drag_forces.drag_x  #  brownian.brownian_x + drag_forces.drag_x
-    physicaly = drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy  # brownian.brownian_y +
+    physicalx = 0 # drag_forces.drag_x  #  brownian.brownian_x + drag_forces.drag_x
+    physicaly = gravity.gravity + bouyancy.bouyancy  # brownian.brownian_y + drag_forces.drag_y
 
     dlvox = dlvo.EDLx + dlvo.attractive_x  # + dlvo.LVDWx + dlvo.LewisABx
     dlvoy = dlvo.EDLy + dlvo.attractive_y  # dlvo.LVDWy + dlvo.LewisABy
@@ -563,9 +566,11 @@ def run(config):
 
     _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
                     ncols, timer, print_time,
-                    store_time, colloidcolloid, brownian, ModelDict,
+                    store_time, colloidcolloid, brownian, drag_forces,
+                    ModelDict,
                     pathline, timeseries, endpoint)
 
+    # todo: update the multiple config block to reflect updates to brown, colcol, and drag
     if multiple_config:
         for confignumber in range(len(multiple_config)):
             config = multiple_config[confignumber]
@@ -610,7 +615,8 @@ def run(config):
 
             _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
                             ncols, timer, print_time,
-                            store_time, colloidcolloid, brownian, ModelDict,
+                            store_time, colloidcolloid, brownian, drag_forces,
+                            ModelDict,
                             pathline, timeseries, endpoint)
 
     if OutputDict['plot']:
