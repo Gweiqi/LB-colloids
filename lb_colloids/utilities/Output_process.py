@@ -6,7 +6,10 @@ import matplotlib.pyplot as plt
 
 class OutputProcess(object):
     """
-    Simple class to process outputs from PhD validation project
+    Pest++ compatible output processing class.
+    Simplifying assumptions must be made for quantification
+    Definitely incomplete. Created for calibration purposes for
+    PhD project....
     """
     def __init__(self, filename, ncol_per_ml=0, nts_per_ml=0, ncol_per_second=0):
         t = ColloidOutput.ASCIIReader(filename)
@@ -123,11 +126,29 @@ class OutputProcess(object):
     def plot(self, *args, **kwargs):
         return
 
+    def to_ascii(self, ascii_name):
+        """
+        Method to dump model results to ascii file.
+        :param ascii_name:
+        """
+        sec = self.seconds
+        pv = self.pore_volumes
+        c_c0 = self.relative_concentration_per_second
+        header = "Seconds    pore_volumes    c_c0\n"
+        fmt_str ="{:09}    {:9.6f}   {:7.6f}\n"
+
+        with open(ascii_name, "w") as asf:
+            asf.write(header)
+            for i, v in enumerate(sec):
+                asf.write(fmt_str.format(v, pv[i], c_c0[i]))
+
 
 if __name__ == "__main__":
+    import os
+    ws = r'/home/josh/Desktop/PackageTesting/Super_user/validate/DarcyValidate/Pestpp_runs/'
     oname = "SyVal200p_2_1e-05.endpoint"
 
-    test = OutputProcess(oname, ncol_per_second=71)
+    test = OutputProcess(os.path.join(ws, oname), ncol_per_second=71)
     x = test.relative_concentration_per_second
     s = test.seconds
     pv = test.pore_volumes
@@ -136,5 +157,8 @@ if __name__ == "__main__":
     plt.ylim([0, 2.0])
     plt.xlim([0, max(pv)])
     plt.show()
+
+    test.to_ascii(os.path.join(ws, "butts.txt"))
+
 
 

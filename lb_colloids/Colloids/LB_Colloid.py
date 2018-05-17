@@ -144,7 +144,7 @@ class Colloid:
                 idxrx = int(irx//self.resolution)
                 idxry = int(iry//-self.resolution)
            
-            except ValueError:
+            except (ValueError, OverflowError):
                 if not np.isnan(self.xposition[-1]) and not np.isnan(self.yposition[-1]):
                     self._append_xposition(self.xposition[-1])
                     self._append_yposition(self.yposition[-1])
@@ -159,6 +159,16 @@ class Colloid:
             try:
                 idxry = int(iry//-self.resolution)
                 idxrx = int(irx//self.resolution)
+
+                if not isinstance(idxry, int):
+                    print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+                    print(self.tag)
+                    print(idxry)
+
+                if not isinstance(idxrx, int):
+                    print("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
+                    print(self.tag)
+                    print(idxrx)
 
                 xv = xvelocity[idxry][idxrx]
                 yv = yvelocity[idxry][idxrx]
@@ -311,9 +321,6 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
     vy0 = np.copy(vy)
     colcolupdateinterval = ModelDict['col_col_update']
 
-    vx0 += drag.drag_x
-    vy0 += drag.drag_y
-
     while timer.time <= iters:
         # update colloid position and time
         # p = Singleton.positions
@@ -327,9 +334,9 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
             colloidcolloid.update(x)
             drag.update(vx0, vy0)
             up_vx = (colloidcolloid.x_array +
-                     brownian.brownian_x + drag.drag_x) * conversion  # /1e-6
+                     brownian.brownian_x) * conversion  # /1e-6
             up_vy = (colloidcolloid.y_array +
-                     brownian.brownian_y + drag.drag_y) * conversion  # /1e-6
+                     brownian.brownian_y) * conversion  # /1e-6
 
             vx0 = vx + up_vx
             vy0 = vy + up_vy
@@ -345,8 +352,6 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
             col.update_position(vx0, vy0, ts)
             if not store_time:
                 col.strip_positions()
-
-        del col
 
         timer.update_time()
 
@@ -527,8 +532,8 @@ def run(config):
     gravity = cm.Gravity(**PhysicalDict)
     bouyancy = cm.Bouyancy(**PhysicalDict)
 
-    physicalx = 0 # drag_forces.drag_x  #  brownian.brownian_x + drag_forces.drag_x
-    physicaly = gravity.gravity + bouyancy.bouyancy  # brownian.brownian_y + drag_forces.drag_y
+    physicalx = drag_forces.drag_x  #  brownian.brownian_x + drag_forces.drag_x
+    physicaly = drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy  # brownian.brownian_y + drag_forces.drag_y
 
     dlvox = dlvo.EDLx + dlvo.attractive_x  # + dlvo.LVDWx + dlvo.LewisABx
     dlvoy = dlvo.EDLy + dlvo.attractive_y  # dlvo.LVDWy + dlvo.LewisABy

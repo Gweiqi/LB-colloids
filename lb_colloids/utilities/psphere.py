@@ -16,6 +16,7 @@ class PSphere(object):
         self.dimension = dimension
         self.matrix = np.ones((dimension, dimension), dtype=bool)
         self.matrix_porosity = 0.
+        self.matrix_rh = 0.
         self.particle_space = False
         self.pore_space = True
         self.percolates = False
@@ -29,6 +30,7 @@ class PSphere(object):
             if abs(self.matrix_porosity - self.porosity) <= sensitivity:
                 if self.percolates:
                     good = True
+
             else:
                 print("Regenerating porous media")
                 self.matrix = np.ones((dimension, dimension), dtype=bool)
@@ -63,7 +65,6 @@ class PSphere(object):
                 slice_radius = np.sqrt(self.radius ** 2 - slice_distance ** 2) - 0.5
                 if slice_radius < 0 or np.isnan(slice_radius):
                     slice_radius = 0
-                # todo: continue with patch function()
                 self.patch(x, y, slice_radius)
 
     def patch(self, x, y, radius):
@@ -168,15 +169,15 @@ class PSphere(object):
                 # self.generate_plane()
                 # self.check_percolation()
 
-    def calculate_surface_area(self, resolution):
+    def calculate_hydraulic_radius(self, resolution):
         """
-        Calculates the volumetric surface area of the porous media
+        Calculates the hydraulic radius of the porous medium
 
         Parameters:
         ----------
         :param float resolution: model resolution applied to image
 
-        :return: volumetric surface area of the porous media L^2/L^3
+        :return: hydraulic radius of the image
         """
         surface = 0
         for i, xdim in enumerate(self.matrix):
@@ -191,10 +192,11 @@ class PSphere(object):
                         (ydim[j-1], ydim[j]) == (False, True):
                     surface += 1
 
-        sa0 = surface * (resolution ** 2) * 10 ** 2  # facilitates radial correction?
-        img_volume = (self.dimension ** 2) * resolution ** 3
+        pore = np.count_nonzero(self.matrix) * (resolution ** 3)
 
-        return sa0 / img_volume
+        sa0 = surface * (resolution ** 2)
+
+        return pore / sa0
 
     def check_porosity(self):
         porosity = (np.count_nonzero(self.matrix)/float(self.dimension * self.dimension))
@@ -214,7 +216,8 @@ class PSphere(object):
 
 
 if __name__ == "__main__":
-    psphere = PSphere()
+    psphere = PSphere(dimension=200, radius=18, porosity=0.375, sensitivity=0.02)
     print(psphere.matrix_porosity)
+    print psphere.calculate_hydraulic_radius(1e-06)
     plt.imshow(psphere.matrix, interpolation="None")
     plt.show()
