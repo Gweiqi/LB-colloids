@@ -49,7 +49,7 @@ class Images:
         else:
             pass
         
-        self.arr = np.array(self.image)
+        self.arr = np.array(self.image, dtype=int)
 
 
 class BoundaryCondition:
@@ -70,7 +70,7 @@ class BoundaryCondition:
         number of open boundary layers to add to the top and
         bottom of the image array.
     """
-    def __init__(self, data, fluidvx, solidvx, nlayers):
+    def __init__(self, data, fluidvx, solidvx, nlayers, bottom=False):
 
         if isinstance(fluidvx, int):
             fluidvx = [fluidvx]
@@ -82,19 +82,28 @@ class BoundaryCondition:
         self.__solidvx = solidvx
         self.__nlayers = nlayers
         self.__dimx = data.shape[1] + 2
-        self.__dimy = data.shape[0] + (nlayers * 2)
+        self.__bottom = bottom
+        if bottom:
+            self.__lower_layer = 0
+            self.__dimy = data.shape[0] + nlayers
+        else:
+            self.__dimy = data.shape[0] + (nlayers * 2)
         self.image = data
         self.__binarized = None
         self.__set_boundary_conditions()
         print("Porosity: ", self.__porosity())
         
     def __set_boundary_conditions(self):
+        if self.__bottom:
+            bottom = self.__dimy - 1
+        else:
+            bottom = self.__dimy - self.__nlayers - 1
         setup_bc = np.zeros((self.__dimy, self.__dimx))
         setup_bc.T[0] = 1.
         setup_bc.T[-1] = 1.
         for i in range(self.__dimy):
             for j in range(self.__dimx):
-                if self.__nlayers <= i <= self.__dimy - self.__nlayers - 1:
+                if self.__nlayers <= i <= bottom:
                     if 0 < j < self.__dimx - 1:
                         value = self.image[i-self.__nlayers, j-1]
                         if value in self.__fluidvx:
@@ -158,22 +167,23 @@ class BoundaryCondition:
     
 
 class HDF5_write:
-    def __init__(self, arr, porosity, boundary, output):
-        """
-        Write class for LB2d_image. Writes a HDF5 file that includes
-        the binary image, porosit &, number of boundary layers,
+    """
+    Write class for LB2d_image. Writes a HDF5 file that includes
+    the binary image, porosit &, number of boundary layers,
 
-        Parameters:
-        ----------
-        :param np.ndarray arr:
-            binarized image data
-        :param float porosity:
-            porosity of the image
-        :param int boundary:
-            number of boundary layers
-        :param str output:
-            output hdf5 file name
-        """
+    Parameters:
+    ----------
+    :param np.ndarray arr:
+        binarized image data
+    :param float porosity:
+        porosity of the image
+    :param int boundary:
+        number of boundary layers
+    :param str output:
+        output hdf5 file name
+    """
+    def __init__(self, arr, porosity, boundary, output):
+
         self.__x = None
         with H.File(output, "w") as fi:
             print '[Writing to %s]' % output

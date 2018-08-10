@@ -198,6 +198,43 @@ class PSphere(object):
 
         return pore / sa0
 
+    @staticmethod
+    def static_hydraulic_radius(matrix, resolution, invert=True):
+        """
+        Static method to calculate the hydraulic radius of a given porous medium
+
+        Parameters:
+        ----------
+        :param np.ndarray matrix: boolean array corresponding to porous media
+        :param float resolution: model resolution applied to image
+        :param bool invert: inverts model, pore space needs to be set to True
+
+        :return: hydraulic radius of the image
+        """
+
+        if invert:
+            matrix = np.invert(matrix)
+
+        surface = 0
+        for i, xdim in enumerate(matrix):
+            for j in range(1, len(xdim)):
+                if (xdim[j - 1], xdim[j]) == (True, False) or \
+                                (xdim[j - 1], xdim[j]) == (False, True):
+                    surface += 1
+
+        for i, ydim in enumerate(matrix.T):
+            for j in range(1, len(ydim)):
+                if (ydim[j - 1], ydim[j]) == (True, False) or \
+                                (ydim[j - 1], ydim[j]) == (False, True):
+                    surface += 1
+
+        pore = np.count_nonzero(matrix) * (resolution ** 3)
+
+        sa0 = surface * (resolution ** 2)
+
+        return pore / sa0
+
+
     def check_porosity(self):
         porosity = (np.count_nonzero(self.matrix)/float(self.dimension * self.dimension))
         if abs(porosity - self.porosity) > self.sensitivity:
