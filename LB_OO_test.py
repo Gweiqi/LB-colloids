@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from lb_colloids import cIO
 from lb_colloids import ColloidModel
 import os
+import time
 
 from lb_colloids import ColloidMath as cm
 import numpy as np
@@ -33,7 +34,8 @@ x = lbmodel.get_velocity_conversion()
 # need to think about namespace now.
 # now we can use this to do other analysis such as sensitivity analysis
 # sensitivity analysis, do this soonish!
-
+t0 = time.time()
+tc0 = time.clock()
 io = cIO.ColloidsConfig()
 print io.valid_model_parameters
 io['lbmodel'] = lbname
@@ -45,14 +47,14 @@ io['ac'] = 1e-6
 io['timestep'] = 5e-7
 io['temperature'] = 298.
 # io['multiple_config'] = False
-io["col_col_update"] = 100
-io['continuous'] = 10000
+io["col_col_update"] = 10
+io['continuous'] = 0
 
 io['i'] = 0.001
 
 io['print_time'] = 10000
-io['plot'] = True
-io['showfig'] = True
+io['plot'] = False
+io['showfig'] = False
 io['endpoint'] = os.path.join(path, 'Synth100_3.endpoint')
 io['timeseries'] = os.path.join(path, 'Synth100_3.pathline')
 io['store_time'] = 100
@@ -66,7 +68,10 @@ print io.output_control_parameters
 
 config = cIO.Config(io.config)
 ColloidModel.run(config)
-
+t1 = time.time()
+tc1 = time.clock()
+print(t1 - t0)
+print(tc1 - tc0)
 
 # import matplotlib.pyplot as plt
 """

@@ -114,8 +114,6 @@ class PSphere(object):
 
                 self.matrix[newypos][newxpos] = self.particle_space
 
-
-
     def burn_2d(self):
         """
 
@@ -199,14 +197,13 @@ class PSphere(object):
         return pore / sa0
 
     @staticmethod
-    def static_hydraulic_radius(matrix, resolution, invert=True):
+    def static_hydraulic_radius(matrix, invert=True):
         """
         Static method to calculate the hydraulic radius of a given porous medium
 
         Parameters:
         ----------
         :param np.ndarray matrix: boolean array corresponding to porous media
-        :param float resolution: model resolution applied to image
         :param bool invert: inverts model, pore space needs to be set to True
 
         :return: hydraulic radius of the image
@@ -228,12 +225,61 @@ class PSphere(object):
                                 (ydim[j - 1], ydim[j]) == (False, True):
                     surface += 1
 
-        pore = np.count_nonzero(matrix) * (resolution ** 3)
+        pore = np.count_nonzero(matrix)
 
-        sa0 = surface * (resolution ** 2)
+        sa0 = surface
 
-        return pore / sa0
+        return pore / float(sa0)
 
+    @staticmethod
+    def static_surface_area(matrix, invert=True):
+        """
+        Static method to calculate the non-dimensional surface
+        area of a given porous medium
+
+        Parameters:
+        ----------
+        :param np.ndarray matrix: boolean array corresponding to porous media
+        :param bool invert: inverts model, pore space needs to be set to True
+
+        :return: hydraulic radius of the image
+        """
+
+        if invert:
+            matrix = np.invert(matrix)
+
+        surface = 0
+        for i, xdim in enumerate(matrix):
+            for j in range(1, len(xdim)):
+                if (xdim[j - 1], xdim[j]) == (True, False) or \
+                        (xdim[j - 1], xdim[j]) == (False, True):
+                    surface += 1
+
+        for i, ydim in enumerate(matrix.T):
+            for j in range(1, len(ydim)):
+                if (ydim[j - 1], ydim[j]) == (True, False) or \
+                        (ydim[j - 1], ydim[j]) == (False, True):
+                    surface += 1
+
+        return surface
+
+    @staticmethod
+    def static_porosity(matrix, invert=True):
+        """
+        Static method to calculate the porosity of a given porous media
+
+        Parameters:
+        ----------
+        :param np.ndarray matrix: boolean array corresponding to porous media
+        :param bool invert: inverts model, pore space needs to be set to True
+
+        :return: porosity of the image
+        """
+        if invert:
+            matrix = np.invert(matrix)
+
+        porosity = np.count_nonzero(matrix)/float(matrix.shape[0] * matrix.shape[1])
+        return porosity
 
     def check_porosity(self):
         porosity = (np.count_nonzero(self.matrix)/float(self.dimension * self.dimension))
