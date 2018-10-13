@@ -1,0 +1,203 @@
+\indexentry{lb\_colloids (module)|hyperpage}{17}
+\indexentry{LBImage (in module lb\_colloids)|hyperpage}{17}
+\indexentry{lb\_colloids.LB.LB\_2Dimage (module)|hyperpage}{17}
+\indexentry{BoundaryCondition (class in lb\_colloids.LB.LB\_2Dimage)|hyperpage}{17}
+\indexentry{binarized (lb\_colloids.LB.LB\_2Dimage.BoundaryCondition attribute)|hyperpage}{18}
+\indexentry{fluid\_voxels (lb\_colloids.LB.LB\_2Dimage.BoundaryCondition attribute)|hyperpage}{18}
+\indexentry{grey\_values (lb\_colloids.LB.LB\_2Dimage.BoundaryCondition attribute)|hyperpage}{18}
+\indexentry{nlayers (lb\_colloids.LB.LB\_2Dimage.BoundaryCondition attribute)|hyperpage}{18}
+\indexentry{porosity (lb\_colloids.LB.LB\_2Dimage.BoundaryCondition attribute)|hyperpage}{18}
+\indexentry{solid\_voxels (lb\_colloids.LB.LB\_2Dimage.BoundaryCondition attribute)|hyperpage}{18}
+\indexentry{HDF5\_write (class in lb\_colloids.LB.LB\_2Dimage)|hyperpage}{18}
+\indexentry{Images (class in lb\_colloids.LB.LB\_2Dimage)|hyperpage}{18}
+\indexentry{run() (in module lb\_colloids.LB.LB\_2Dimage)|hyperpage}{18}
+\indexentry{lb\_colloids.LB.LB\_2Dpermeability (module)|hyperpage}{19}
+\indexentry{HDF5\_write (class in lb\_colloids.LB.LB\_2Dpermeability)|hyperpage}{19}
+\indexentry{LB2DModel (class in lb\_colloids.LB.LB\_2Dpermeability)|hyperpage}{20}
+\indexentry{cs (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{20}
+\indexentry{cs2 (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{20}
+\indexentry{get\_mean\_pore\_size() (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel method)|hyperpage}{21}
+\indexentry{get\_reynolds\_number() (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel method)|hyperpage}{21}
+\indexentry{get\_velocity\_conversion() (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel method)|hyperpage}{21}
+\indexentry{gravity (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{21}
+\indexentry{img (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{21}
+\indexentry{kernel (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{21}
+\indexentry{niters (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{21}
+\indexentry{nlayers (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{21}
+\indexentry{nx (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{21}
+\indexentry{ny (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{21}
+\indexentry{physical\_rho (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{21}
+\indexentry{physical\_viscosity (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{21}
+\indexentry{porosity (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{21}
+\indexentry{q (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{21}
+\indexentry{resolution (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{21}
+\indexentry{rho (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{21}
+\indexentry{run() (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel method)|hyperpage}{21}
+\indexentry{tau (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{21}
+\indexentry{viscosity (lb\_colloids.LB.LB\_2Dpermeability.LB2DModel attribute)|hyperpage}{21}
+\indexentry{darcy\_velocity() (in module lb\_colloids.LB.LB\_2Dpermeability)|hyperpage}{21}
+\indexentry{get\_mean\_pore\_size() (in module lb\_colloids.LB.LB\_2Dpermeability)|hyperpage}{22}
+\indexentry{get\_reynolds\_number() (in module lb\_colloids.LB.LB\_2Dpermeability)|hyperpage}{22}
+\indexentry{get\_velocity\_conversion() (in module lb\_colloids.LB.LB\_2Dpermeability)|hyperpage}{22}
+\indexentry{lb\_colloids (module)|hyperpage}{22}
+\indexentry{LB2DModel (class in lb\_colloids)|hyperpage}{22}
+\indexentry{lb\_colloids (module)|hyperpage}{23}
+\indexentry{lbIO (in module lb\_colloids)|hyperpage}{23}
+\indexentry{lb\_colloids.LB.LBIO (module)|hyperpage}{23}
+\indexentry{Config (class in lb\_colloids.LB.LBIO)|hyperpage}{23}
+\indexentry{check\_if\_valid() (lb\_colloids.LB.LBIO.Config method)|hyperpage}{23}
+\indexentry{check\_model\_parameters() (lb\_colloids.LB.LBIO.Config method)|hyperpage}{24}
+\indexentry{get\_block() (lb\_colloids.LB.LBIO.Config method)|hyperpage}{24}
+\indexentry{image\_parameters() (lb\_colloids.LB.LBIO.Config method)|hyperpage}{24}
+\indexentry{model\_parameters() (lb\_colloids.LB.LBIO.Config method)|hyperpage}{24}
+\indexentry{output\_parameters() (lb\_colloids.LB.LBIO.Config method)|hyperpage}{24}
+\indexentry{parametertype() (lb\_colloids.LB.LBIO.Config method)|hyperpage}{24}
+\indexentry{permeability\_parameters() (lb\_colloids.LB.LBIO.Config method)|hyperpage}{24}
+\indexentry{LB\_pretty (in module lb\_colloids.LB)|hyperpage}{24}
+\indexentry{lb\_colloids.LB.LB\_pretty (module)|hyperpage}{24}
+\indexentry{set\_colormap() (in module lb\_colloids.LB.LB\_pretty)|hyperpage}{25}
+\indexentry{velocity\_image() (in module lb\_colloids.LB.LB\_pretty)|hyperpage}{25}
+\indexentry{lb\_colloids (module)|hyperpage}{27}
+\indexentry{ColloidModel (in module lb\_colloids)|hyperpage}{27}
+\indexentry{lb\_colloids.Colloids.LB\_Colloid (module)|hyperpage}{27}
+\indexentry{Colloid (class in lb\_colloids.Colloids.LB\_Colloid)|hyperpage}{27}
+\indexentry{reset\_master\_positions() (lb\_colloids.Colloids.LB\_Colloid.Colloid method)|hyperpage}{28}
+\indexentry{store\_position() (lb\_colloids.Colloids.LB\_Colloid.Colloid method)|hyperpage}{28}
+\indexentry{strip\_positions() (lb\_colloids.Colloids.LB\_Colloid.Colloid method)|hyperpage}{28}
+\indexentry{update\_position() (lb\_colloids.Colloids.LB\_Colloid.Colloid method)|hyperpage}{28}
+\indexentry{update\_special() (lb\_colloids.Colloids.LB\_Colloid.Colloid method)|hyperpage}{28}
+\indexentry{Singleton (class in lb\_colloids.Colloids.LB\_Colloid)|hyperpage}{28}
+\indexentry{TrackTime (class in lb\_colloids.Colloids.LB\_Colloid)|hyperpage}{28}
+\indexentry{print\_time() (lb\_colloids.Colloids.LB\_Colloid.TrackTime method)|hyperpage}{28}
+\indexentry{strip\_time() (lb\_colloids.Colloids.LB\_Colloid.TrackTime method)|hyperpage}{28}
+\indexentry{update\_time() (lb\_colloids.Colloids.LB\_Colloid.TrackTime method)|hyperpage}{28}
+\indexentry{run() (in module lb\_colloids.Colloids.LB\_Colloid)|hyperpage}{28}
+\indexentry{lb\_colloids (module)|hyperpage}{29}
+\indexentry{ColloidMath (in module lb\_colloids)|hyperpage}{29}
+\indexentry{lb\_colloids.Colloids.Colloid\_Math (module)|hyperpage}{29}
+\indexentry{Bouyancy (class in lb\_colloids.Colloids.Colloid\_Math)|hyperpage}{30}
+\indexentry{Brownian (class in lb\_colloids.Colloids.Colloid\_Math)|hyperpage}{30}
+\indexentry{ColloidColloid (class in lb\_colloids.Colloids.Colloid\_Math)|hyperpage}{30}
+\indexentry{colloid\_potential (lb\_colloids.Colloids.Colloid\_Math.ColloidColloid attribute)|hyperpage}{31}
+\indexentry{debye (lb\_colloids.Colloids.Colloid\_Math.ColloidColloid attribute)|hyperpage}{31}
+\indexentry{ionic\_strength (lb\_colloids.Colloids.Colloid\_Math.ColloidColloid attribute)|hyperpage}{31}
+\indexentry{positions (lb\_colloids.Colloids.Colloid\_Math.ColloidColloid attribute)|hyperpage}{31}
+\indexentry{update() (lb\_colloids.Colloids.Colloid\_Math.ColloidColloid method)|hyperpage}{31}
+\indexentry{x (lb\_colloids.Colloids.Colloid\_Math.ColloidColloid attribute)|hyperpage}{31}
+\indexentry{x\_array (lb\_colloids.Colloids.Colloid\_Math.ColloidColloid attribute)|hyperpage}{32}
+\indexentry{x\_distance\_array (lb\_colloids.Colloids.Colloid\_Math.ColloidColloid attribute)|hyperpage}{32}
+\indexentry{y (lb\_colloids.Colloids.Colloid\_Math.ColloidColloid attribute)|hyperpage}{32}
+\indexentry{y\_array (lb\_colloids.Colloids.Colloid\_Math.ColloidColloid attribute)|hyperpage}{32}
+\indexentry{y\_distance\_array (lb\_colloids.Colloids.Colloid\_Math.ColloidColloid attribute)|hyperpage}{32}
+\indexentry{DLVO (class in lb\_colloids.Colloids.Colloid\_Math)|hyperpage}{32}
+\indexentry{attractive\_x (lb\_colloids.Colloids.Colloid\_Math.DLVO attribute)|hyperpage}{33}
+\indexentry{attractive\_y (lb\_colloids.Colloids.Colloid\_Math.DLVO attribute)|hyperpage}{33}
+\indexentry{ionic() (lb\_colloids.Colloids.Colloid\_Math.DLVO method)|hyperpage}{34}
+\indexentry{k\_debye (lb\_colloids.Colloids.Colloid\_Math.DLVO attribute)|hyperpage}{34}
+\indexentry{Drag (class in lb\_colloids.Colloids.Colloid\_Math)|hyperpage}{34}
+\indexentry{drag\_x (lb\_colloids.Colloids.Colloid\_Math.Drag attribute)|hyperpage}{35}
+\indexentry{update() (lb\_colloids.Colloids.Colloid\_Math.Drag method)|hyperpage}{35}
+\indexentry{ForceToVelocity (class in lb\_colloids.Colloids.Colloid\_Math)|hyperpage}{35}
+\indexentry{Gap (class in lb\_colloids.Colloids.Colloid\_Math)|hyperpage}{35}
+\indexentry{Gravity (class in lb\_colloids.Colloids.Colloid\_Math)|hyperpage}{36}
+\indexentry{Velocity (class in lb\_colloids.Colloids.Colloid\_Math)|hyperpage}{36}
+\indexentry{lb\_colloids (module)|hyperpage}{36}
+\indexentry{cIO (in module lb\_colloids)|hyperpage}{36}
+\indexentry{lb\_colloids.Colloids.Colloid\_IO (module)|hyperpage}{36}
+\indexentry{ColloidsConfig (class in lb\_colloids.Colloids.Colloid\_IO)|hyperpage}{37}
+\indexentry{chemical\_parameters (lb\_colloids.Colloids.Colloid\_IO.ColloidsConfig attribute)|hyperpage}{37}
+\indexentry{config (lb\_colloids.Colloids.Colloid\_IO.ColloidsConfig attribute)|hyperpage}{37}
+\indexentry{model\_parameters (lb\_colloids.Colloids.Colloid\_IO.ColloidsConfig attribute)|hyperpage}{37}
+\indexentry{output\_control\_parameters (lb\_colloids.Colloids.Colloid\_IO.ColloidsConfig attribute)|hyperpage}{37}
+\indexentry{physical\_parameters (lb\_colloids.Colloids.Colloid\_IO.ColloidsConfig attribute)|hyperpage}{37}
+\indexentry{valid\_chemical\_parameters (lb\_colloids.Colloids.Colloid\_IO.ColloidsConfig attribute)|hyperpage}{37}
+\indexentry{valid\_model\_parameters (lb\_colloids.Colloids.Colloid\_IO.ColloidsConfig attribute)|hyperpage}{37}
+\indexentry{valid\_output\_control\_parameters (lb\_colloids.Colloids.Colloid\_IO.ColloidsConfig attribute)|hyperpage}{37}
+\indexentry{valid\_physical\_parameters (lb\_colloids.Colloids.Colloid\_IO.ColloidsConfig attribute)|hyperpage}{37}
+\indexentry{write() (lb\_colloids.Colloids.Colloid\_IO.ColloidsConfig method)|hyperpage}{38}
+\indexentry{Config (class in lb\_colloids.Colloids.Colloid\_IO)|hyperpage}{38}
+\indexentry{add\_universal\_parameters() (lb\_colloids.Colloids.Colloid\_IO.Config method)|hyperpage}{38}
+\indexentry{adjust\_pname() (lb\_colloids.Colloids.Colloid\_IO.Config method)|hyperpage}{38}
+\indexentry{check\_if\_valid() (lb\_colloids.Colloids.Colloid\_IO.Config method)|hyperpage}{38}
+\indexentry{check\_model\_parameters() (lb\_colloids.Colloids.Colloid\_IO.Config method)|hyperpage}{38}
+\indexentry{chemical\_parameters() (lb\_colloids.Colloids.Colloid\_IO.Config method)|hyperpage}{38}
+\indexentry{get\_block() (lb\_colloids.Colloids.Colloid\_IO.Config method)|hyperpage}{39}
+\indexentry{model\_parameters() (lb\_colloids.Colloids.Colloid\_IO.Config method)|hyperpage}{39}
+\indexentry{output\_control() (lb\_colloids.Colloids.Colloid\_IO.Config method)|hyperpage}{39}
+\indexentry{parametertype() (lb\_colloids.Colloids.Colloid\_IO.Config method)|hyperpage}{39}
+\indexentry{physical\_parameters() (lb\_colloids.Colloids.Colloid\_IO.Config method)|hyperpage}{39}
+\indexentry{HDF5WriteArray (class in lb\_colloids.Colloids.Colloid\_IO)|hyperpage}{39}
+\indexentry{Output (class in lb\_colloids.Colloids.Colloid\_IO)|hyperpage}{39}
+\indexentry{write\_output() (lb\_colloids.Colloids.Colloid\_IO.Output method)|hyperpage}{40}
+\indexentry{write\_single\_colloid() (lb\_colloids.Colloids.Colloid\_IO.Output method)|hyperpage}{40}
+\indexentry{lb\_colloids (module)|hyperpage}{40}
+\indexentry{ColloidOutput (in module lb\_colloids)|hyperpage}{40}
+\indexentry{lb\_colloids.Colloids.Colloid\_output (module)|hyperpage}{40}
+\indexentry{ADE (class in lb\_colloids.Colloids.Colloid\_output)|hyperpage}{40}
+\indexentry{reset\_pdf() (lb\_colloids.Colloids.Colloid\_output.ADE method)|hyperpage}{41}
+\indexentry{solve\_jury\_1991() (lb\_colloids.Colloids.Colloid\_output.ADE method)|hyperpage}{41}
+\indexentry{solve\_van\_genuchten\_1986() (lb\_colloids.Colloids.Colloid\_output.ADE method)|hyperpage}{41}
+\indexentry{ASCIIReader (class in lb\_colloids.Colloids.Colloid\_output)|hyperpage}{41}
+\indexentry{read\_ascii() (lb\_colloids.Colloids.Colloid\_output.ASCIIReader method)|hyperpage}{41}
+\indexentry{read\_header() (lb\_colloids.Colloids.Colloid\_output.ASCIIReader method)|hyperpage}{41}
+\indexentry{Breakthrough (class in lb\_colloids.Colloids.Colloid\_output)|hyperpage}{42}
+\indexentry{breakthrough\_curve (lb\_colloids.Colloids.Colloid\_output.Breakthrough attribute)|hyperpage}{42}
+\indexentry{plot() (lb\_colloids.Colloids.Colloid\_output.Breakthrough method)|hyperpage}{42}
+\indexentry{plot\_pv() (lb\_colloids.Colloids.Colloid\_output.Breakthrough method)|hyperpage}{42}
+\indexentry{pore\_volume\_conversion() (lb\_colloids.Colloids.Colloid\_output.Breakthrough method)|hyperpage}{42}
+\indexentry{CCModelPlot (class in lb\_colloids.Colloids.Colloid\_output)|hyperpage}{42}
+\indexentry{get\_data() (lb\_colloids.Colloids.Colloid\_output.CCModelPlot method)|hyperpage}{43}
+\indexentry{get\_data\_by\_path() (lb\_colloids.Colloids.Colloid\_output.CCModelPlot method)|hyperpage}{43}
+\indexentry{keys (lb\_colloids.Colloids.Colloid\_output.CCModelPlot attribute)|hyperpage}{43}
+\indexentry{plot() (lb\_colloids.Colloids.Colloid\_output.CCModelPlot method)|hyperpage}{43}
+\indexentry{plot\_mesh() (lb\_colloids.Colloids.Colloid\_output.CCModelPlot method)|hyperpage}{43}
+\indexentry{ColloidVelocity (class in lb\_colloids.Colloids.Colloid\_output)|hyperpage}{43}
+\indexentry{cv (lb\_colloids.Colloids.Colloid\_output.ColloidVelocity attribute)|hyperpage}{43}
+\indexentry{max (lb\_colloids.Colloids.Colloid\_output.ColloidVelocity attribute)|hyperpage}{43}
+\indexentry{mean (lb\_colloids.Colloids.Colloid\_output.ColloidVelocity attribute)|hyperpage}{43}
+\indexentry{min (lb\_colloids.Colloids.Colloid\_output.ColloidVelocity attribute)|hyperpage}{43}
+\indexentry{plot() (lb\_colloids.Colloids.Colloid\_output.ColloidVelocity method)|hyperpage}{43}
+\indexentry{plot\_histogram() (lb\_colloids.Colloids.Colloid\_output.ColloidVelocity method)|hyperpage}{44}
+\indexentry{stdev (lb\_colloids.Colloids.Colloid\_output.ColloidVelocity attribute)|hyperpage}{44}
+\indexentry{var (lb\_colloids.Colloids.Colloid\_output.ColloidVelocity attribute)|hyperpage}{44}
+\indexentry{DistributionFunction (class in lb\_colloids.Colloids.Colloid\_output)|hyperpage}{44}
+\indexentry{plot() (lb\_colloids.Colloids.Colloid\_output.DistributionFunction method)|hyperpage}{44}
+\indexentry{plot\_pv() (lb\_colloids.Colloids.Colloid\_output.DistributionFunction method)|hyperpage}{44}
+\indexentry{pore\_volume\_conversion() (lb\_colloids.Colloids.Colloid\_output.DistributionFunction method)|hyperpage}{45}
+\indexentry{reset\_pdf() (lb\_colloids.Colloids.Colloid\_output.DistributionFunction method)|hyperpage}{45}
+\indexentry{Hdf5Reader (class in lb\_colloids.Colloids.Colloid\_output)|hyperpage}{45}
+\indexentry{get\_data() (lb\_colloids.Colloids.Colloid\_output.Hdf5Reader method)|hyperpage}{45}
+\indexentry{get\_data\_by\_path() (lb\_colloids.Colloids.Colloid\_output.Hdf5Reader method)|hyperpage}{45}
+\indexentry{keys (lb\_colloids.Colloids.Colloid\_output.Hdf5Reader attribute)|hyperpage}{45}
+\indexentry{LBOutput (class in lb\_colloids.Colloids.Colloid\_output)|hyperpage}{45}
+\indexentry{get\_data() (lb\_colloids.Colloids.Colloid\_output.LBOutput method)|hyperpage}{46}
+\indexentry{keys (lb\_colloids.Colloids.Colloid\_output.LBOutput attribute)|hyperpage}{46}
+\indexentry{ModelPlot (class in lb\_colloids.Colloids.Colloid\_output)|hyperpage}{46}
+\indexentry{get\_data() (lb\_colloids.Colloids.Colloid\_output.ModelPlot method)|hyperpage}{46}
+\indexentry{get\_data\_by\_path() (lb\_colloids.Colloids.Colloid\_output.ModelPlot method)|hyperpage}{46}
+\indexentry{plot() (lb\_colloids.Colloids.Colloid\_output.ModelPlot method)|hyperpage}{46}
+\indexentry{plot\_velocity\_magnitude() (lb\_colloids.Colloids.Colloid\_output.ModelPlot method)|hyperpage}{46}
+\indexentry{lb\_colloids.nam\_file (module)|hyperpage}{46}
+\indexentry{NamFile (class in lb\_colloids.nam\_file)|hyperpage}{46}
+\indexentry{lb\_colloids.Colloids.Colloid\_Setup (module)|hyperpage}{47}
+\indexentry{GridArray (class in lb\_colloids.Colloids.Colloid\_Setup)|hyperpage}{47}
+\indexentry{gridx (lb\_colloids.Colloids.Colloid\_Setup.GridArray attribute)|hyperpage}{47}
+\indexentry{gridy (lb\_colloids.Colloids.Colloid\_Setup.GridArray attribute)|hyperpage}{47}
+\indexentry{vector\_x (lb\_colloids.Colloids.Colloid\_Setup.GridArray attribute)|hyperpage}{47}
+\indexentry{vector\_y (lb\_colloids.Colloids.Colloid\_Setup.GridArray attribute)|hyperpage}{47}
+\indexentry{Hdf5Reader (class in lb\_colloids.Colloids.Colloid\_Setup)|hyperpage}{47}
+\indexentry{InterpV() (in module lb\_colloids.Colloids.Colloid\_Setup)|hyperpage}{48}
+\indexentry{LBVArray() (in module lb\_colloids.Colloids.Colloid\_Setup)|hyperpage}{48}
+\indexentry{lb\_colloids (module)|hyperpage}{49}
+\indexentry{PSphere (class in lb\_colloids)|hyperpage}{49}
+\indexentry{lb\_colloids.utilities.psphere (module)|hyperpage}{49}
+\indexentry{PSphere (class in lb\_colloids.utilities.psphere)|hyperpage}{49}
+\indexentry{calculate\_hydraulic\_radius() (lb\_colloids.utilities.psphere.PSphere method)|hyperpage}{50}
+\indexentry{check\_percolation() (lb\_colloids.utilities.psphere.PSphere method)|hyperpage}{50}
+\indexentry{generate\_plane() (lb\_colloids.utilities.psphere.PSphere method)|hyperpage}{50}
+\indexentry{iround() (lb\_colloids.utilities.psphere.PSphere method)|hyperpage}{50}
+\indexentry{patch() (lb\_colloids.utilities.psphere.PSphere method)|hyperpage}{50}
+\indexentry{save\_image() (lb\_colloids.utilities.psphere.PSphere method)|hyperpage}{50}
+\indexentry{static\_hydraulic\_radius() (lb\_colloids.utilities.psphere.PSphere static method)|hyperpage}{50}
+\indexentry{static\_porosity() (lb\_colloids.utilities.psphere.PSphere static method)|hyperpage}{50}
+\indexentry{static\_surface\_area() (lb\_colloids.utilities.psphere.PSphere static method)|hyperpage}{50}

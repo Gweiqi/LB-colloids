@@ -1,0 +1,74 @@
+\select@language {english}
+\contentsline {chapter}{\numberline {1}Introduction to LB-Colloids}{1}{chapter.1}
+\contentsline {chapter}{\numberline {2}Table of Mathematical Symbols}{3}{chapter.2}
+\contentsline {section}{\numberline {2.1}Lattice Boltzmann}{3}{section.2.1}
+\contentsline {section}{\numberline {2.2}Colloid Simulation}{3}{section.2.2}
+\contentsline {chapter}{\numberline {3}Installation of LB-Colloids}{5}{chapter.3}
+\contentsline {chapter}{\numberline {4}FORMATED TEXT INPUT}{7}{chapter.4}
+\contentsline {section}{\numberline {4.1}Description of Data Types}{7}{section.4.1}
+\contentsline {section}{\numberline {4.2}NAM File Inputs}{8}{section.4.2}
+\contentsline {subsection}{\numberline {4.2.1}Input Structure:}{8}{subsection.4.2.1}
+\contentsline {subsection}{\numberline {4.2.2}Example NAM file:}{9}{subsection.4.2.2}
+\contentsline {section}{\numberline {4.3}Lattice Boltzmann Configuration File}{9}{section.4.3}
+\contentsline {subsection}{\numberline {4.3.1}Input Structure:}{9}{subsection.4.3.1}
+\contentsline {subsection}{\numberline {4.3.2}Example Lattice Boltzmann configuration file:}{12}{subsection.4.3.2}
+\contentsline {section}{\numberline {4.4}Colloids Simulation Control File}{12}{section.4.4}
+\contentsline {subsection}{\numberline {4.4.1}Input Structure:}{13}{subsection.4.4.1}
+\contentsline {subsection}{\numberline {4.4.2}Example colloid model configuration file:}{16}{subsection.4.4.2}
+\contentsline {chapter}{\numberline {5}Lattice Boltzmann}{17}{chapter.5}
+\contentsline {section}{\numberline {5.1}Lattice Boltzmann boundary conditions}{17}{section.5.1}
+\contentsline {subsection}{\numberline {5.1.1}API documentation}{17}{subsection.5.1.1}
+\contentsline {paragraph}{Attributes}{18}{paragraph*.6}
+\contentsline {section}{\numberline {5.2}Lattice Boltzmann Permeability}{19}{section.5.2}
+\contentsline {subsection}{\numberline {5.2.1}API documentation}{19}{subsection.5.2.1}
+\contentsline {paragraph}{Attributes}{20}{paragraph*.19}
+\contentsline {paragraph}{Methods}{20}{paragraph*.20}
+\contentsline {paragraph}{Attributes}{23}{paragraph*.48}
+\contentsline {paragraph}{Methods}{23}{paragraph*.49}
+\contentsline {section}{\numberline {5.3}Lattice Boltzmann Input Output}{23}{section.5.3}
+\contentsline {subsection}{\numberline {5.3.1}API documentation}{23}{subsection.5.3.1}
+\contentsline {paragraph}{Methods}{23}{paragraph*.54}
+\contentsline {chapter}{\numberline {6}Colloid Simulation}{27}{chapter.6}
+\contentsline {section}{\numberline {6.1}LB Colloid simulations}{27}{section.6.1}
+\contentsline {subsection}{\numberline {6.1.1}API documentation}{27}{subsection.6.1.1}
+\contentsline {paragraph}{Methods}{28}{paragraph*.71}
+\contentsline {paragraph}{Methods}{28}{paragraph*.79}
+\contentsline {section}{\numberline {6.2}LB Colloid mathematics}{29}{section.6.2}
+\contentsline {subsection}{\numberline {6.2.1}API documentation}{29}{subsection.6.2.1}
+\contentsline {paragraph}{Attributes}{30}{paragraph*.89}
+\contentsline {paragraph}{Attributes}{31}{paragraph*.91}
+\contentsline {paragraph}{Methods}{31}{paragraph*.92}
+\contentsline {paragraph}{Attributes}{33}{paragraph*.105}
+\contentsline {paragraph}{Methods}{33}{paragraph*.106}
+\contentsline {paragraph}{Attributes}{35}{paragraph*.112}
+\contentsline {paragraph}{Methods}{35}{paragraph*.113}
+\contentsline {paragraph}{Methods}{36}{paragraph*.118}
+\contentsline {section}{\numberline {6.3}LB Colloid Input Output}{36}{section.6.3}
+\contentsline {subsection}{\numberline {6.3.1}API documentation}{36}{subsection.6.3.1}
+\contentsline {paragraph}{Attributes}{37}{paragraph*.125}
+\contentsline {paragraph}{Methods}{37}{paragraph*.126}
+\contentsline {paragraph}{Methods}{38}{paragraph*.138}
+\contentsline {paragraph}{Methods}{40}{paragraph*.151}
+\contentsline {paragraph}{Methods}{41}{paragraph*.158}
+\contentsline {paragraph}{Methods}{41}{paragraph*.163}
+\contentsline {paragraph}{Attributes}{42}{paragraph*.167}
+\contentsline {paragraph}{Methods}{42}{paragraph*.168}
+\contentsline {paragraph}{Attributes}{43}{paragraph*.174}
+\contentsline {paragraph}{Methods}{43}{paragraph*.175}
+\contentsline {paragraph}{Attributes}{43}{paragraph*.182}
+\contentsline {paragraph}{Methods}{43}{paragraph*.183}
+\contentsline {paragraph}{Methods}{44}{paragraph*.193}
+\contentsline {paragraph}{Attributes}{45}{paragraph*.199}
+\contentsline {paragraph}{Methods}{45}{paragraph*.200}
+\contentsline {paragraph}{Attributes}{46}{paragraph*.205}
+\contentsline {paragraph}{Methods}{46}{paragraph*.206}
+\contentsline {paragraph}{Attributes}{46}{paragraph*.210}
+\contentsline {paragraph}{Methods}{46}{paragraph*.211}
+\contentsline {section}{\numberline {6.4}LB Colloid Setup (background classes)}{47}{section.6.4}
+\contentsline {subsection}{\numberline {6.4.1}API documentation}{47}{subsection.6.4.1}
+\contentsline {paragraph}{Attributes}{47}{paragraph*.220}
+\contentsline {chapter}{\numberline {7}Penetrable Sphere (PSHPERE)}{49}{chapter.7}
+\contentsline {paragraph}{Methods}{49}{paragraph*.230}
+\contentsline {paragraph}{Methods}{50}{paragraph*.233}
+\contentsline {chapter}{Python Module Index}{53}{section*.243}
+\contentsline {chapter}{Index}{55}{section*.244}
