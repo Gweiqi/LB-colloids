@@ -24,6 +24,14 @@ import random
 from copy import copy
 
 
+class Singleton(object):
+    """
+    Singleton object to hold Colloid positions. Potential object to hold
+    calculated arrays to avoid passing and reduce memory requirements
+    """
+    positions = []
+
+
 class Colloid:
     """
     Primary colloid class to instantiate and track colloids through a colloid simulation
@@ -31,12 +39,14 @@ class Colloid:
     Parameters:
     ----------
     :param int xlen: grid length after interpolation in the x-direction
+    :param int ylen: grid length after interpolation in the y-direction
     :param float resolution: grid resolution after interpolation
-
+    :param int tag: colloid number for output writing
     """
     positions = []
 
-    def __init__(self, xlen, ylen, resolution):
+    def __init__(self, xlen, ylen, resolution, tag=0):
+        self.tag = tag
         self.xposition = [random.uniform(0.1, 0.9)*xlen*resolution]
         self.yposition = [-resolution]
         self.resolution = resolution
@@ -44,21 +54,21 @@ class Colloid:
         self.storex = [self.xposition[0]]
         self.idx_rx = [int(self.xposition[-1]//resolution)]
         self.idx_ry = [-int(self.yposition[-1]//resolution)]
-        self.__cell_time = [0.]
+        # self.__cell_time = [0.]
         self.time = [0]
         self.colloid_start_time = copy(TrackTime.model_time)
         self.colloid_end_time = np.nan
         self.flag = [1]
         self.ylen = ylen
         self.xlen = xlen
-        Colloid.positions.append(tuple([self.idx_rx[-1], self.idx_ry[-1]]))
+        Singleton.positions.append(tuple([self.idx_rx[-1], self.idx_ry[-1]]))
 
     def reset_master_positions(self):
         """
         Resets the master position storage mechanism for all colloids. Master position
         storage is used to later generate colloid-colloid DLVO fields.
         """
-        Colloid.positions = []
+        Singleton.positions = []
 
     def _append_xposition(self, item):
         self.xposition.append(item)
@@ -85,7 +95,7 @@ class Colloid:
         self.idx_ry.append(item)
 
     def _append_master_positions(self, idx_rx, idx_ry):
-        Colloid.positions.append(tuple([idx_rx, idx_ry]))
+        Singleton.positions.append([idx_rx, idx_ry])
 
     def __update_cell_time(self, item, new_cell=False):
         if new_cell:
@@ -134,11 +144,11 @@ class Colloid:
                 idxrx = int(irx//self.resolution)
                 idxry = int(iry//-self.resolution)
            
-            except ValueError:
+            except (ValueError, OverflowError):
                 if not np.isnan(self.xposition[-1]) and not np.isnan(self.yposition[-1]):
                     self._append_xposition(self.xposition[-1])
                     self._append_yposition(self.yposition[-1])
-                    self.__update_cell_time(ts, new_cell=True)
+                    # self.__update_cell_time(ts, new_cell=True)
                 else:
                     self._append_xposition(random.uniform(0.1, 0.9) * self.xlen * self.resolution)
                     self._append_yposition(-self.resolution)
@@ -149,6 +159,17 @@ class Colloid:
             try:
                 idxry = int(iry//-self.resolution)
                 idxrx = int(irx//self.resolution)
+
+                if not isinstance(idxry, int):
+                    print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+                    print(self.tag)
+                    print(idxry)
+
+                if not isinstance(idxrx, int):
+                    print("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
+                    print(self.tag)
+                    print(idxrx)
+
                 xv = xvelocity[idxry][idxrx]
                 yv = yvelocity[idxry][idxrx]
                 
@@ -168,11 +189,12 @@ class Colloid:
                     # self._append_yposition(iry)
                     return
 
+            # todo: remove this unused block of code after validating it is not necessary
             # track time each colloid spends in a cell to account for acceleration effects
-            if idxrx == self.idx_rx[-1] and idxry == self.idx_ry[-1]:
-                self.__update_cell_time(ts)
-            else:
-                self.__update_cell_time(ts, new_cell=True)
+            # if idxrx == self.idx_rx[-1] and idxry == self.idx_ry[-1]:
+            #     self.__update_cell_time(ts)
+            # else:
+            #     self.__update_cell_time(ts, new_cell=True)
 
             xv = xvelocity[idxry][idxrx]
             yv = yvelocity[idxry][idxrx]
@@ -189,7 +211,7 @@ class Colloid:
             if ry >= 0.:
                 rx = random.uniform(0.1, 0.9)*self.xlen*self.resolution
                 ry = -self.resolution
-                self.__update_cell_time(ts, new_cell=True)
+                # self.__update_cell_time(ts, new_cell=True)
 
             self._append_master_positions(idxrx, idxry)
             self._append_xposition(rx)
@@ -217,6 +239,7 @@ class Colloid:
         """
         self.xposition = [self.xposition[-1]]
         self.yposition = [self.yposition[-1]]
+        self.flag = [self.flag[-1]]
 
     def store_position(self, timer):
         """
@@ -281,11 +304,12 @@ def fmt(x, pos):
 
 def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
                     ncols, timer, print_time, store_time,
-                    colloidcolloid, ModelDict, pathline=None,
+                    colloidcolloid, brownian, drag, ModelDict, pathline=None,
                     timeseries=None, endpoint=None):
     """
     definition to allow the use of multiple ionic strengths ie. attachment then flush, etc....
     """
+    tag = x[-1].tag + 1
     continuous = 0
     if 'continuous' in ModelDict:
         continuous = ModelDict['continuous']
@@ -293,21 +317,41 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
     colloidcolloid.update(x)
     conversion = cm.ForceToVelocity(1, **ModelDict).velocity
 
+    vx0 = np.copy(vx)
+    vy0 = np.copy(vy)
+    colcolupdateinterval = ModelDict['col_col_update']
+
     while timer.time <= iters:
         # update colloid position and time
+        # p = Singleton.positions
         if continuous:
             if timer.time % continuous == 0 and timer.time != 0:
-                x += [Colloid(xlen, ylen, gridres) for i in range(ncols)]
+                x += [Colloid(xlen, ylen, gridres, tag=i + tag) for i in range(ncols)]
+                tag = x[-1].tag + 1
 
-        colloidcolloid.update(x)
-        cc_vx = colloidcolloid.x_array * conversion  # /1e-6
-        cc_vy = colloidcolloid.y_array * conversion  # /1e-6
-        Colloid.positions = []
-        vx0 = vx + cc_vx
-        vy0 = vy + cc_vy
+        # todo: drag force updates!
+        if timer.time % colcolupdateinterval == 0:
+            colloidcolloid.update(x)
+            drag.update(vx0, vy0)
+            up_vx = (colloidcolloid.x_array +
+                     brownian.brownian_x) * conversion  # /1e-6
+            up_vy = (colloidcolloid.y_array +
+                     brownian.brownian_y) * conversion  # /1e-6
 
+            vx0 = vx + up_vx
+            vy0 = vy + up_vy
+
+            pop_list = [ix for ix, colloid in enumerate(x) if colloid.flag[-1] == 3]
+
+            for ix in pop_list[::-1]:
+                endpoint.write_single_colloid(timer, x[ix])
+                x.pop(ix)
+
+        Singleton.positions = []
         for col in x:
             col.update_position(vx0, vy0, ts)
+            if not store_time:
+                col.strip_positions()
 
         timer.update_time()
 
@@ -316,7 +360,10 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
             timer.print_time()
             
         # check store_times and strip younger time steps from memory
-        if timer.time % store_time == 0.:
+        if not store_time:
+            timer.strip_time()
+
+        elif timer.time % store_time == 0.:
             if pathline is not None:
                 pathline.write_output(timer, x)
                 timer.strip_time()
@@ -330,9 +377,11 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
                     col.strip_positions()
                 timeseries.write_output(timer, x, pathline=False)
 
+
+
             else:
                 for col in x:
-                    col.store_position(timer)
+                    col.store_position(timer.time)
                     col.strip_positions()
                 
         # check if user wants an endpoint file
@@ -408,6 +457,11 @@ def run(config):
     else:
         OutputDict['showfig'] = False
 
+    if 'col_col_update' in ModelDict:
+        pass
+    else:
+        ModelDict['col_col_update'] = 1
+
     pathline = None
     timeseries = None
     endpoint = None
@@ -478,8 +532,8 @@ def run(config):
     gravity = cm.Gravity(**PhysicalDict)
     bouyancy = cm.Bouyancy(**PhysicalDict)
 
-    physicalx = brownian.brownian_x + drag_forces.drag_x
-    physicaly = brownian.brownian_y + drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy
+    physicalx = drag_forces.drag_x  #  brownian.brownian_x + drag_forces.drag_x
+    physicaly = drag_forces.drag_y + gravity.gravity + bouyancy.bouyancy  # brownian.brownian_y + drag_forces.drag_y
 
     dlvox = dlvo.EDLx + dlvo.attractive_x  # + dlvo.LVDWx + dlvo.LewisABx
     dlvoy = dlvo.EDLy + dlvo.attractive_y  # dlvo.LVDWy + dlvo.LewisABy
@@ -513,13 +567,15 @@ def run(config):
     timer = TrackTime(ts)
 
     # generate initial pulse of colloids.
-    x = [Colloid(xlen, ylen, gridres) for i in range(ncols)]
+    x = [Colloid(xlen, ylen, gridres, tag=i) for i in range(ncols)]
 
     _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
                     ncols, timer, print_time,
-                    store_time, colloidcolloid, ModelDict,
+                    store_time, colloidcolloid, brownian, drag_forces,
+                    ModelDict,
                     pathline, timeseries, endpoint)
 
+    # todo: update the multiple config block to reflect updates to brown, colcol, and drag
     if multiple_config:
         for confignumber in range(len(multiple_config)):
             config = multiple_config[confignumber]
@@ -564,7 +620,8 @@ def run(config):
 
             _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
                             ncols, timer, print_time,
-                            store_time, colloidcolloid, ModelDict,
+                            store_time, colloidcolloid, brownian, drag_forces,
+                            ModelDict,
                             pathline, timeseries, endpoint)
 
     if OutputDict['plot']:

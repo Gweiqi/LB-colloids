@@ -1146,9 +1146,12 @@ class Hdf5Reader(object):
     ----------
     :param str hdf5: LB-Colloid hdf5 file name
     """
-    data_paths = {'image': 'Binary_image',
+    data_paths = {'ac': "colloids/model_dict/ac",
+                  'image': 'Binary_image',
                   'lb_velocity_x': 'results/uarray',
                   'lb_velocity_y': 'results/uarray',
+                  'lb_mean_velocity_x': 'results/mean_ux',
+                  'lb_mean_velocity_y': 'results/mean_uy',
                   'conversion_factor': 'results/velocity_factor',
                   'pore_diameter': 'results/pore_diameter',
                   'porosity': 'results/porosity',
@@ -1167,6 +1170,7 @@ class Hdf5Reader(object):
                   'velocity_y': 'colloids/uy',
                   'gravity': 'colloids/gravity',
                   'bouyancy': 'colloids/bouyancy',
+                  'ionic': 'colloids/chemical_dict/I',
                   'distance_array': 'colloids/distance_arr',
                   'dlvo_x': None,
                   'dlvo_y': None,

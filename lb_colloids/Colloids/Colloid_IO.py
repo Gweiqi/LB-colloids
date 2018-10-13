@@ -55,7 +55,7 @@ class Config:
 
         self._strtype = ('LBMODEL', 'ENDPOINT', 'PATHLINE', 'TIMESERIES')
         self._inttype = ('NCOLS', 'ITERS', 'STORE_TIME', 'PRINT_TIME',
-                         'CONTINUOUS')
+                         'CONTINUOUS', 'COL_COL_UPDATE')
         self._floattype = ('LBRES', 'GRIDREF', 'AC', 'TIMESTEP', 'TEMPERATURE',
                            'RHO_WATER', 'RHO_COLLOID', 'VISCOSITY', 'I_INITIAL',
                            'I', 'EPSILON_R', 'SHEER_PLANE', 'LVDWST_WATER',
@@ -68,7 +68,7 @@ class Config:
                           'TS')
         self.validmodelparams = ('LBMODEL', 'NCOLS', 'ITERS', 'LBRES',
                                  'GRIDREF', 'AC', 'TIMESTEP', 'TEMPERATURE',
-                                 'RHO_COLLOID', 'CONTINUOUS')
+                                 'RHO_COLLOID', 'CONTINUOUS', 'COL_COL_UPDATE')
         self.validphysicalparams = ('RHO_WATER', 'RHO_COLLOID', 'VISCOSITY', "SCALE_LB")
         self.validchemicalparams = ('CONCENTRATION', 'ADJUST_ZETA', 'I_INITIAL',
                                     'I', 'EPSILON_R', 'VALENCE', 'SHEER_PLANE',
@@ -374,7 +374,7 @@ class Output:
                 output_string = '{:>8d}\t{:>5d}\t{:5d}\t{:09.8f}\t' \
                                 '{:10.9f}\t ' \
                                 '{:09.5f}\t{:09.5f}\t{:6f}\t{:6f}\t{:6f}\n'.format(
-                                    number, colloid.flag[-1], time[-1],
+                                    colloid.tag, colloid.flag[-1], time[-1],
                                     colloid.xposition[-1],
                                     colloid.yposition[-1],
                                     colloid.xposition[-1]/self.resolution,
@@ -389,7 +389,7 @@ class Output:
                 for number, colloid in enumerate(colloids):
                     output_string = '{:>8d}\t{:>5d}\t{:5d}\t{:09.8f}\t{:09.8f}\t' \
                                     '{:09.8f}\t{:09.8f}\t{:7f}\t{:7f}\t{:7f}\n'.format(
-                                        number, colloid.flag[-1], time[-1],
+                                        colloid.tag, colloid.flag[-1], time[-1],
                                         colloid.xposition[-1],
                                         colloid.yposition[-1],
                                         colloid.xposition[-1]/self.resolution,
@@ -400,7 +400,28 @@ class Output:
                     output.append(output_string)
 
         self._writer(self.filename, output)
-        
+
+    def write_single_colloid(self, timer, colloid):
+        """
+        Method to write a single colloid to an endpoint file upon breakthrough
+        :param TrackTime timer: Model TrackTime instance
+        :param LB_Colloid.Colloid colloid:
+        """
+        time = timer.timer
+        output_string = '{:>8d}\t{:>5d}\t{:5d}\t{:09.8f}\t' \
+                        '{:10.9f}\t ' \
+                        '{:09.5f}\t{:09.5f}\t{:6f}\t{:6f}\t{:6f}\n'.format(
+            colloid.tag, colloid.flag[-1], time[-1],
+            colloid.xposition[-1],
+            colloid.yposition[-1],
+            colloid.xposition[-1] / self.resolution,
+            colloid.yposition[-1] / self.resolution,
+            colloid.colloid_start_time,
+            colloid.colloid_end_time,
+            colloid.colloid_end_time - colloid.colloid_start_time)
+
+        self._writer(self.filename, [output_string])
+
 
 class ColloidsConfig(dict):
     """
