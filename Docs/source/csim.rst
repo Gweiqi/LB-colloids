@@ -1,0 +1,2 @@
+The lattice Boltzmann colloids simulation module, LB_Colloid, contains the base simulation classes for colloid models. The LB_Colloid module is general and can be adapted for use with other computational fluid dynamic methods that produce velocity arrays within a discernable porous media. Colloid streaming, updating, and internal data storage are managed within this module. Simulation time and physical time are also tracked within the colloids simulation module.
+

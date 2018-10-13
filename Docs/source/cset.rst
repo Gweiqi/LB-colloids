@@ -1,0 +1,1 @@
+The colloid setup module contains basic utilities to create and enforce boundary conditions. The computation of grid distance to the nearest solid interface is performed within this module. The normal user should not call these objects, as they are called internally by the ColloidModel instance. 
