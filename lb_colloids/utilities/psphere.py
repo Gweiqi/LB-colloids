@@ -1,3 +1,21 @@
+"""
+The Pshpere module contains a class named PShpere which allows the user to
+generate synthetic porous media, and to get information about that porous
+media
+
+A user can instantiate and use the PSphere() object as follows:
+
+>>> from lb_colloids import PSphere
+>>> img = Psphere(dimension=200, radius=20, porosity=0.375, sensitivity=0.01)
+>>> # hydraulic radius can be calculated
+>>> rh = img.calculate_hydraulic_radius(resolution=1e-06)
+>>> # to get a copy of the porous media use
+>>> matrix = img.matrix
+>>> # save the image
+>>> img.save("test_image.png")
+
+"""
+
 import numpy as np
 import random
 import math
@@ -7,7 +25,17 @@ import matplotlib.pyplot as plt
 
 class PSphere(object):
     """
+    Pshpere is a class that allows for the automated generation of
+    synthetic porous media in two-dimensions. This approach can be
+    expanded to three dimensions with some effort.
 
+
+    Parameters:
+    ----------
+    :param int radius: grain size radius
+    :param float porosity: target porosity for porous media
+    :param int dimension: the x and y dimension in pixels for the domain
+    :param float sensitivity: a porosity sensitivity target. This is the allowable range of error for PShpere
     """
     def __init__(self, radius=20, porosity=0.5, dimension=256, sensitivity=0.08):
         self.radius = radius
@@ -38,11 +66,8 @@ class PSphere(object):
 
     def generate_plane(self):
         """
-
-        :param porosity:
-        :param radius:
-        :param dimension:
-        :return:
+        Main method used to generate a porous media plane by PSphere,
+        this should not be called by the user
         """
         porosity = self.porosity
         slice_location = self.dimension / 2
@@ -69,11 +94,14 @@ class PSphere(object):
 
     def patch(self, x, y, radius):
         """
+        The patch method is used to set grains into a porous media.
+        Not to be called by the user!
 
-        :param x:
-        :param y:
-        :param radius:
-        :return:
+        Parameters:
+        ----------
+        :param int x: x index location
+        :param int y: y index location
+        :param int radius: grain radius
         """
         circumference = 2 * np.pi * radius + 1
         nsteps = int(math.ceil(circumference))/4
@@ -114,18 +142,12 @@ class PSphere(object):
 
                 self.matrix[newypos][newxpos] = self.particle_space
 
-    def burn_2d(self):
-        """
-
-        :return:
-        """
-        return
-
     def iround(self, val):
         """
+        Rounding routine to set index locations.
 
-        :param val:
-        :return:
+        :param float val: floating point value
+        :return int:
         """
         if val - math.floor(val) >= 0.5:
             return int(math.ceil(val))
@@ -133,6 +155,10 @@ class PSphere(object):
             return int(math.floor(val))
 
     def check_percolation(self):
+        """
+        Modified sweep line technique that checks the porous media percolation
+        Pshpere automatically calls this during porous media creation.
+        """
         sweep = np.zeros((self.matrix.shape), dtype=bool)
         sweep[0] = self.matrix[0]
 
@@ -290,8 +316,9 @@ class PSphere(object):
 
     def save_image(self, image_name):
         """
+        Save method, to save an image to file!
 
-        :param image_name:
+        :param str image_name: image path and name
         """
         matrix = np.invert(self.matrix)
         plt.imsave(image_name, matrix, cmap="gray")
