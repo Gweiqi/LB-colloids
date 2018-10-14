@@ -587,7 +587,8 @@ class HDF5WriteArray(object):
                  model_dict, chemical_dict, physical_dict):
 
         self.__model = model_dict['lbmodel']
-        arr = np.array([np.arange(1, 101) * model_dict['lbres'] / model_dict['gridref']])
+        gridres = model_dict['lbres'] / model_dict['gridref']
+        arr = np.array([np.arange(1, 101) * gridres]) - (gridres - 1e-9)
         varr = np.array([np.ones(100)])
         gravity = cm.Gravity(**model_dict)
         bounancy = cm.Bouyancy(**model_dict)
