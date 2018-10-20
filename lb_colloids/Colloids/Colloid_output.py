@@ -584,7 +584,7 @@ class ModelPlot(object):
         """
         return self.__hdf.get_data_by_path(path)
 
-    def plot(self, key, ax=None, *args, **kwargs):
+    def plot(self, key, ax=None, masked=False, *args, **kwargs):
         """
         Hdf array plotting using Hdf5Reader keys
 
@@ -596,6 +596,8 @@ class ModelPlot(object):
         :param **kwargs: matplotlib plotting kwargs
         """
         # todo: create a function_fmt for axis options
+        mesh = None
+
         if ax is None:
             ax = plt.gca()
 
@@ -622,12 +624,27 @@ class ModelPlot(object):
             arr = self.__hdf.get_data(key)
             ax.plot(x_axis, arr, *args, **kwargs)
 
+        elif key == "image":
+            arr = self.__hdf.get_data(key)
+            if masked:
+                arr = np.ma.masked_where(arr == 0, a=arr)
+            ax.imshow(arr, *args, **kwargs)
+
         else:
-            ax.imshow(self.__hdf.get_data(key), *args, **kwargs)
+            arr = self.__hdf.get_data(key)
+            if masked:
+                img = self.__hdf.get_data("image")
+                arr = np.ma.masked_where(img == 1, a=arr)
 
-        return ax
+            mesh = ax.imshow(arr, *args, **kwargs)
 
-    def plot_velocity_magnitude(self, nbin=10, *args, **kwargs):
+        if mesh is not None:
+            return mesh
+        else:
+            return ax
+
+    def plot_velocity_magnitude(self, nbin=10, dimensional=True,
+                                masked=False, *args, **kwargs):
         """
         Method to create a quiver plot to display the
         magnitude and direction of velocity vectors within
@@ -639,13 +656,26 @@ class ModelPlot(object):
         :param *args: matplotlib plotting args
         :param **kwargs: matplotlib plotting kwargs
         """
-        x = self.__hdf.get_data('velocity_x')
-        y = self.__hdf.get_data('velocity_y')
+        if dimensional:
+            x = self.__hdf.get_data('velocity_x')
+            y = self.__hdf.get_data('velocity_y')
+
+        else:
+            x = self.__hdf.get_data('lb_velocity_x')
+            y = self.__hdf.get_data('lb_velocity_y')
 
         xx = np.arange(0, x.shape[1])
         yy = np.arange(0, x.shape[0])
 
         xx, yy = np.meshgrid(xx, yy)
+
+        if masked:
+            img = self.__hdf.get_data('image')
+            xx = np.ma.masked_where(img == 1, a=xx)
+            yy = np.ma.masked_where(img == 1, a=yy)
+            x = np.ma.masked_where(img == 1, a=x)
+            y = np.ma.masked_where(img == 1, a=y)
+
 
         Q = plt.quiver(xx[::nbin, ::nbin], yy[::nbin, ::nbin],
                        x[::nbin, ::nbin], y[::nbin, ::nbin],
