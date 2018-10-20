@@ -64,6 +64,10 @@ class PSphere(object):
                 self.matrix = np.ones((dimension, dimension), dtype=bool)
                 # self.percolates = False
 
+    def get_matrix(self):
+        matrix = np.invert(self.matrix)
+        return matrix.astype(bool)
+
     def generate_plane(self):
         """
         Main method used to generate a porous media plane by PSphere,
