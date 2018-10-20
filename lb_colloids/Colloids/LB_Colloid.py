@@ -675,6 +675,8 @@ def run(config):
                       dlvo.all_chemical_params,
                       drag_forces.all_physical_params)
 
+    return drag_forces.drag_y
+
 
 if __name__ == '__main__':
     pass

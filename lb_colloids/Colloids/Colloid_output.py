@@ -584,17 +584,20 @@ class ModelPlot(object):
         """
         return self.__hdf.get_data_by_path(path)
 
-    def plot(self, key, *args, **kwargs):
+    def plot(self, key, ax=None, *args, **kwargs):
         """
         Hdf array plotting using Hdf5Reader keys
 
         Parameters:
         ----------
         :param str key: valid dictionary key from self.keys
+        :param object ax: matplotlib pyplot axes object (optional)
         :param *args: matplotlib plotting args
         :param **kwargs: matplotlib plotting kwargs
         """
         # todo: create a function_fmt for axis options
+        if ax is None:
+            ax = plt.gca()
 
         if key in ('lvdw_x', 'lvdw_y',
                    'lewis_x', 'lewis_y',
@@ -604,7 +607,8 @@ class ModelPlot(object):
 
             x_axis = self.__hdf.get_data('distance_array')
             arr = self.__hdf.get_data(key)
-            plt.plot(x_axis, arr, *args, **kwargs)
+
+            ax.plot(x_axis, arr, *args, **kwargs)
 
         elif key in ('conversion_factor',
                      'gravity',
@@ -616,10 +620,12 @@ class ModelPlot(object):
 
             x_axis = self.__hdf.get_data('distance_fine')
             arr = self.__hdf.get_data(key)
-            plt.plot(x_axis, arr, *args, **kwargs)
+            ax.plot(x_axis, arr, *args, **kwargs)
 
         else:
-            plt.imshow(self.__hdf.get_data(key), *args, **kwargs)
+            ax.imshow(self.__hdf.get_data(key), *args, **kwargs)
+
+        return ax
 
     def plot_velocity_magnitude(self, nbin=10, *args, **kwargs):
         """
@@ -746,7 +752,7 @@ class CCModelPlot(object):
 
         plt.plot(x, y * -1, *args, **kwargs)
 
-    def plot_mesh(self, key, *args, **kwargs):
+    def plot_mesh(self, key, ax=None, *args, **kwargs):
         """
         Plotting method for 2d representation of colloid-colloid
         dlvo profiles.
@@ -754,10 +760,15 @@ class CCModelPlot(object):
         Parameters:
         ----------
         :param str key: valid data key
+        :param object ax: matplotlib axes object (optional)
         :param *args: matplotlib plotting args
         :param **kwargs: matplotlib plotting kwargs
         """
         from matplotlib.colors import LogNorm
+
+        if ax is None:
+            ax = plt.gca()
+
         if key not in ('col_col', 'col_col_fine',
                        'col_col_x', 'col_col_y',
                        'col_col_fine_x', 'col_col_fine_y'):
@@ -774,8 +785,9 @@ class CCModelPlot(object):
             mesh = ccx + ccy
 
         else:
-            mesh = np.abs(self.__hdf5.get_data(key))
+            mesh = self.__hdf5.get_data(key)
 
+        print(mesh.max())
         # find center and set to nearby value to prevent log scale crashing
         shape = mesh.shape
         center = shape[0] // 2
@@ -785,19 +797,29 @@ class CCModelPlot(object):
                              np.arange(0, mesh.shape[1] + 1))
 
         if mesh.max()/mesh.min() > 10:
-            plt.pcolormesh(xx, yy, mesh,
-                           norm=LogNorm(vmin=mesh.min(),
-                                        vmax=mesh.max()),
-                           *args, **kwargs)
+            vmin = mesh.min()
+            vmax = mesh.max()
+
+            if 'vmin' in kwargs:
+                vmin = kwargs.pop('vmin')
+
+            if 'vmax' in kwargs:
+                vamx = kwargs.pop('vmax')
+
+            p = ax.pcolormesh(xx, yy, mesh,
+                              norm=LogNorm(vmin=mesh.min(),
+                                           vmax=mesh.max()),
+                              *args, **kwargs)
 
         else:
-            plt.pcolormesh(xx, yy, mesh,
-                           *args, **kwargs)
+            p = ax.pcolormesh(xx, yy, mesh,
+                              *args, **kwargs)
 
-        plt.ylim([0, mesh.shape[0]])
-        plt.xlim([0, mesh.shape[1]])
+        ax.set_ylim([0, mesh.shape[0]])
+        ax.set_xlim([0, mesh.shape[1]])
         center = mesh.shape[0] / 2.
-        plt.plot([center], [center], 'ko')
+        ax.plot([center], [center], 'ko')
+        return p
 
 
 class ColloidVelocity(object):
