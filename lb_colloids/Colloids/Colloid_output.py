@@ -21,8 +21,6 @@ import pandas as pd
 import h5py as H
 
 
-# todo: return an axis object and dump the data into csv for further processing?
-
 class Breakthrough(object):
     """
     Class to prepare and plot breakthrough curve data from endpoint
@@ -751,8 +749,6 @@ class CCModelPlot(object):
         :param *args: matplotlib plotting args
         :param **kwargs: matplotlib plotting kwargs
         """
-        # todo: store at fine discretization also for nicer plotting!!!!
-
         if key not in ('col_col_x', 'col_col_y',
                        'col_col_fine_x', 'col_col_fine_y'):
             raise KeyError("{} is not a valid key".format(key))
@@ -817,7 +813,6 @@ class CCModelPlot(object):
         else:
             mesh = self.__hdf5.get_data(key)
 
-        print(mesh.max())
         # find center and set to nearby value to prevent log scale crashing
         shape = mesh.shape
         center = shape[0] // 2
@@ -958,9 +953,9 @@ class ColloidVelocity(object):
         :param *args: matplotlib plotting args
         :param **kwargs: matplotlib plotting kwargs
         """
-        plt.plot(self.velocity['colloid'],
-                 self.velocity['velocity'],
-                 *args, **kwargs)
+        plt.scatter(self.velocity['colloid'],
+                    self.velocity['velocity'],
+                    *args, **kwargs)
 
     def plot_histogram(self, nbin=10, width=0.01,
                        *args, **kwargs):
