@@ -9,11 +9,17 @@ PhD project development branch of LB-colloid tracking code
 Installation of LB-Colloids is fairly easy and can be accomplished using the python installer pip. Download a zip file of the repository and open a terminal window.
 
 Installation can be accomplished using the command
->>> pip install .
+
+```
+python -m pip install .
+```
 
 or
 
->>> pip install . -e
+```
+python -m pip install . -e
+```
+
 for an editable version of the installation.
 
 If there are problems with installation or importing LB-Colloids please raise an issue or send me an email. It may be a FORTRAN compiler issue that we can work out together.
