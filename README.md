@@ -28,3 +28,9 @@ A user document/package API for the LB-Colloids package is located in the Docs/b
 
 Examples of how to use LB-Colloids using python scripting are located in the examples/Notebooks directory. These are jupyter notebooks that can be run interactively on the user's machine if Jupyter is installed.
 
+
+## How to reference this work
+
+Larsen, Joshua. Ph.D., Pore Scale Computational Fluid Dynamic Modeling: Approaches for Permeability Modeling and Particle Tracking Using Lattice Boltzmann Methods, The University of Arizona 2018L 230 pages; 10978423
+
+Open Access: https://pqdtopen.proquest.com/doc/2139258833.html?FMT=ABS
