@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3245555.svg)](https://doi.org/10.5281/zenodo.3245555)
+
 # LB-colloids
 LB colloids development code
 
