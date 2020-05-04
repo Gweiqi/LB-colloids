@@ -1,10 +1,11 @@
 import os
+import shutil
 import platform
 
 
 def test_setup():
 	if os.path.exists(os.path.join(".", "temp")):
-		os.remove(os.path.join(".", "temp"))
+		shutil.rmtree(os.path.join(".", "temp"))
 	os.mkdir(os.path.join(".", "temp"))
 
 	
@@ -21,5 +22,5 @@ def test_imports():
 
 
 if __name__ == "__main__":
-	# test_setup()
+	test_setup()
 	test_imports()
