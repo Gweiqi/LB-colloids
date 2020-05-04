@@ -1,10 +1,5 @@
-from lb_colloids import LBImage
-from lb_colloids import LB2DModel
-import matplotlib.pyplot as plt
-from lb_colloids import cIO
-from lb_colloids import ColloidModel
 import os
-import time
+import platform
 
 
 def test_setup():
@@ -19,9 +14,12 @@ def test_imports():
 	from lb_colloids import LBImage
 	from lb_colloids import LB2DModel
 	from lb_colloids import Colloids
-	import lb_colloids.LB.LB2D
+	if platform.system().lower() == "windows":
+		import lb_colloids.LB.LB2Dw
+	else:
+		import lb_colloids.LB.LB2D
 
 
 if __name__ == "__main__":
-	test_setup()
+	# test_setup()
 	test_imports()

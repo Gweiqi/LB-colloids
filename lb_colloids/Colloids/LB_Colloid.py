@@ -17,9 +17,9 @@ Please see the Input Output section for details on building the Colloid_IO.Confi
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-import Colloid_Setup as cs
-import Colloid_Math as cm
-import Colloid_IO as IO
+from . import Colloid_Setup as cs
+from . import Colloid_Math as cm
+from . import Colloid_IO as IO
 import random
 from copy import copy
 

@@ -1,5 +1,5 @@
-import Colloids
-import LB
+# import Colloids
+# import LB
 
 from .Colloids import LB_Colloid as ColloidModel
 from .Colloids import Colloid_IO as cIO

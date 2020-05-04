@@ -19,7 +19,7 @@ Importing classes from this module follows the notation:
 """
 import sys
 import numpy as np
-import Colloid_Math as cm
+from . import Colloid_Math as cm
 import h5py as H
 
 

@@ -48,14 +48,12 @@ Example showing the build and run of a D2Q9 LB2DModel
 """
 import numpy as np
 import h5py as H
-import LB_pretty as pretty
-import optparse
+from . import LB_pretty as pretty
 import platform
 if platform.system().lower() == "windows":
-    import LB2Dw as LB
+    from . import LB2Dw as LB
 else:
-    import LB2D as LB
-import LBIO
+    from . import LB2D as LB
 import os
 
 

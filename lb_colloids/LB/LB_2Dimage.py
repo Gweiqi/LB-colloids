@@ -13,14 +13,10 @@ and save the base model for usage in with LB_permeability
 >>> binary.binarized
 >>> HDF5_write(binary.binarized, binary.porosity, binary.boundary, 'LBModel.hdf5')
 """
-import Image
-from scipy.ndimage import imread
+from PIL import Image
 import numpy as np
 import h5py as H
-import optparse
 import matplotlib.pyplot as plt
-import sys
-import LBIO
 
 
 class Images:

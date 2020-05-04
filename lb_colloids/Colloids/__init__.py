@@ -1,5 +1,5 @@
-import Colloid_Setup
-import Colloid_Math
-import LB_Colloid
-import Colloid_IO
+from . import Colloid_Setup
+from . import Colloid_Math
+from . import LB_Colloid
+from . import Colloid_IO
 #import LB2D
