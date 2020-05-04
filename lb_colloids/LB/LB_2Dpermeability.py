@@ -546,7 +546,7 @@ class LB2DModel(object):
             super(LB2DModel, self).__setattr__('_LB2DModel__gravity', float(value))
 
         elif obj == 'tau':
-            if 0.5 > obj < 2.0:
+            if 0.5 > value < 2.0:
                 raise AssertionError('Tau is out of stable bounds')
             super(LB2DModel, self).__setattr__('_LB2DModel__tau', float(value))
 
