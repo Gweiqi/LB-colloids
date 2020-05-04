@@ -33,7 +33,7 @@ Examples of how to use LB-Colloids using python scripting are located in the exa
 
 ## How to reference this work
 
-Larsen, Joshua. Ph.D., Pore Scale Computational Fluid Dynamic Modeling: Approaches for Permeability Modeling and Particle Tracking Using Lattice Boltzmann Methods, The University of Arizona 2018L 230 pages; 10978423
+Larsen, Joshua. Ph.D., Pore Scale Computational Fluid Dynamic Modeling: Approaches for Permeability Modeling and Particle Tracking Using Lattice Boltzmann Methods, The University of Arizona 2018, 230 pages; 10978423
 
 Open Access: https://pqdtopen.proquest.com/doc/2139258833.html?FMT=ABS
 
