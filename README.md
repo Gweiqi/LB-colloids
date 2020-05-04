@@ -37,6 +37,8 @@ of how to use LB-Colloids using python scripting are located in the
 examples/Notebooks directory. These are jupyter notebooks that can be run 
 interactively on the user's machine if Jupyter is installed.
 
+Additional scripts and code samples can be found in the data directory.
+
 ## Required software
 To install LB-Colloids the following software is required:  
 A fortran compiler (ex. mingw, GFORTRAN)

@@ -67,7 +67,7 @@ if configs.lb_config is not None:
 
     print('[Setting boundary condition]')
     binary = LBImage.BoundaryCondition(img.arr, fluid, solid, nlayers)
-    print '[Porosity: %.4f]' % binary.porosity
+    print('[Porosity: %.4f]' % binary.porosity)
 
     if plot_binary:
         plt.imshow(binary.binarized, interpolation = 'nearest')

@@ -8,7 +8,6 @@ import os
 path =  os.path.dirname(os.path.realpath(__file__))
 imgname = os.path.join(path, "Synth100_2.png")
 
-
 nlayers = 5
 solidvx = 0
 fluidvx = 253
@@ -44,10 +43,10 @@ for ions in ionics:
     io['endpoint'] = os.path.join(path, "S2_i{:.3}.endpoint".format(ions))
     io['store_time'] = 100
 
-    print io.model_parameters
-    print io.chemical_parameters
-    print io.physical_parameters
-    print io.output_control_parameters
+    print(io.model_parameters)
+    print(io.chemical_parameters)
+    print(io.physical_parameters)
+    print(io.output_control_parameters)
 
     config = cIO.Config(io.config)
     ColloidModel.run(config)
