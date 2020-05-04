@@ -29,8 +29,8 @@ setup(name=__name__,
       version=__version__,
       description="A D2Q9 lattice Boltzmann modeling tool to simulate colloid transport",
       long_description=long_description,
-      install_requires=['numpy', 'matplotlib', 'pandas', 'scipy', 'h5py'],
+      install_requires=['numpy', 'matplotlib', 'pandas', 'scipy', 'h5py', 'Pillow'],
       # python_requires="=2.7.*",
       packages=['lb_colloids', 'lb_colloids.LB', 'lb_colloids.Colloids'],
-      ext_modules=ext_modules
+      # ext_modules=ext_modules
       )

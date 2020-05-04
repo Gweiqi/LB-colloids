@@ -46,12 +46,13 @@ A fortran compiler (ex. mingw, GFORTRAN)
 On Windows:  
 Microsoft visual C++ for python
 
-Python > 2.7
+Python >= 2.7
    * numpy
    * matplotlib
    * h5py
    * pandas
    * scipy
+   * Pillow
    * jupyter
    
 ## How to reference this work
