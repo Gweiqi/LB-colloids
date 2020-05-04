@@ -111,9 +111,9 @@ class BoundaryCondition:
                         elif value in self.__solidvx:
                             setup_bc[i, j] = 1.
                         else:
-                            print 'Grey Values: ', self.grey_values
-                            print 'Solid Values: ', self.solid_voxels
-                            print 'Fluid Values: ', self.fluid_voxels
+                            print('Grey Values: ', self.grey_values)
+                            print('Solid Values: ', self.solid_voxels)
+                            print('Fluid Values: ', self.fluid_voxels)
                             raise ValueError('Grey Value not in solid or fluid voxel values')
 
         self.__binarized = setup_bc.astype(bool)
@@ -186,7 +186,7 @@ class HDF5_write:
 
         self.__x = None
         with H.File(output, "w") as fi:
-            print '[Writing to %s]' % output
+            print('[Writing to {}]'.format(output))
             fi.create_dataset('Binary_image', data=arr)
             fi.create_dataset('results/porosity', data=porosity)
             fi.create_dataset('results/boundary', data=boundary)

@@ -37,7 +37,7 @@ x = lbmodel.get_velocity_conversion()
 t0 = time.time()
 tc0 = time.clock()
 io = cIO.ColloidsConfig()
-print io.valid_model_parameters
+print(io.valid_model_parameters)
 io['lbmodel'] = lbname
 io['ncols'] = 500
 io['iters'] = 200000
@@ -59,10 +59,10 @@ io['endpoint'] = os.path.join(path, 'Synth100_3.endpoint')
 io['timeseries'] = os.path.join(path, 'Synth100_3.pathline')
 io['store_time'] = 100
 
-print io.model_parameters
-print io.chemical_parameters
-print io.physical_parameters
-print io.output_control_parameters
+print(io.model_parameters)
+print(io.chemical_parameters)
+print(io.physical_parameters)
+print(io.output_control_parameters)
 
 # config = os.path.join(path, 'Synth100_3.config')
 
@@ -82,7 +82,7 @@ for key, value in io.chemical_parameters.items():
 for key, value in io.model_parameters.items():
     d[key.lower()] = value
 
-print d
+print(d)
 
 arr = np.linspace(1e-9, 1e-8, 100)
 xarr = np.array([arr])

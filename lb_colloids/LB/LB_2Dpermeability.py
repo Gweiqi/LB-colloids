@@ -50,7 +50,11 @@ import numpy as np
 import h5py as H
 import LB_pretty as pretty
 import optparse
-import LB2D as LB
+import platform
+if platform.system().lower() == "windows":
+    import LB2Dw as LB
+else:
+    import LB2D as LB
 import LBIO
 import os
 
@@ -445,7 +449,7 @@ class HDF5_write(object):
                  velocity_factor, img=None, porosity=None, boundary=None):
 
         self.__x = None
-        print '[Writing to: %s]' % output
+        print('[Writing to: {}]'.format(output))
         try:
             with H.File(output, "r+") as fi:
                 fi.create_dataset('results/mrho', data=mrho)
@@ -817,7 +821,7 @@ class LB2DModel(object):
             else:
                 raise AssertionError("image_folder must be supplied")
 
-        print self.__niters
+        print(self.__niters)
         
         f = initial_distribution(9, self.__ny, self.__nx, self.__rho , 0., self.viscosity,
                                  self.__img, self.__wi)

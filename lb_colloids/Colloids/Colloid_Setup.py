@@ -175,7 +175,7 @@ class GridArray(object):
                     vline[lbound:rbound] = np.append(left, right)
                     
         except IndexError:
-            print 'volume does not percolate'
+            print('volume does not percolate')
             sys.exit()
         return line, vline
 

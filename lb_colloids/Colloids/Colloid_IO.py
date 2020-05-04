@@ -221,7 +221,7 @@ class Config:
                 param[keyvalue[i]] = float(keyvalue[i+1])              
                 
         else:
-            print 'Parameter name %s is not valid' % pname
+            print('Parameter name %s is not valid' % pname)
             sys.exit(-1)
 
         return pname, param

@@ -54,7 +54,7 @@ class PSphere(object):
             self.generate_plane()
             self.check_percolation()
             self.check_porosity()
-            print self.matrix_porosity
+            print(self.matrix_porosity)
             if abs(self.matrix_porosity - self.porosity) <= sensitivity:
                 if self.percolates:
                     good = True
@@ -332,6 +332,6 @@ class PSphere(object):
 if __name__ == "__main__":
     psphere = PSphere(dimension=200, radius=18, porosity=0.375, sensitivity=0.02)
     print(psphere.matrix_porosity)
-    print psphere.calculate_hydraulic_radius(1e-06)
+    print(psphere.calculate_hydraulic_radius(1e-06))
     plt.imshow(psphere.matrix, interpolation="None")
     plt.show()
