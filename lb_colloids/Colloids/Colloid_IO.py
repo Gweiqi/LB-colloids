@@ -19,7 +19,6 @@ Importing classes from this module follows the notation:
 """
 import sys
 import numpy as np
-from . import Colloid_Math as cm
 import h5py as H
 
 
@@ -585,6 +584,7 @@ class HDF5WriteArray(object):
     """
     def __init__(self, ux, uy, colloidcolloid,
                  model_dict, chemical_dict, physical_dict):
+        from . import Colloid_Math as cm
 
         self.__model = model_dict['lbmodel']
         gridres = model_dict['lbres'] / model_dict['gridref']

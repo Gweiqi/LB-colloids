@@ -18,7 +18,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from . import Colloid_Setup as cs
-from . import Colloid_Math as cm
 from . import Colloid_IO as IO
 import random
 from copy import copy
@@ -309,6 +308,7 @@ def _run_save_model(x, iters, vx, vy, ts, xlen, ylen, gridres,
     """
     definition to allow the use of multiple ionic strengths ie. attachment then flush, etc....
     """
+    from . import Colloid_Math as cm
     tag = x[-1].tag + 1
     continuous = 0
     if 'continuous' in ModelDict:
@@ -406,6 +406,7 @@ def run(config):
     :param colloid_IO.config config: object or list of colloid_IO.Config objects
 
     """
+    from . import Colloid_Math as cm
 
     if isinstance(config, list):
         if len(config) > 1:
