@@ -55,7 +55,7 @@ class PSphere(object):
             self.check_percolation()
             self.check_porosity()
             print(self.matrix_porosity)
-            if abs(self.matrix_porosity - self.porosity) <= sensitivity:
+            if abs(self.matrix_porosity - self.porosity) <= self.sensitivity:
                 if self.percolates:
                     good = True
 
@@ -109,6 +109,7 @@ class PSphere(object):
         """
         circumference = 2 * np.pi * radius + 1
         nsteps = int(math.ceil(circumference))/4
+        nsteps = int(nsteps)
 
         if nsteps == 1:
             nsteps = 2
