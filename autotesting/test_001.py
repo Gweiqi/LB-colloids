@@ -1,8 +1,12 @@
 import os
 from lb_colloids import PSphere
+import matplotlib.image as mpimg
+import numpy as np
+
 
 ws = os.path.abspath(os.path.dirname(__file__))
-ws = os.path.join(ws, "..", "data")
+data = os.path.join(ws, "..", "data")
+outpth = os.path.join(ws, "temp")
 
 
 def test_psphere():
@@ -39,6 +43,16 @@ def test_psphere():
 
 	if not psp.percolates:
 		raise AssertionError("Porous media does not percolate")
+
+	psp.save_image(os.path.join(outpth, "psphere_test.png"))
+
+	img = mpimg.imread(os.path.join(outpth, "psphere_test.png"))
+	img_matrix = np.array(img[:, :, 0], dtype=bool)
+
+	img_por = PSphere.static_porosity(img_matrix)
+
+	if abs(mpor - img_por) > sensitivity:
+		raise AssertionError("Porous media not written to disk correctly")
 
 
 def test_lb_image():
