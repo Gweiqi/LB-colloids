@@ -13,7 +13,6 @@ def test_imports():
 	import lb_colloids
 	from lb_colloids import PSphere
 	from lb_colloids import LBImage
-	from lb_colloids import LBBC
 	from lb_colloids import LB2DModel
 	from lb_colloids import Colloids
 	if platform.system().lower() == "windows":

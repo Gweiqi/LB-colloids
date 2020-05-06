@@ -8,7 +8,6 @@ from .Colloids import Colloid_Setup
 from .Colloids import Colloid_output as ColloidOutput
 
 from .LB import LB_2Dimage as LBImage
-from .LB.LB_2Dimage import BoundaryCondition as LBBC
 from .LB.LB_2Dpermeability import LB2DModel
 from .LB import LBIO as lbIO
 from .utilities.psphere import PSphere 

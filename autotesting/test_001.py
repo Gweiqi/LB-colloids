@@ -1,7 +1,6 @@
 import os
 from lb_colloids import PSphere
 from lb_colloids import LBImage
-from lb_colloids import LBBC
 import matplotlib.image as mpimg
 import numpy as np
 
@@ -77,12 +76,43 @@ def test_lb_image():
 
 
 def test_lb_boundary_condition():
+	image_name = "test_image.png"
+	img = LBImage.Images(os.path.join(examples, image_name))
+
+	unique = np.unique(img.arr)
+
+	fluidvx = [unique[0], ]
+	solidvx = [unique[1], ]
+	nlayers = 5
+
+	bc = LBImage.BoundaryCondition(img.arr, fluidvx, solidvx,
+								   nlayers)
+
+	if not np.allclose(bc.grey_values, unique):
+		raise AssertionError("Grey values not properly passed to "
+							 "BoundaryCondition class")
+
+	if bc.porosity != 0.4044:
+		raise AssertionError("Porosity calculation has failed")
+
+	if bc.binarized.shape != (210, 202):
+		raise AssertionError("Boundary conditions not added in the correct "
+							 "dimension")
+
+	if not all(bc.binarized[:, 0]):
+		raise AssertionError("No flow boundary not added properly")
+
+	if not all(bc.binarized[:, -1]):
+		raise AssertionError("No flow boundary not added properly")
+
+
+def test_lb_model_fortran():
 	pass
 
 
-def test_lb_model():
+def test_lb_model_python():
 	pass
-	
+
 	
 def test_colloid_model():
 	pass
