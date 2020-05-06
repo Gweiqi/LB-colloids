@@ -1,11 +1,14 @@
 import os
 from lb_colloids import PSphere
+from lb_colloids import LBImage
+from lb_colloids import LBBC
 import matplotlib.image as mpimg
 import numpy as np
 
 
 ws = os.path.abspath(os.path.dirname(__file__))
 data = os.path.join(ws, "..", "data")
+examples = os.path.join(ws, "..", "examples", "data")
 outpth = os.path.join(ws, "temp")
 
 
@@ -56,6 +59,24 @@ def test_psphere():
 
 
 def test_lb_image():
+	image_name = "test_image.png"
+	img = LBImage.Images(os.path.join(examples, image_name))
+
+	pmin = np.min(img.arr)
+	pmax = np.min(img.arr)
+
+	if 0 <= pmin <= 255:
+		pass
+	else:
+		raise AssertionError("Image could not be converted to 8 bit")
+
+	if 0 <= pmax <= 255:
+		pass
+	else:
+		raise AssertionError("Image could not be converted to 8 bit")
+
+
+def test_lb_boundary_condition():
 	pass
 
 
@@ -69,3 +90,5 @@ def test_colloid_model():
 
 if __name__ == "__main__":
 	test_psphere()
+	test_lb_image()
+	test_lb_boundary_condition()
